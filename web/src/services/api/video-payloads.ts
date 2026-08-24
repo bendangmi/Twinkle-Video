@@ -230,6 +230,7 @@ export function uniquePayloads(payloads: Array<Record<string, unknown>>) {
 
 export function shouldUsePublicVideoReferenceUrls(config: AiConfig, path: string) {
     if (path === GLOBAL_AIOPC_VIDEO_CREATE_PATH) return true;
+    if (config.advancedConfig?.protocol === "twinkle-model") return true;
     const rule = (config.advancedConfig?.referenceRule || "").trim().toLowerCase();
     return /\u516c\u7f51|public|next_public_site_url|localhost|must.*\burl\b|\burl\b.*only|\u5fc5\u987b.*\burl\b|\u4ec5.*\burl\b|\u53ea.*\burl\b/i.test(rule);
 }

@@ -139,7 +139,14 @@ export async function POST(request: Request) {
     }
     if (advancedConfig.protocol === "globalaiopc" || isGlobalAiOpcBaseUrl(baseUrl)) return NextResponse.json({ error: "未识别到 GlobalAiOpc 接口范围，请检查 Base URL 或重新选择接口范围" }, { status: 400 });
 
-    if (!(await isSafeOutboundUrl(baseUrl))) return NextResponse.json({ error: "Base URL 不允许访问内网或保留地址" }, { status: 400 });
+    if (!(await isSafeOutboundUrl(baseUrl))) {
+        return NextResponse.json(
+            {
+                error: "Base URL 不允许访问内网或保留地址；如需接入管理员控制的内网模型，请在服务端设置 VOZEB_PRO_ALLOW_PRIVATE_UPSTREAMS=1，并将精确 Host/IP 加入 VOZEB_PRO_PRIVATE_UPSTREAM_HOSTS 后重启服务",
+            },
+            { status: 400 },
+        );
+    }
     const modelCatalogUrls = buildModelCatalogUrls(baseUrl, apiFormat, modelCatalogPaths);
     if (!modelCatalogUrls.length) return NextResponse.json({ error: "模型目录路径必须与 Base URL 同源" }, { status: 400 });
 
@@ -210,6 +217,15 @@ export async function POST(request: Request) {
     } catch (error) {
         modelFetchCooldowns.delete(cooldownKey);
         console.error("Admin model fetch failed", sanitizeProviderMessage(error, [apiKey]));
-        return NextResponse.json({ error: isProviderTimeoutError(error) ? "拉取模型超时，请稍后重试" : "拉取模型失败，请检查接口地址和网络" }, { status: 502 });
+        const diagnostic = modelFetchDiagnostic(error, [apiKey]);
+        return NextResponse.json({ error: isProviderTimeoutError(error) ? "拉取模型超时，请稍后重试" : diagnostic ? `拉取模型失败：${diagnostic}` : "拉取模型失败，请检查接口地址和网络" }, { status: 502 });
     }
+}
+
+function modelFetchDiagnostic(error: unknown, secrets: string[]) {
+    const message = sanitizeProviderMessage(error, secrets);
+    if (!(error instanceof Error) || !error.cause) return message;
+    const cause = error.cause instanceof Error ? error.cause.message : typeof error.cause === "object" ? JSON.stringify(error.cause) : String(error.cause);
+    const sanitizedCause = sanitizeProviderMessage(cause, secrets);
+    return sanitizedCause && sanitizedCause !== message ? `${message}: ${sanitizedCause}` : message;
 }

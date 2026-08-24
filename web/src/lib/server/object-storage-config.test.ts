@@ -21,6 +21,7 @@ import { getObjectStorageAdminSettings, getObjectStorageRuntimeConfig, saveObjec
 const storedSettings = {
     id: "default" as const,
     enabled: false,
+    customDomain: "https://cdn.example.com",
     endpoint: "https://oss.example.com",
     region: "cn-test-1",
     bucket: "media",
@@ -50,6 +51,7 @@ describe("object storage configuration", () => {
     it("preserves encrypted credentials when secret fields are empty", async () => {
         await saveObjectStorageAdminSettings({
             enabled: true,
+            customDomain: "https://cdn.example.com/",
             endpoint: "https://oss.example.com/",
             region: "cn-test-1",
             bucket: "media",
@@ -72,9 +74,10 @@ describe("object storage configuration", () => {
     });
 
     it("rejects unsafe endpoints and incomplete enabled configurations", async () => {
-        await expect(saveObjectStorageAdminSettings({ enabled: false, endpoint: "ftp://oss.example.com", region: "auto", bucket: "media", prefix: "vozeb-pro", forcePathStyle: false })).rejects.toThrow("Endpoint");
+        await expect(saveObjectStorageAdminSettings({ enabled: false, customDomain: "", endpoint: "ftp://oss.example.com", region: "auto", bucket: "media", prefix: "vozeb-pro", forcePathStyle: false })).rejects.toThrow("Endpoint");
         mocks.read.mockResolvedValue({ ...storedSettings, accessKeyIdCiphertext: "", secretAccessKeyCiphertext: "" });
-        await expect(saveObjectStorageAdminSettings({ enabled: true, endpoint: "", region: "auto", bucket: "media", prefix: "vozeb-pro", forcePathStyle: false })).rejects.toThrow("Access Key");
+        await expect(saveObjectStorageAdminSettings({ enabled: true, customDomain: "", endpoint: "", region: "auto", bucket: "media", prefix: "vozeb-pro", forcePathStyle: false })).rejects.toThrow("Access Key");
+        await expect(saveObjectStorageAdminSettings({ enabled: false, customDomain: "ftp://cdn.example.com", endpoint: "", region: "auto", bucket: "media", prefix: "vozeb-pro", forcePathStyle: false })).rejects.toThrow("自定义访问域名");
     });
 
     it("does not let an old in-flight read overwrite the cache after a switch change", async () => {
@@ -85,6 +88,7 @@ describe("object storage configuration", () => {
 
         await saveObjectStorageAdminSettings({
             enabled: true,
+            customDomain: storedSettings.customDomain,
             endpoint: storedSettings.endpoint,
             region: storedSettings.region,
             bucket: storedSettings.bucket,

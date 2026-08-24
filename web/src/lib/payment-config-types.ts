@@ -1,4 +1,4 @@
-export type PaymentProviderId = "stripe" | "alipay" | "wechat" | "payply" | "manual";
+export type PaymentProviderId = "stripe" | "alipay" | "wechat" | "easypay" | "payply" | "manual";
 
 export const ALIPAY_PAYMENT_MODES = ["official", "face_to_face"] as const;
 export type AlipayPaymentMode = (typeof ALIPAY_PAYMENT_MODES)[number];
@@ -181,6 +181,58 @@ export const PAYMENT_PROVIDER_DEFINITIONS: PaymentProviderDefinition[] = [
             { key: "notifyUrl", label: "支付回调地址", kind: "url", envNames: ["VOZEB_PRO_WECHAT_PAY_NOTIFY_URL"], placeholder: "默认 /api/billing/webhooks/wechat", advanced: true },
             { key: "refundNotifyUrl", label: "退款回调地址", kind: "url", envNames: ["VOZEB_PRO_WECHAT_PAY_REFUND_NOTIFY_URL"], placeholder: "可选，默认不单独接收退款回调", advanced: true },
             { key: "webhookToleranceSeconds", label: "回调时间容差秒数", kind: "text", envNames: ["VOZEB_PRO_WECHAT_PAY_WEBHOOK_TOLERANCE_SECONDS"], placeholder: "300", advanced: true },
+        ],
+    },
+    {
+        id: "easypay",
+        name: "易支付",
+        description: "兼容标准 EasyPay 协议，支持支付宝或微信支付跳转与二维码收款。",
+        checkoutKind: "跳转支付 / 二维码",
+        checkoutFieldKeys: ["pid", "pkey", "apiBase", "paymentType", "paymentMode"],
+        webhookFieldKeys: ["pkey"],
+        fields: [
+            { key: "pid", label: "商户 ID（PID）", kind: "text", required: true, envNames: ["VOZEB_PRO_EASYPAY_PID", "EASYPAY_PID"], placeholder: "易支付商户 ID" },
+            { key: "pkey", label: "商户密钥（PKey）", kind: "secret", secret: true, required: true, envNames: ["VOZEB_PRO_EASYPAY_PKEY", "EASYPAY_PKEY"], placeholder: "易支付商户密钥" },
+            {
+                key: "apiBase",
+                label: "API 基础地址",
+                kind: "url",
+                required: true,
+                envNames: ["VOZEB_PRO_EASYPAY_API_BASE", "EASYPAY_API_BASE"],
+                placeholder: "https://pay.example.com",
+                note: "可填写站点根地址，也兼容填写 submit.php、mapi.php 或 api.php。",
+            },
+            {
+                key: "paymentType",
+                label: "支付类型",
+                kind: "select",
+                required: true,
+                defaultValue: "alipay",
+                envNames: ["VOZEB_PRO_EASYPAY_PAYMENT_TYPE", "EASYPAY_PAYMENT_TYPE"],
+                options: [
+                    { label: "支付宝", value: "alipay" },
+                    { label: "微信支付", value: "wxpay" },
+                ],
+                note: "易支付实例一次按当前选择的支付类型下单；如需切换类型，可在此保存后再创建新订单。",
+            },
+            {
+                key: "paymentMode",
+                label: "支付模式",
+                kind: "select",
+                required: true,
+                defaultValue: "qrcode",
+                envNames: ["VOZEB_PRO_EASYPAY_PAYMENT_MODE", "EASYPAY_PAYMENT_MODE"],
+                options: [
+                    { label: "二维码 / API 下单", value: "qrcode" },
+                    { label: "跳转易支付收银台", value: "popup" },
+                ],
+                note: "二维码模式调用 mapi.php；跳转模式直接生成 submit.php 收银台地址。",
+            },
+            { key: "cid", label: "通道 ID", kind: "text", envNames: ["VOZEB_PRO_EASYPAY_CID", "EASYPAY_CID"], placeholder: "可选，作为未单独指定类型时的通道", advanced: true },
+            { key: "cidAlipay", label: "支付宝通道 ID", kind: "text", envNames: ["VOZEB_PRO_EASYPAY_CID_ALIPAY", "EASYPAY_CID_ALIPAY"], placeholder: "可选", advanced: true },
+            { key: "cidWxpay", label: "微信通道 ID", kind: "text", envNames: ["VOZEB_PRO_EASYPAY_CID_WXPAY", "EASYPAY_CID_WXPAY"], placeholder: "可选", advanced: true },
+            { key: "notifyUrl", label: "异步回调地址", kind: "url", envNames: ["VOZEB_PRO_EASYPAY_NOTIFY_URL", "EASYPAY_NOTIFY_URL"], placeholder: "默认 /api/billing/webhooks/easypay", advanced: true },
+            { key: "returnUrl", label: "同步返回地址", kind: "url", envNames: ["VOZEB_PRO_EASYPAY_RETURN_URL", "EASYPAY_RETURN_URL"], placeholder: "默认 /billing/success", advanced: true },
         ],
     },
     {

@@ -20,7 +20,7 @@ describe("create workbench overview service", () => {
         expect(overview.runningTasks).toHaveLength(4);
         expect(overview.runningTasks[0].id).toBe("pending-5");
         expect(overview.recentAssets).toHaveLength(8);
-        expect(overview.recentAssets[0]).toMatchObject({ id: "success-new-0", url: "/api/media/image-one.webp" });
+        expect(overview.recentAssets[0]).toMatchObject({ id: "success-new-0", generationLogId: "success-new", url: "/api/media/image-one.webp" });
         expect(overview.recentAssets.filter((asset) => asset.url === "/api/media/image-one.webp")).toHaveLength(1);
         expect(overview.recentAssets.some((asset) => asset.url.startsWith("data:"))).toBe(false);
     });

@@ -21,4 +21,13 @@ describe("payment provider definitions", () => {
         expect(getAlipayPaymentModePresentation("face_to_face")).toMatchObject({ checkoutKind: "当面付二维码" });
         expect(getAlipayPaymentModePresentation("both")).toBeUndefined();
     });
+
+    it("exposes the EasyPay merchant, payment mode and channel settings", () => {
+        const provider = PAYMENT_PROVIDER_DEFINITIONS.find((item) => item.id === "easypay");
+
+        expect(provider).toMatchObject({ checkoutKind: "跳转支付 / 二维码", checkoutFieldKeys: ["pid", "pkey", "apiBase", "paymentType", "paymentMode"] });
+        expect(provider?.fields.find((field) => field.key === "paymentType")).toMatchObject({ defaultValue: "alipay", options: [{ value: "alipay" }, { value: "wxpay" }] });
+        expect(provider?.fields.find((field) => field.key === "paymentMode")).toMatchObject({ defaultValue: "qrcode", options: [{ value: "qrcode" }, { value: "popup" }] });
+        expect(provider?.webhookFieldKeys).toContain("pkey");
+    });
 });

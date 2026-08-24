@@ -1,24 +1,22 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ agentOptions: {} as Record<string, unknown> }));
+import { resolveInternalOrigin } from "./internal-origin";
 
-vi.mock("undici", () => ({
-    Agent: class {
-        constructor(options: Record<string, unknown>) {
-            mocks.agentOptions = options;
-        }
-    },
-    fetch: vi.fn(),
-}));
+describe("internal origin", () => {
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
 
-import { GENERATION_TRANSPORT_TIMEOUT_MS } from "./generation-http-lifecycle";
-import "./internal-origin";
+    it("uses the configured local app origin for worker and server callbacks", () => {
+        vi.stubEnv("VOZEB_PRO_INTERNAL_ORIGIN", "http://127.0.0.1:3000");
 
-describe("internal API dispatcher", () => {
-    it("outlives the longest model request instead of using Undici's five minute default", () => {
-        expect(mocks.agentOptions).toMatchObject({
-            headersTimeout: GENERATION_TRANSPORT_TIMEOUT_MS,
-            bodyTimeout: GENERATION_TRANSPORT_TIMEOUT_MS,
-        });
+        expect(resolveInternalOrigin("http://localhost:3000")).toBe("http://127.0.0.1:3000");
+    });
+
+    it("falls back to the running app port when no internal origin is configured", () => {
+        vi.stubEnv("VOZEB_PRO_INTERNAL_ORIGIN", "");
+        vi.stubEnv("PORT", "3000");
+
+        expect(resolveInternalOrigin("http://localhost:3000")).toBe("http://localhost:3000");
     });
 });

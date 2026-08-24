@@ -5,6 +5,7 @@ vi.mock("@/lib/server/safe-outbound-fetch", () => ({ fetchSafeOutbound: (url: st
 
 import type { BillingOrderRecord } from "@/lib/server/database";
 import type { PaymentRuntimeConfig } from "@/lib/server/payment-config-store";
+import { easyPaySign } from "@/lib/server/payment-easypay";
 import { checkoutFromMetadata, checkoutMetadata, createProviderCheckout } from "./payment-checkout-providers";
 
 const order = {
@@ -159,6 +160,39 @@ describe("payment checkout providers", () => {
 
         await expect(createProviderCheckout("alipay", { ...order, provider: "alipay", currency: "CNY" }, {}, alipayConfig("face_to_face"))).rejects.toThrow("支付宝当面付响应验签失败");
     });
+
+    it("creates an EasyPay QR checkout with the standard MD5 request signature", async () => {
+        const fetchMock = vi.fn(async (_url: string | URL, init?: RequestInit) => {
+            const body = init?.body as URLSearchParams;
+            expect(body.get("pid")).toBe("epay-pid");
+            expect(body.get("type")).toBe("wxpay");
+            expect(body.get("cid")).toBe("wx-channel");
+            expect(body.get("sign")).toBe(easyPaySign(Object.fromEntries(body.entries()), "epay-pkey"));
+            return Response.json({ code: 1, msg: "success", trade_no: "epay-trade-1", qrcode: "https://qr.easypay.test/order-one" });
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        const checkout = await createProviderCheckout("easypay", { ...order, provider: "easypay", currency: "CNY" }, { origin: "https://app.test" }, easyPayConfig({ VOZEB_PRO_EASYPAY_PAYMENT_TYPE: "wxpay", VOZEB_PRO_EASYPAY_CID_WXPAY: "wx-channel" }));
+
+        expect(checkout).toMatchObject({ provider: "easypay", kind: "qr", qrContent: "https://qr.easypay.test/order-one", providerOrderId: "epay-trade-1" });
+        expect(fetchMock).toHaveBeenCalledWith("https://easypay.test/mapi.php", expect.objectContaining({ method: "POST" }));
+    });
+
+    it("builds an EasyPay hosted checkout URL without a server-side request", async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+
+        const checkout = await createProviderCheckout("easypay", { ...order, provider: "easypay", currency: "CNY" }, { origin: "https://app.test" }, easyPayConfig({ VOZEB_PRO_EASYPAY_PAYMENT_MODE: "popup" }));
+        const params = new URL(checkout.url || "").searchParams;
+
+        expect(checkout).toMatchObject({ provider: "easypay", kind: "redirect", providerOrderId: order.orderNo });
+        expect(params.get("pid")).toBe("epay-pid");
+        expect(params.get("type")).toBe("alipay");
+        expect(params.get("out_trade_no")).toBe(order.orderNo);
+        expect(params.get("sign_type")).toBe("MD5");
+        expect(params.get("sign")).toBe(easyPaySign(Object.fromEntries(params.entries()), "epay-pkey"));
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
 });
 
 function alipayConfig(mode = "official"): PaymentRuntimeConfig {
@@ -179,6 +213,22 @@ function signedAlipayResponse(payload: { alipay_trade_precreate_response: Record
     const signContent = JSON.stringify(payload.alipay_trade_precreate_response);
     const sign = createSign("RSA-SHA256").update(signContent, "utf8").sign(alipayPrivateKey, "base64");
     return new Response(JSON.stringify({ ...payload, sign }), { headers: { "content-type": "application/json" } });
+}
+
+function easyPayConfig(overrides: Record<string, string> = {}): PaymentRuntimeConfig {
+    return {
+        saved: { providers: {} },
+        providers: { easypay: { enabled: true, saved: true } },
+        valuesByEnvName: {
+            VOZEB_PRO_EASYPAY_PID: "epay-pid",
+            VOZEB_PRO_EASYPAY_PKEY: "epay-pkey",
+            VOZEB_PRO_EASYPAY_API_BASE: "https://easypay.test",
+            VOZEB_PRO_EASYPAY_PAYMENT_TYPE: "alipay",
+            VOZEB_PRO_EASYPAY_PAYMENT_MODE: "qrcode",
+            VOZEB_PRO_EASYPAY_CID_ALIPAY: "ali-channel",
+            ...overrides,
+        },
+    };
 }
 
 function verifyAlipayRequestSignature(body: URLSearchParams) {

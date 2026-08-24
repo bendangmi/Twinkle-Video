@@ -7,6 +7,7 @@ import type { BillingOrderRecord, JsonValue, PaymentTransactionRecord } from "@/
 import { getPaymentRuntimeConfig, getPaymentRuntimeEnv, getPaymentRuntimeValue, type PaymentRuntimeConfig } from "@/lib/server/payment-config-store";
 import { loadPaymentPublicKey, verifyRsaSha256 } from "@/lib/server/payment-signature-utils";
 import { fetchSafeOutbound } from "@/lib/server/safe-outbound-fetch";
+import { isEasyPaySuccessCode, normalizeEasyPayApiBase } from "@/lib/server/payment-easypay";
 
 export type PaymentRefundStatus = "succeeded" | "pending" | "manual";
 
@@ -31,6 +32,7 @@ export async function refundPaymentTransaction(order: BillingOrderRecord, paymen
     if (provider === "stripe") return refundStripePayment(order, payment, options, paymentConfig);
     if (provider === "alipay") return refundAlipayPayment(order, payment, options, paymentConfig);
     if (provider === "wechat") return refundWechatPayment(order, payment, options, paymentConfig);
+    if (provider === "easypay") return refundEasyPayPayment(order, payment, paymentConfig);
     if (provider === "payply") return refundPayplyPayment(order, payment, options, paymentConfig);
     throw new BillingInputError("该支付渠道未接入自动退款，不能直接标记本地退款", 409);
 }
@@ -172,6 +174,33 @@ async function refundWechatPayment(order: BillingOrderRecord, payment: PaymentTr
         providerRefundId: normalizeOptionalText(responsePayload.refund_id, 160),
         rawPayload: sanitizeJson(responsePayload),
     };
+}
+
+async function refundEasyPayPayment(order: BillingOrderRecord, payment: PaymentTransactionRecord, paymentConfig: PaymentRuntimeConfig): Promise<PaymentRefundResult> {
+    const pid = requiredConfig(paymentConfig, "VOZEB_PRO_EASYPAY_PID", "EASYPAY_PID");
+    const pkey = requiredConfig(paymentConfig, "VOZEB_PRO_EASYPAY_PKEY", "EASYPAY_PKEY");
+    const apiBase = normalizeEasyPayApiBase(requiredConfig(paymentConfig, "VOZEB_PRO_EASYPAY_API_BASE", "EASYPAY_API_BASE"));
+    const identifiers = [order.orderNo, payment.providerTradeId, payment.providerPaymentId].map((value) => normalizeText(value, "", 160)).filter(Boolean);
+    let lastError: BillingInputError | undefined;
+    for (const identifier of [...new Set(identifiers)]) {
+        const params = new URLSearchParams({ pid, key: pkey, money: centsToDecimal(order.amountCents) });
+        if (identifier === order.orderNo) params.set("out_trade_no", identifier);
+        else params.set("trade_no", identifier);
+        const response = await fetchSafeOutbound(`${apiBase}/api.php?act=refund`, {
+            method: "POST",
+            headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
+            body: params,
+            signal: AbortSignal.timeout(20_000),
+        });
+        const rawBody = await response.text();
+        const payload = parseJsonObject(rawBody);
+        if (response.ok && isEasyPaySuccessCode(payload.code)) {
+            return { provider: "easypay", status: "succeeded", providerRefundId: identifier, rawPayload: sanitizeJson(payload) };
+        }
+        lastError = new BillingInputError(readEasyPayError(payload, `易支付退款失败（HTTP ${response.status}）`), response.status >= 500 ? 502 : 400);
+        if (!isEasyPayOrderNotFound(lastError.message)) throw lastError;
+    }
+    throw lastError || new BillingInputError("易支付退款缺少订单标识", 409);
 }
 
 async function refundPayplyPayment(order: BillingOrderRecord, payment: PaymentTransactionRecord, options: PaymentRefundOptions, paymentConfig: PaymentRuntimeConfig): Promise<PaymentRefundResult> {
@@ -526,6 +555,15 @@ function readWechatError(payload: Record<string, unknown>, fallback: string) {
 
 function readPayplyError(payload: Record<string, unknown>, fallback: string) {
     return normalizeText(readPath(payload, "message") || readPath(payload, "error.message") || readPath(payload, "error") || readPath(payload, "data.message"), fallback, 300);
+}
+
+function readEasyPayError(payload: Record<string, unknown>, fallback: string) {
+    return normalizeText(payload.msg || payload.message || payload.error, fallback, 300);
+}
+
+function isEasyPayOrderNotFound(message: string) {
+    const lower = message.toLowerCase();
+    return message.includes("订单编号不存在") || message.includes("订单不存在") || lower.includes("order not found") || lower.includes("not exist");
 }
 
 function renderTemplate(template: string, values: Record<string, string>) {

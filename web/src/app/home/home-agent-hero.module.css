@@ -992,3 +992,600 @@
         transition: none;
     }
 }
+
+.hero {
+    --hero-card-radius: 8px;
+    --hero-card-width: 100%;
+    --hero-text-primary: #141413;
+    --hero-text-secondary: #6b6963;
+    --hero-border: #e8e6dc;
+    --hero-blue: #6a9bcc;
+    --hero-purple: #d97757;
+    align-items: center;
+    min-height: auto;
+    border-bottom: 1px solid var(--hero-border);
+    background: #faf9f5;
+    padding: 94px 32px 96px;
+}
+
+.hero::before,
+.hero::after,
+.agentRing,
+.floatingArtifact {
+    display: none;
+}
+
+:global(.dark) .hero {
+    --hero-text-primary: #faf9f5;
+    --hero-text-secondary: #b0aea5;
+    --hero-border: #383733;
+    background: #141413;
+}
+
+.heroContent {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(460px, 1.1fr);
+    align-items: center;
+    column-gap: 72px;
+    max-width: 1180px;
+    text-align: left;
+}
+
+.eyebrow {
+    grid-column: 1;
+    margin-bottom: 22px;
+    color: var(--hero-text-secondary);
+    font-family: var(--anthropic-font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+.heroBrand {
+    grid-column: 1;
+    color: var(--hero-text-primary);
+    font-family: var(--anthropic-font-display);
+    font-size: clamp(48px, 5vw, 72px);
+    font-weight: 500;
+    letter-spacing: -0.06em;
+    line-height: 0.98;
+    margin-bottom: 22px;
+    overflow-wrap: anywhere;
+}
+
+.heroTitle {
+    grid-column: 1;
+    color: var(--hero-text-primary);
+    font-family: var(--anthropic-font-display);
+    font-size: clamp(48px, 5.3vw, 76px);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 0.99;
+    max-width: 10ch;
+}
+
+.heroTitle span {
+    color: var(--hero-text-primary);
+    background: none;
+}
+
+.heroSubtitle {
+    grid-column: 1;
+    margin: 24px 0 0;
+    color: var(--hero-text-secondary);
+    font-size: 16px;
+    line-height: 1.75;
+    max-width: 48ch;
+}
+
+.heroTagline {
+    grid-column: 1;
+    color: var(--hero-text-primary);
+    font-size: 19px;
+    font-weight: 650;
+    line-height: 1.4;
+    margin: 20px 0 0;
+}
+
+.heroActions,
+.heroSignals {
+    grid-column: 1;
+}
+
+.heroActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 28px;
+}
+
+.heroPrimaryAction,
+.heroSecondaryAction {
+    align-items: center;
+    border-radius: 6px;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 650;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 18px;
+}
+
+.heroPrimaryAction {
+    background: #d97757;
+    color: #fffaf5;
+}
+
+.heroPrimaryAction:hover {
+    background: #c96648;
+}
+
+.heroSecondaryAction {
+    border: 1px solid #e1ded6;
+    background: #faf9f6;
+    color: var(--hero-text-primary);
+}
+
+.heroSecondaryAction:hover {
+    border-color: #d97757;
+    background: #f7e9e2;
+}
+
+.heroSignals {
+    color: #8b887f;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 12px;
+    gap: 18px;
+    margin-top: 24px;
+}
+
+.agentStage {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.agentCard {
+    min-height: 330px;
+    border: 1px solid var(--hero-border);
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(20, 20, 19, 0.1);
+    backdrop-filter: none;
+}
+
+.agentCard::before {
+    display: block;
+    height: 34px;
+    flex: 0 0 34px;
+    border-bottom: 1px solid var(--hero-border);
+    background: #f1eee8;
+    content: "LIVE CREATIVE WORKSPACE                                      READY";
+    color: #6b6963;
+    font-family: var(--anthropic-font-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    line-height: 34px;
+    padding: 0 18px;
+    white-space: pre;
+}
+
+:global(.dark) .agentCard {
+    border-color: var(--hero-border);
+    background: #1d1d1b;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+}
+
+:global(.dark) .agentCard::before {
+    background: #383733;
+    color: #b0aea5;
+}
+
+.inputArea {
+    padding: 28px 28px 0;
+}
+
+.agentTextarea {
+    min-height: 98px;
+    color: var(--hero-text-primary);
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.agentTextarea::placeholder {
+    color: var(--hero-text-secondary);
+}
+
+.promptExamples {
+    gap: 8px;
+    padding: 0 28px;
+}
+
+.promptExamples button {
+    height: 36px;
+    border: 1px solid var(--hero-border);
+    border-radius: 6px;
+    background: #faf9f5;
+    color: var(--hero-text-secondary);
+    font-size: 12px;
+}
+
+.promptExamples button:hover,
+.promptExamples button:focus-visible {
+    border-color: #d1a18d;
+    background: #f1eee8;
+    color: var(--hero-text-primary);
+}
+
+:global(.dark) .promptExamples button {
+    border-color: var(--hero-border);
+    background: #141413;
+    color: var(--hero-text-secondary);
+}
+
+:global(.dark) .promptExamples button:hover,
+:global(.dark) .promptExamples button:focus-visible {
+    border-color: #8f5945;
+    background: #383733;
+    color: var(--hero-text-primary);
+}
+
+.agentToolbar {
+    margin-top: 22px;
+    padding: 0 18px 18px;
+}
+
+.creationModes button,
+.agentTools button {
+    border: 1px solid var(--hero-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--hero-text-secondary);
+}
+
+.creationModes button:hover,
+.creationModes .modeActive,
+.agentTools button:not(.sendButton):hover {
+    border-color: #d1a18d;
+    background: #f1eee8;
+    color: var(--hero-text-primary);
+}
+
+.agentTools .sendButton {
+    border-radius: 6px;
+    background: #141413;
+    color: #fffaf5;
+}
+
+.agentTools .sendButton:hover,
+.agentTools .sendButton:focus-visible {
+    background: #242421;
+    box-shadow: none;
+    transform: none;
+}
+
+@media (max-width: 920px) {
+    .hero {
+        padding: 72px 24px 76px;
+    }
+
+    .heroContent {
+        grid-template-columns: 1fr;
+        row-gap: 0;
+    }
+
+    .heroTitle,
+    .heroBrand,
+    .heroTagline,
+    .heroSubtitle,
+    .eyebrow,
+    .heroActions,
+    .heroSignals,
+    .agentStage {
+        grid-column: 1;
+    }
+
+    .heroTitle {
+        max-width: 12ch;
+    }
+
+    .agentStage {
+        grid-row: auto;
+        margin-top: 42px;
+    }
+}
+
+@media (max-width: 600px) {
+    .hero {
+        padding: 56px 16px 60px;
+    }
+
+    .heroContent {
+        width: 100%;
+    }
+
+    .heroTitle {
+        font-size: 46px;
+    }
+
+    .agentCard {
+        min-height: 320px;
+    }
+
+    .inputArea,
+    .promptExamples {
+        padding-inline: 18px;
+    }
+}
+
+/* Final landing-page composition */
+.hero {
+    align-items: center;
+    min-height: calc(100svh - 68px);
+    padding: 88px 32px 96px;
+    background: #f7f6f2;
+    border-bottom: 0;
+}
+
+.heroContent {
+    grid-template-columns: minmax(420px, 480px) minmax(0, 640px);
+    column-gap: 60px;
+    max-width: 1180px;
+    width: 100%;
+}
+
+.heroCopy {
+    align-self: center;
+    grid-column: 1;
+    min-width: 0;
+}
+
+.eyebrow {
+    margin-bottom: 16px;
+    color: #8b887f;
+    letter-spacing: 0.12em;
+}
+
+.heroTitle {
+    font-size: clamp(54px, 5.4vw, 78px);
+    line-height: 0.98;
+    max-width: 8ch;
+}
+
+.heroTitle {
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.4;
+    margin-top: 0;
+    max-width: 32ch;
+    display: none;
+}
+
+.heroBrand {
+    font-size: clamp(56px, 5vw, 68px);
+    margin-bottom: 0;
+}
+
+.heroTagline {
+    margin-top: 14px;
+}
+
+.heroSubtitle {
+    margin-top: 14px;
+}
+
+.heroActions {
+    margin-top: 22px;
+}
+
+.heroSignals {
+    margin-top: 18px;
+}
+
+.heroSubtitle {
+    color: #716f68;
+    font-size: 16px;
+    max-width: 34ch;
+}
+
+.agentStage {
+    align-self: center;
+    grid-column: 2;
+    grid-row: 1;
+    max-width: 640px;
+    justify-self: center;
+    width: 100%;
+}
+
+.agentCard {
+    min-height: 380px;
+    border-color: #e1ded6;
+    border-radius: 10px;
+    box-shadow: 0 18px 42px rgba(50, 48, 42, 0.1);
+}
+
+.agentCard::before {
+    height: 38px;
+    flex-basis: 38px;
+    background: #eeece6;
+    line-height: 38px;
+}
+
+.inputArea {
+    padding: 32px 32px 0;
+}
+
+.agentTextarea {
+    min-height: 128px;
+}
+
+.promptExamples {
+    gap: 8px;
+    padding-inline: 32px;
+}
+
+.agentToolbar {
+    margin-top: 26px;
+    gap: 12px;
+    padding: 0 24px 22px;
+}
+
+.creationModes {
+    gap: 6px;
+}
+
+.creationModes button {
+    padding-right: 12px;
+}
+
+.agentTools {
+    gap: 6px;
+}
+
+.creationModes button,
+.agentTools button {
+    border-color: #e1ded6;
+    background: #faf9f6;
+}
+
+.creationModes button:hover,
+.creationModes .modeActive,
+.agentTools button:not(.sendButton):hover {
+    border-color: #d97757;
+    background: #f7e9e2;
+}
+
+.agentTools .sendButton {
+    background: #1f1f1c;
+}
+
+:global(.dark) .hero {
+    background: #1f1f1c;
+}
+
+:global(.dark) .agentCard {
+    border-color: #3b3a35;
+    background: #292925;
+}
+
+@media (max-width: 920px) {
+    .hero {
+        min-height: auto;
+    }
+
+    .heroContent {
+        grid-template-columns: 1fr;
+    }
+
+    .heroCopy,
+    .agentStage {
+        grid-column: 1;
+    }
+
+    .agentStage {
+        grid-row: auto;
+        max-width: none;
+        justify-self: stretch;
+    }
+}
+
+@media (max-width: 1180px) and (min-width: 768px) {
+    .heroContent {
+        grid-template-columns: minmax(0, 1fr);
+        max-width: 720px;
+    }
+
+    .heroCopy,
+    .agentStage {
+        grid-column: 1;
+    }
+
+    .agentStage {
+        grid-row: auto;
+        justify-self: stretch;
+        margin-top: 48px;
+        max-width: none;
+    }
+}
+
+:global(.dark) .hero {
+    --hero-text-primary: #f5f2eb;
+    --hero-text-secondary: #a7a39a;
+    --hero-border: #35342f;
+    background: #141413;
+}
+
+:global(.dark) .eyebrow,
+:global(.dark) .heroSubtitle,
+:global(.dark) .heroSignals {
+    color: #a7a39a;
+}
+
+:global(.dark) .heroPrimaryAction {
+    background: #d97757;
+    color: #fffaf5;
+}
+
+:global(.dark) .heroPrimaryAction:hover {
+    background: #e38768;
+}
+
+:global(.dark) .heroSecondaryAction {
+    border-color: #4a4841;
+    background: #24231f;
+    color: #f5f2eb;
+}
+
+:global(.dark) .heroSecondaryAction:hover,
+:global(.dark) .heroSecondaryAction:focus-visible {
+    border-color: #d97757;
+    background: #33251f;
+    color: #fffaf5;
+}
+
+:global(.dark) .agentCard {
+    border-color: #45433d;
+    background: #1d1d1b;
+    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.3);
+}
+
+:global(.dark) .agentCard::before {
+    background: #292824;
+    border-bottom-color: #35342f;
+    color: #a7a39a;
+}
+
+:global(.dark) .promptExamples button,
+:global(.dark) .creationModes button,
+:global(.dark) .agentTools button:not(.sendButton) {
+    border-color: #45433d;
+    background: #24231f;
+    color: #bdb8ae;
+}
+
+:global(.dark) .promptExamples button:hover,
+:global(.dark) .promptExamples button:focus-visible,
+:global(.dark) .creationModes button:hover,
+:global(.dark) .creationModes .modeActive,
+:global(.dark) .agentTools button:not(.sendButton):hover,
+:global(.dark) .agentTools button:not(.sendButton):focus-visible {
+    border-color: #a96852;
+    background: #33251f;
+    color: #fffaf5;
+}
+
+:global(.dark) .agentTools .sendButton {
+    background: #f5f2eb;
+    color: #1f1f1c;
+}
+
+:global(.dark) .agentTools .sendButton:hover,
+:global(.dark) .agentTools .sendButton:focus-visible {
+    background: #ffffff;
+    color: #1f1f1c;
+}

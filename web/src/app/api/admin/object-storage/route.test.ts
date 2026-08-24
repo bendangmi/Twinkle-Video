@@ -20,6 +20,7 @@ import { GET, PATCH, POST } from "./route";
 
 const settings = {
     enabled: true,
+    customDomain: "http://sub.bdmcom.cn",
     endpoint: "https://oss.example.com",
     region: "auto",
     bucket: "media",
@@ -79,7 +80,7 @@ describe("administrator object storage API", () => {
             expect.objectContaining({
                 action: "admin.object-storage.update",
                 target: { type: "object_storage", id: "primary" },
-                metadata: { enabled: true, forcePathStyle: true },
+                metadata: { enabled: true, customDomain: true, forcePathStyle: true },
             }),
         );
         expect(JSON.stringify(mocks.audit.mock.calls)).not.toContain("new-secret");

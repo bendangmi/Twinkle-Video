@@ -12,6 +12,7 @@ import { buildApiUrl, modelOptionName, resolveModelRequestConfig, type AiConfig 
 import type { ReferenceImage } from "@/types/image";
 import type { ReferenceAudio, ReferenceVideo } from "@/types/media";
 import { buildSeedanceSpecialRequest } from "@/lib/seedance-special";
+import { buildTwinkleModelVideoRequest } from "@/lib/twinkle-model";
 import { urlHostHasLabel, urlHostMatches } from "@/lib/url-host";
 
 import {
@@ -180,7 +181,10 @@ export async function createCompatibleVideoTask(
         const payloads = await buildCompatibleVideoPayloadVariants(config, model, prompt, references, path, videoReferences, audioReferences);
         for (const payload of payloads) {
             try {
-                const response = await axios.post<ApiEnvelope<Record<string, unknown>>>(aiApiUrl(config, path), payload, { headers: aiHeaders(config, "application/json"), signal: options?.signal });
+                const response = await axios.post<ApiEnvelope<Record<string, unknown>>>(aiApiUrl(config, path), payload, {
+                    headers: aiHeaders(config, "application/json"),
+                    signal: options?.signal,
+                });
                 syncUserPointsFromHeaders(response.headers, config.apiSource);
                 const created = unwrapEnvelope(response.data, "视频接口没有返回任务") as Record<string, unknown>;
                 if (references.length && readTaskMode(created) === "t2v") {
@@ -214,13 +218,13 @@ export function compatibleVideoCreatePaths(config: AiConfig, model: string) {
     const globalPreset = globalAiOpcVideoPreset(config, model);
     if (globalPreset) return [globalPreset.createPath];
     const configuredPath = normalizeAdvancedVideoPath(config.advancedConfig?.createPath);
-    if (config.advancedConfig?.protocol === "yumeng") return configuredPath ? [configuredPath] : [];
+    if (config.advancedConfig?.protocol === "yumeng" || config.advancedConfig?.protocol === "twinkle-model") return configuredPath ? [configuredPath] : [];
     const defaultPaths = isGlobalAiOpcVideoConfig(config, model) ? [GLOBAL_AIOPC_VIDEO_CREATE_PATH, ...VIDEO_CREATE_PATHS.filter((path) => path !== GLOBAL_AIOPC_VIDEO_CREATE_PATH)] : VIDEO_CREATE_PATHS;
     return uniqueStrings([configuredPath, ...defaultPaths]);
 }
 
 export function isGlobalAiOpcVideoConfig(config: AiConfig, model: string) {
-    if (config.advancedConfig?.protocol === "yumeng") return false;
+    if (config.advancedConfig?.protocol === "yumeng" || config.advancedConfig?.protocol === "twinkle-model") return false;
     if (config.advancedConfig?.protocol === "globalaiopc") return true;
     if (normalizeAdvancedVideoPath(config.advancedConfig?.createPath).toLowerCase().endsWith(GLOBAL_AIOPC_VIDEO_CREATE_PATH)) return true;
     const modelName = modelOptionName(model).toLowerCase();
@@ -260,7 +264,7 @@ export function compatibleVideoPollPaths(config: AiConfig, task: VideoGeneration
     const globalPreset = globalAiOpcVideoPreset(config, config.model);
     if (globalPreset?.queryPath) return [globalPreset.queryPath];
     const configuredPath = normalizeAdvancedVideoPath(config.advancedConfig?.queryPath);
-    if (config.advancedConfig?.protocol === "yumeng") return configuredPath ? [configuredPath] : [];
+    if (config.advancedConfig?.protocol === "yumeng" || config.advancedConfig?.protocol === "twinkle-model") return configuredPath ? [configuredPath] : [];
     const paths = task.pollPath === GLOBAL_AIOPC_VIDEO_CREATE_PATH ? [configuredPath, GLOBAL_AIOPC_VIDEO_RESULT_PATH, task.pollPath, ...VIDEO_CREATE_PATHS] : [configuredPath, task.pollPath || VIDEO_CREATE_PATHS[0], ...VIDEO_CREATE_PATHS];
     return uniqueStrings(paths);
 }
@@ -387,24 +391,25 @@ export async function buildCompatibleVideoPayloadVariants(config: AiConfig, mode
     const globalPreset = globalAiOpcVideoPreset(config, model);
     const legacyGlobalAiOpc = !globalPreset && path === GLOBAL_AIOPC_VIDEO_CREATE_PATH;
     const publicUrlReferenceMode = Boolean(globalPreset) || shouldUsePublicVideoReferenceUrls(config, path);
+    const imageReferences = config.advancedConfig?.protocol === "twinkle-model" ? references.filter((reference) => !reference.videoRole || reference.videoRole === "reference") : references;
     const imageSources = await Promise.all(
-        references.map((reference) => (globalPreset || legacyGlobalAiOpc ? Promise.resolve(resolveGlobalAiOpcImageSources(reference)) : publicUrlReferenceMode ? resolvePublicImageSources(reference) : resolveCompatibleImageSources(reference))),
+        imageReferences.map((reference) => (globalPreset || legacyGlobalAiOpc ? Promise.resolve(resolveGlobalAiOpcImageSources(reference)) : publicUrlReferenceMode ? resolvePublicImageSources(reference) : resolveCompatibleImageSources(reference))),
     );
     const images = uniqueStrings(imageSources.flat());
     if ((globalPreset || legacyGlobalAiOpc) && references.length && !images.length) {
         throw new Error("当前渠道无法读取这张参考图，请重新上传或更换渠道");
     }
-    if (!globalPreset && !legacyGlobalAiOpc && publicUrlReferenceMode && references.length && !images.length) {
+    if (!globalPreset && !legacyGlobalAiOpc && publicUrlReferenceMode && imageReferences.length && !images.length) {
         throw new Error("\u53c2\u8003\u56fe\u9700\u8981\u516c\u7f51\u56fe\u7247 URL\uff1b\u672c\u5730\u5f00\u53d1 localhost \u4e0d\u80fd\u76f4\u63a5\u63d0\u4ea4\u7ed9\u4e0a\u6e38\uff0c\u8bf7\u90e8\u7f72\u540e\u914d\u7f6e NEXT_PUBLIC_SITE_URL");
     }
     const publicReferenceVideos = uniqueStrings(videoReferences.flatMap(resolveGlobalAiOpcMediaReferenceSources));
     const publicReferenceAudios = uniqueStrings(audioReferences.flatMap(resolveGlobalAiOpcMediaReferenceSources));
-    const referenceVideos = globalPreset || legacyGlobalAiOpc ? publicReferenceVideos : [];
-    const referenceAudios = globalPreset || legacyGlobalAiOpc ? publicReferenceAudios : [];
-    if ((globalPreset || legacyGlobalAiOpc) && videoReferences.length && !referenceVideos.length) {
+    const referenceVideos = globalPreset || legacyGlobalAiOpc || publicUrlReferenceMode ? publicReferenceVideos : [];
+    const referenceAudios = globalPreset || legacyGlobalAiOpc || publicUrlReferenceMode ? publicReferenceAudios : [];
+    if ((globalPreset || legacyGlobalAiOpc || publicUrlReferenceMode) && videoReferences.length && !referenceVideos.length) {
         throw new Error("当前渠道无法读取这个参考视频，请重新上传或更换渠道");
     }
-    if ((globalPreset || legacyGlobalAiOpc) && audioReferences.length && !referenceAudios.length) {
+    if ((globalPreset || legacyGlobalAiOpc || publicUrlReferenceMode) && audioReferences.length && !referenceAudios.length) {
         throw new Error("当前渠道无法读取这个参考音频，请重新上传或更换渠道");
     }
     const duration =
@@ -443,6 +448,23 @@ export async function buildCompatibleVideoPayloadVariants(config: AiConfig, mode
         referenceAudios: publicReferenceAudios,
     });
     if (config.advancedConfig?.protocol === "yumeng") return templatePayloads;
+    if (config.advancedConfig?.protocol === "twinkle-model") {
+        return [
+            buildTwinkleModelVideoRequest({
+                model: modelOptionName(model),
+                prompt,
+                duration,
+                aspectRatio: ratio,
+                resolution,
+                generateAudio: boolConfig(config.videoGenerateAudio, true),
+                images,
+                videos: referenceVideos,
+                audios: referenceAudios,
+                startImageUrl: await twinkleFrameImageUrl(references, "first_frame"),
+                endImageUrl: await twinkleFrameImageUrl(references, "last_frame"),
+            }),
+        ];
+    }
     if (path === GLOBAL_AIOPC_VIDEO_CREATE_PATH) {
         const payloads = mediaPayloads.map((mediaPayload) => ({
             model: modelOptionName(model),
@@ -482,6 +504,12 @@ export async function buildCompatibleVideoPayloadVariants(config: AiConfig, mode
 function normalizeYumengVideoDuration(value: string) {
     const seconds = Math.floor(Number(value) || 4);
     return Math.max(4, Math.min(15, seconds));
+}
+
+async function twinkleFrameImageUrl(references: ReferenceImage[], role: "first_frame" | "last_frame") {
+    const reference = references.find((item) => item.videoRole === role);
+    if (!reference) return undefined;
+    return (await resolvePublicImageSources(reference))[0] || undefined;
 }
 
 function globalAiOpcVideoPreset(config: AiConfig, model: string) {

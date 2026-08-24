@@ -1,0 +1,526 @@
+html[data-ui-theme="anthropic"] {
+    --background: #faf9f5;
+    --foreground: #141413;
+    --card: #ffffff;
+    --card-foreground: #141413;
+    --popover: #ffffff;
+    --popover-foreground: #141413;
+    --primary: #d97757;
+    --primary-foreground: #fffaf5;
+    --secondary: #f1eee8;
+    --secondary-foreground: #141413;
+    --muted: #f1eee8;
+    --muted-foreground: #6b6963;
+    --accent: #f1eee8;
+    --accent-foreground: #141413;
+    --border: #e8e6dc;
+    --input: #e8e6dc;
+    --ring: rgba(217, 119, 87, 0.28);
+    --sidebar: #ffffff;
+    --sidebar-foreground: #141413;
+    --sidebar-primary: #d97757;
+    --sidebar-primary-foreground: #fffaf5;
+    --sidebar-accent: #f1eee8;
+    --sidebar-accent-foreground: #141413;
+    --sidebar-border: #e8e6dc;
+    --sidebar-ring: rgba(217, 119, 87, 0.28);
+    --anthropic-paper: #faf9f5;
+    --anthropic-surface: #ffffff;
+    --anthropic-ink: #141413;
+    --anthropic-muted: #6b6963;
+    --anthropic-mid: #b0aea5;
+    --anthropic-line: #e8e6dc;
+    --anthropic-accent: #d97757;
+    --anthropic-accent-hover: #c66343;
+    --anthropic-focus: rgba(217, 119, 87, 0.28);
+    --anthropic-font-sans: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif;
+    --anthropic-font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif;
+    --anthropic-font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+    color-scheme: light;
+}
+
+html[data-ui-theme="anthropic"].dark {
+    --background: #141413;
+    --foreground: #faf9f5;
+    --card: #1d1d1b;
+    --card-foreground: #faf9f5;
+    --popover: #1d1d1b;
+    --popover-foreground: #faf9f5;
+    --primary: #e18b6d;
+    --primary-foreground: #fffaf5;
+    --secondary: #383733;
+    --secondary-foreground: #faf9f5;
+    --muted: #383733;
+    --muted-foreground: #b0aea5;
+    --accent: #383733;
+    --accent-foreground: #faf9f5;
+    --border: #383733;
+    --input: #383733;
+    --ring: rgba(225, 139, 109, 0.3);
+    --sidebar: #1d1d1b;
+    --sidebar-foreground: #faf9f5;
+    --sidebar-primary: #e18b6d;
+    --sidebar-primary-foreground: #fffaf5;
+    --sidebar-accent: #383733;
+    --sidebar-accent-foreground: #faf9f5;
+    --sidebar-border: #383733;
+    --sidebar-ring: rgba(225, 139, 109, 0.3);
+    --anthropic-paper: #141413;
+    --anthropic-surface: #1d1d1b;
+    --anthropic-ink: #faf9f5;
+    --anthropic-muted: #b0aea5;
+    --anthropic-mid: #66645e;
+    --anthropic-line: #383733;
+    --anthropic-accent: #e18b6d;
+    --anthropic-accent-hover: #eca184;
+    --anthropic-focus: rgba(225, 139, 109, 0.3);
+    color-scheme: dark;
+}
+
+html[data-ui-theme="anthropic"],
+html[data-ui-theme="anthropic"] body {
+    background: var(--anthropic-paper);
+    color: var(--anthropic-ink);
+    font-family: var(--anthropic-font-sans);
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell {
+    background: var(--anthropic-paper);
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell::before {
+    display: none;
+}
+
+html[data-ui-theme="anthropic"] .workspace-header,
+html[data-ui-theme="anthropic"] .landing-site-header {
+    background: color-mix(in srgb, var(--anthropic-paper) 94%, transparent);
+    border-color: var(--anthropic-line);
+    box-shadow: 0 1px 2px rgba(20, 20, 19, 0.04);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell aside,
+html[data-ui-theme="anthropic"] .workspace-shell .bg-white,
+html[data-ui-theme="anthropic"] .workspace-shell [class~="bg-card"] {
+    background: var(--anthropic-surface) !important;
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell aside,
+html[data-ui-theme="anthropic"] .workspace-shell aside > a,
+html[data-ui-theme="anthropic"] .workspace-shell [class*="border-[#eaecf0]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class*="border-[#e5e8ec]"] {
+    border-color: var(--anthropic-line) !important;
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell aside a:not([aria-current]) {
+    color: var(--anthropic-muted);
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell aside a:hover,
+html[data-ui-theme="anthropic"] .workspace-shell aside a[aria-current="page"] {
+    background: color-mix(in srgb, var(--anthropic-line) 48%, transparent) !important;
+    color: var(--anthropic-ink) !important;
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell aside a[aria-current="page"] svg,
+html[data-ui-theme="anthropic"] .workspace-shell aside a[aria-current="page"] .text-\[5965ff\] {
+    color: var(--anthropic-accent) !important;
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell .workspace-header [class*="text-[#20242a]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#111827]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#20242a]"] {
+    color: var(--anthropic-ink) !important;
+}
+
+html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#697381]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#98a2b3]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#7f8995]"] {
+    color: var(--anthropic-muted) !important;
+}
+
+html[data-ui-theme="anthropic"] [class~="rounded-xl"],
+html[data-ui-theme="anthropic"] [class~="rounded-2xl"],
+html[data-ui-theme="anthropic"] [class~="rounded-3xl"] {
+    border-radius: 8px;
+}
+
+html[data-ui-theme="anthropic"] [class~="shadow-lg"],
+html[data-ui-theme="anthropic"] [class~="shadow-xl"],
+html[data-ui-theme="anthropic"] [class~="shadow-2xl"] {
+    box-shadow: 0 8px 24px rgba(20, 20, 19, 0.1) !important;
+}
+
+html[data-ui-theme="anthropic"] .ant-btn {
+    border-radius: 6px;
+    box-shadow: none;
+    font-family: var(--anthropic-font-sans);
+    font-weight: 600;
+    transition-duration: 150ms;
+}
+
+html[data-ui-theme="anthropic"] .ant-btn-primary,
+html[data-ui-theme="anthropic"] .ant-btn-color-primary {
+    border-color: var(--anthropic-accent);
+    background: var(--anthropic-accent);
+    color: #fffaf5;
+}
+
+html[data-ui-theme="anthropic"] .ant-btn-primary:hover:not(:disabled),
+html[data-ui-theme="anthropic"] .ant-btn-color-primary:hover:not(:disabled) {
+    border-color: var(--anthropic-accent-hover);
+    background: var(--anthropic-accent-hover);
+    color: #fffaf5;
+}
+
+html[data-ui-theme="anthropic"] .ant-btn-default,
+html[data-ui-theme="anthropic"] .ant-btn-variant-outlined {
+    border-color: var(--anthropic-line);
+    background: var(--anthropic-surface);
+    color: var(--anthropic-ink);
+}
+
+html[data-ui-theme="anthropic"] .ant-btn-default:hover:not(:disabled),
+html[data-ui-theme="anthropic"] .ant-btn-variant-outlined:hover:not(:disabled) {
+    border-color: var(--anthropic-mid);
+    background: color-mix(in srgb, var(--anthropic-line) 42%, var(--anthropic-surface));
+    color: var(--anthropic-ink);
+}
+
+html[data-ui-theme="anthropic"] .ant-input,
+html[data-ui-theme="anthropic"] .ant-input-affix-wrapper,
+html[data-ui-theme="anthropic"] .ant-select-selector,
+html[data-ui-theme="anthropic"] .ant-picker,
+html[data-ui-theme="anthropic"] .ant-input-number {
+    border-color: var(--anthropic-line) !important;
+    border-radius: 6px !important;
+    background: var(--anthropic-surface) !important;
+    color: var(--anthropic-ink);
+    box-shadow: none !important;
+}
+
+html[data-ui-theme="anthropic"] .ant-input:focus,
+html[data-ui-theme="anthropic"] .ant-input-affix-wrapper-focused,
+html[data-ui-theme="anthropic"] .ant-select-focused .ant-select-selector,
+html[data-ui-theme="anthropic"] .ant-picker-focused,
+html[data-ui-theme="anthropic"] .ant-input-number-focused {
+    border-color: var(--anthropic-accent) !important;
+    box-shadow: 0 0 0 3px var(--anthropic-focus) !important;
+}
+
+html[data-ui-theme="anthropic"] .ant-modal-content,
+html[data-ui-theme="anthropic"] .ant-drawer-content,
+html[data-ui-theme="anthropic"] .ant-popover-inner,
+html[data-ui-theme="anthropic"] .ant-dropdown-menu {
+    border: 1px solid var(--anthropic-line);
+    border-radius: 8px;
+    background: var(--anthropic-surface);
+    box-shadow: 0 8px 24px rgba(20, 20, 19, 0.14);
+}
+
+html[data-ui-theme="anthropic"] .ant-modal-header,
+html[data-ui-theme="anthropic"] .ant-modal-footer,
+html[data-ui-theme="anthropic"] .ant-drawer-header,
+html[data-ui-theme="anthropic"] .ant-drawer-footer {
+    border-color: var(--anthropic-line);
+    background: transparent;
+}
+
+html[data-ui-theme="anthropic"] .ant-table-wrapper,
+html[data-ui-theme="anthropic"] .ant-table,
+html[data-ui-theme="anthropic"] .ant-table-container {
+    border-color: var(--anthropic-line);
+    background: var(--anthropic-surface);
+}
+
+html[data-ui-theme="anthropic"] .ant-table-thead > tr > th {
+    background: color-mix(in srgb, var(--anthropic-line) 38%, var(--anthropic-surface));
+    border-color: var(--anthropic-line);
+    color: var(--anthropic-muted);
+    font-weight: 600;
+}
+
+html[data-ui-theme="anthropic"] .ant-table-tbody > tr > td {
+    border-color: var(--anthropic-line);
+}
+
+html[data-ui-theme="anthropic"] .ant-table-tbody > tr:hover > td,
+html[data-ui-theme="anthropic"] .ant-list-item:hover {
+    background: color-mix(in srgb, var(--anthropic-line) 32%, var(--anthropic-surface));
+}
+
+html[data-ui-theme="anthropic"] :focus-visible {
+    outline: 2px solid var(--anthropic-accent);
+    outline-offset: 2px;
+}
+
+html[data-ui-theme="anthropic"] ::selection {
+    background: color-mix(in srgb, var(--anthropic-accent) 24%, transparent);
+    color: var(--anthropic-ink);
+}
+
+html[data-ui-theme="anthropic"] .ant-tag,
+html[data-ui-theme="anthropic"] .ant-badge-status-text {
+    border-radius: 6px;
+}
+
+html[data-ui-theme="anthropic"] .ant-empty-description,
+html[data-ui-theme="anthropic"] .ant-form-item-explain,
+html[data-ui-theme="anthropic"] .ant-typography-secondary {
+    color: var(--anthropic-muted);
+}
+
+html[data-ui-theme="anthropic"].dark .workspace-shell .bg-white,
+html[data-ui-theme="anthropic"].dark .workspace-shell [class~="bg-card"] {
+    background: var(--anthropic-surface) !important;
+}
+
+html[data-ui-theme="anthropic"].dark .ant-btn-default,
+html[data-ui-theme="anthropic"].dark .ant-btn-variant-outlined,
+html[data-ui-theme="anthropic"].dark .ant-input,
+html[data-ui-theme="anthropic"].dark .ant-input-affix-wrapper,
+html[data-ui-theme="anthropic"].dark .ant-select-selector,
+html[data-ui-theme="anthropic"].dark .ant-picker,
+html[data-ui-theme="anthropic"].dark .ant-input-number {
+    background: var(--anthropic-surface) !important;
+    color: var(--anthropic-ink);
+}
+
+html[data-ui-theme="anthropic"] .workspace-main {
+    background: var(--anthropic-paper) !important;
+}
+
+html[data-ui-theme="anthropic"] .workspace-main > main,
+html[data-ui-theme="anthropic"] .workspace-main > section,
+html[data-ui-theme="anthropic"] .workspace-main > div {
+    background-color: var(--anthropic-paper) !important;
+}
+
+html[data-ui-theme="anthropic"] .create-workspace-page,
+html[data-ui-theme="anthropic"] .create-workspace-page > div,
+html[data-ui-theme="anthropic"] .create-workspace-page [data-testid="creative-page-tools"] {
+    background-color: var(--anthropic-paper) !important;
+}
+
+html[data-ui-theme="anthropic"] .sidebar {
+    border-color: var(--anthropic-line) !important;
+    background: var(--anthropic-surface) !important;
+    box-shadow: none;
+    color: var(--anthropic-ink) !important;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-header {
+    border-color: var(--anthropic-line) !important;
+    background: var(--anthropic-surface);
+}
+
+html[data-ui-theme="anthropic"] .sidebar-header > span,
+html[data-ui-theme="anthropic"] .sidebar-section-title {
+    color: var(--anthropic-muted) !important;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-nav {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-section + .sidebar-section {
+    margin-top: 22px;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-section-title {
+    min-height: 20px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-link {
+    min-height: 40px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--anthropic-muted) !important;
+    font-size: 13px;
+    font-weight: 500;
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        color 150ms ease;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-link:hover {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--anthropic-line) 48%, transparent) !important;
+    color: var(--anthropic-ink) !important;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-link[aria-current="page"] {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--anthropic-line) 48%, transparent) !important;
+    color: var(--anthropic-ink) !important;
+    box-shadow: inset 2px 0 0 var(--anthropic-accent);
+}
+
+html[data-ui-theme="anthropic"] .sidebar-link svg[data-sidebar-icon="true"] {
+    display: block;
+    flex: 0 0 auto;
+    fill: none !important;
+    opacity: 1 !important;
+    stroke: currentColor !important;
+    visibility: visible !important;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-link[aria-current="page"] svg[data-sidebar-icon="true"] {
+    color: var(--anthropic-muted) !important;
+}
+
+html[data-ui-theme="anthropic"] .sidebar-footer {
+    border-color: var(--anthropic-line) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-console-page {
+    --admin-home-bg: var(--anthropic-paper);
+    --admin-shell-bg: var(--anthropic-surface);
+    --admin-shell-border: var(--anthropic-line);
+    --admin-panel-bg: var(--anthropic-surface);
+    --admin-control-bg: var(--anthropic-surface);
+    --admin-control-bg-hover: var(--anthropic-card-highlight, #f1eee8);
+    --admin-control-border: var(--anthropic-line);
+    --admin-control-border-hover: var(--anthropic-mid);
+    --admin-control-text: var(--anthropic-muted);
+    --admin-control-text-hover: var(--anthropic-ink);
+    --admin-control-muted: var(--anthropic-muted);
+    --admin-nav-item-active-bg: color-mix(in srgb, var(--anthropic-line) 48%, transparent);
+    --admin-nav-item-active-shadow: inset 2px 0 0 var(--anthropic-accent);
+    --admin-nav-hover-bg: color-mix(in srgb, var(--anthropic-line) 48%, transparent);
+    background: var(--anthropic-paper) !important;
+    color: var(--anthropic-ink) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav {
+    width: 256px;
+    border-color: var(--anthropic-line) !important;
+    background: var(--anthropic-surface) !important;
+    box-shadow: none !important;
+    color: var(--anthropic-ink);
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav.is-collapsed {
+    width: 72px;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-desktop-head,
+html[data-ui-theme="anthropic"] .admin-section-mobile-head,
+html[data-ui-theme="anthropic"] .admin-section-nav-list {
+    border-color: var(--anthropic-line) !important;
+    background: var(--anthropic-surface) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-desktop-head,
+html[data-ui-theme="anthropic"] .admin-section-mobile-head {
+    min-height: 64px;
+    height: 64px;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-list {
+    gap: 0;
+    padding-top: 20px !important;
+    padding-bottom: 20px !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-group + .admin-section-nav-group {
+    margin-top: 22px;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-brand,
+html[data-ui-theme="anthropic"] .admin-section-mobile-brand {
+    color: var(--anthropic-ink) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-brand-copy span:last-child,
+html[data-ui-theme="anthropic"] .admin-section-mobile-brand span:last-child,
+html[data-ui-theme="anthropic"] .admin-section-nav-group-title {
+    color: var(--anthropic-muted) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-group-title {
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-item {
+    min-height: 40px;
+    height: 42px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--anthropic-muted) !important;
+    font-size: 13px;
+    font-weight: 500;
+    gap: 12px;
+    padding-inline: 12px;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-item:hover {
+    background: var(--admin-nav-hover-bg) !important;
+    color: var(--anthropic-ink) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-item.is-active {
+    border-color: transparent !important;
+    background: var(--admin-nav-item-active-bg) !important;
+    color: var(--anthropic-ink) !important;
+    box-shadow: var(--admin-nav-item-active-shadow) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-item.is-active .admin-section-nav-icon {
+    color: var(--anthropic-muted);
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-item svg {
+    display: block;
+    fill: none !important;
+    opacity: 1 !important;
+    stroke: currentColor !important;
+    visibility: visible !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-toggle,
+html[data-ui-theme="anthropic"] .admin-section-desktop-toggle {
+    border-color: var(--anthropic-line) !important;
+    background: transparent !important;
+    color: var(--anthropic-muted) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-section-nav-toggle:hover,
+html[data-ui-theme="anthropic"] .admin-section-desktop-toggle:hover {
+    background: var(--anthropic-card-highlight, #f1eee8) !important;
+    color: var(--anthropic-ink) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-dashboard-shell,
+html[data-ui-theme="anthropic"] .admin-dashboard-content,
+html[data-ui-theme="anthropic"] .admin-dashboard-main {
+    background: var(--anthropic-paper) !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-dashboard-header,
+html[data-ui-theme="anthropic"] .admin-panel-header,
+html[data-ui-theme="anthropic"] .admin-panel-surface,
+html[data-ui-theme="anthropic"] .admin-metric-card,
+html[data-ui-theme="anthropic"] .admin-section-summary {
+    border-color: var(--anthropic-line) !important;
+    background: var(--anthropic-surface) !important;
+    box-shadow: none !important;
+}
+
+html[data-ui-theme="anthropic"] .admin-dashboard-header {
+    backdrop-filter: blur(10px);
+}
+
+@media (max-width: 1023px) {
+    html[data-ui-theme="anthropic"] .admin-section-nav,
+    html[data-ui-theme="anthropic"] .admin-section-nav.is-collapsed {
+        width: min(280px, calc(100vw - 48px));
+    }
+}

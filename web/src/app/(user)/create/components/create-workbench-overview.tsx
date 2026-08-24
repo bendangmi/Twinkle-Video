@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, FileImage, LoaderCircle, Maximize2, Paperclip, RefreshCw, Sparkles, Video } from "lucide-react";
+import { App } from "antd";
+import { ArrowUpRight, CheckCircle2, FileImage, LoaderCircle, Maximize2, Paperclip, RefreshCw, Sparkles, Trash2, Video } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -9,6 +10,7 @@ import { browserReadableMediaUrl } from "@/lib/browser-media-url";
 import type { CreateOverviewAsset, CreateOverviewMedia, CreateOverviewTask } from "@/lib/create-workbench-overview";
 import { imagePreviewUrl } from "@/lib/media-image-url";
 import { cn } from "@/lib/utils";
+import { deleteGenerationLog } from "@/services/api/generation-logs";
 
 import { useCreateWorkbenchOverview } from "../use-create-workbench-overview";
 import { createConversationHref } from "../create-conversation-navigation";
@@ -20,7 +22,9 @@ const recentAssetVisibilityClasses = ["", "", "hidden sm:block", "hidden lg:bloc
 
 export function CreateWorkbenchOverview({ onUseAsset }: { onUseAsset: (asset: CreateOverviewAsset) => Promise<void> }) {
     const { latestProject, runningTasks, recentAssets, loading, error, reload } = useCreateWorkbenchOverview();
+    const { message, modal } = App.useApp();
     const [importingAssetId, setImportingAssetId] = useState("");
+    const [deletingGenerationLogId, setDeletingGenerationLogId] = useState("");
 
     const importAsset = async (asset: CreateOverviewAsset) => {
         setImportingAssetId(asset.id);
@@ -29,6 +33,30 @@ export function CreateWorkbenchOverview({ onUseAsset }: { onUseAsset: (asset: Cr
         } finally {
             setImportingAssetId("");
         }
+    };
+
+    const removeAsset = (asset: CreateOverviewAsset) => {
+        modal.confirm({
+            title: "删除这条生成记录？",
+            content: "删除后将从最近生成中移除，已被其他内容引用的媒体不会受到影响。",
+            okText: "删除",
+            okType: "danger",
+            cancelText: "取消",
+            onOk: async () => {
+                setDeletingGenerationLogId(asset.generationLogId);
+                try {
+                    const deleted = await deleteGenerationLog(asset.generationLogId);
+                    if (!deleted) throw new Error("生成记录不存在或已删除");
+                    message.success("生成记录已删除");
+                    reload();
+                } catch (error) {
+                    message.error(error instanceof Error ? error.message : "删除生成记录失败");
+                    throw error;
+                } finally {
+                    setDeletingGenerationLogId("");
+                }
+            },
+        });
     };
 
     return (
@@ -51,7 +79,7 @@ export function CreateWorkbenchOverview({ onUseAsset }: { onUseAsset: (asset: Cr
                     <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3 sm:gap-3 sm:pt-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                         {recentAssets.slice(0, recentAssetVisibilityClasses.length).map((asset, index) => (
                             <div key={asset.id} className={recentAssetVisibilityClasses[index]}>
-                                <RecentAssetCard asset={asset} importing={importingAssetId === asset.id} onUse={() => void importAsset(asset)} />
+                                <RecentAssetCard asset={asset} importing={importingAssetId === asset.id} deleting={deletingGenerationLogId === asset.generationLogId} onUse={() => void importAsset(asset)} onDelete={() => removeAsset(asset)} />
                             </div>
                         ))}
                     </div>
@@ -154,7 +182,7 @@ function CanvasProjectCover({ previews }: { previews: CreateOverviewMedia[] }) {
     );
 }
 
-function RecentAssetCard({ asset, importing, onUse }: { asset: CreateOverviewAsset; importing: boolean; onUse: () => void }) {
+function RecentAssetCard({ asset, importing, deleting, onUse, onDelete }: { asset: CreateOverviewAsset; importing: boolean; deleting: boolean; onUse: () => void; onDelete: () => void }) {
     return (
         <div className="group min-w-0 overflow-hidden rounded-lg border border-[#e2e7eb] bg-white transition hover:border-[#cbd2d9] hover:shadow-[0_8px_20px_rgba(32,36,42,0.08)] dark:border-[#2b3037] dark:bg-[#181b20] dark:hover:border-[#3b424c] dark:hover:shadow-black/25">
             <div className="relative overflow-hidden bg-[#eef1f4] dark:bg-[#252a31]">
@@ -176,6 +204,16 @@ function RecentAssetCard({ asset, importing, onUse }: { asset: CreateOverviewAss
                         title="引用到 Agent"
                     >
                         {importing ? <LoaderCircle className="size-3.5 animate-spin" /> : <Paperclip className="size-3.5" />}
+                    </button>
+                    <button
+                        type="button"
+                        disabled={importing || deleting}
+                        className="grid size-7 shrink-0 place-items-center rounded-md text-[#596470] transition hover:bg-[#fff0f0] hover:text-[#c24141] disabled:cursor-wait disabled:opacity-60 dark:text-[#aab2bd] dark:hover:bg-[#3a2527] dark:hover:text-[#ffaaa5]"
+                        onClick={onDelete}
+                        aria-label="删除生成记录"
+                        title="删除生成记录"
+                    >
+                        {deleting ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
                     </button>
                 </div>
             </div>

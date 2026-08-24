@@ -4,6 +4,7 @@ import { ensurePostgresSchema, getDatabaseProvider, postgresQuery } from "@/lib/
 export type StoredObjectStorageSettings = {
     id: "default";
     enabled: boolean;
+    customDomain: string;
     endpoint: string;
     region: string;
     bucket: string;
@@ -33,17 +34,17 @@ export async function writeObjectStorageSettings(input: StoredObjectStorageSetti
         await ensurePostgresSchema();
         const result = await postgresQuery(
             `INSERT INTO object_storage_settings (
-                id, enabled, endpoint, region, bucket, prefix, access_key_id_ciphertext,
+                id, enabled, custom_domain, endpoint, region, bucket, prefix, access_key_id_ciphertext,
                 secret_access_key_ciphertext, force_path_style, created_at, updated_at
-             ) VALUES ('default',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+             ) VALUES ('default',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
              ON CONFLICT (id) DO UPDATE SET
-                enabled = EXCLUDED.enabled, endpoint = EXCLUDED.endpoint, region = EXCLUDED.region,
+                enabled = EXCLUDED.enabled, custom_domain = EXCLUDED.custom_domain, endpoint = EXCLUDED.endpoint, region = EXCLUDED.region,
                 bucket = EXCLUDED.bucket, prefix = EXCLUDED.prefix,
                 access_key_id_ciphertext = EXCLUDED.access_key_id_ciphertext,
                 secret_access_key_ciphertext = EXCLUDED.secret_access_key_ciphertext,
                 force_path_style = EXCLUDED.force_path_style, updated_at = EXCLUDED.updated_at
              RETURNING *`,
-            [value.enabled, value.endpoint, value.region, value.bucket, value.prefix, value.accessKeyIdCiphertext, value.secretAccessKeyCiphertext, value.forcePathStyle, new Date(value.createdAt), new Date(value.updatedAt)],
+            [value.enabled, value.customDomain, value.endpoint, value.region, value.bucket, value.prefix, value.accessKeyIdCiphertext, value.secretAccessKeyCiphertext, value.forcePathStyle, new Date(value.createdAt), new Date(value.updatedAt)],
         );
         return mapRow(result.rows[0]);
     }
@@ -63,6 +64,7 @@ function defaultSettings(): StoredObjectStorageSettings {
     return {
         id: "default",
         enabled: false,
+        customDomain: "",
         endpoint: "",
         region: "us-east-1",
         bucket: "",
@@ -81,6 +83,7 @@ function normalizeSettings(value: unknown): StoredObjectStorageSettings {
     return {
         id: "default",
         enabled: source.enabled === true,
+        customDomain: text(source.customDomain ?? source.custom_domain, 2000),
         endpoint: text(source.endpoint, 2000),
         region: text(source.region, 160) || defaults.region,
         bucket: text(source.bucket, 255),

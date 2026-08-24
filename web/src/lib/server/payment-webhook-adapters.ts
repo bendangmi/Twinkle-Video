@@ -5,6 +5,7 @@ import { BillingInputError } from "@/lib/server/billing-errors";
 import type { JsonValue } from "@/lib/server/database";
 import { getPaymentRuntimeEnv, getPaymentRuntimeValue, type PaymentRuntimeConfig } from "@/lib/server/payment-config-store";
 import { loadPaymentPublicKey, verifyRsaSha256 } from "@/lib/server/payment-signature-utils";
+import { verifyEasyPaySign } from "@/lib/server/payment-easypay";
 
 type WebhookStatus = "succeeded" | "ignored";
 
@@ -112,6 +113,30 @@ const alipayWebhookAdapter: PaymentWebhookAdapter = {
     },
 };
 
+const easyPayWebhookAdapter: PaymentWebhookAdapter = {
+    parse(provider, rawBody, _headers, paymentConfig) {
+        const payload = parseFormPayload(rawBody);
+        const tradeStatus = normalizeText(payload.trade_status, "", 80).toUpperCase();
+        const eventType = tradeStatus ? `easypay.${tradeStatus.toLowerCase()}` : "easypay.notify";
+        const orderNo = normalizeOptionalId(payload.out_trade_no);
+        const orderId = normalizeOptionalId(decodeMaybeUrlEncoded(payload.passback_params));
+        return {
+            eventId: normalizeText(payload.notify_id || payload.trade_no, deterministicEventId(provider, rawBody), 160),
+            eventType,
+            orderId,
+            orderNo,
+            status: ["TRADE_SUCCESS", "TRADE_FINISHED"].includes(tradeStatus) ? "succeeded" : "ignored",
+            providerTradeId: normalizeOptionalText(payload.trade_no, 160),
+            providerPaymentId: normalizeOptionalText(payload.trade_no, 160),
+            amountCents: yuanDecimalToCents(payload.money),
+            currency: "CNY",
+            paidAt: parseEasyPayDate(payload.success_time || payload.notify_time),
+            payload,
+            signatureValid: verifyEasyPaySignature(payload, paymentConfig),
+        };
+    },
+};
+
 const wechatWebhookAdapter: PaymentWebhookAdapter = {
     parse(provider, rawBody, headers, paymentConfig) {
         const envelope = parseJsonPayload(rawBody);
@@ -152,6 +177,7 @@ export function resolveWebhookAdapter(provider: string) {
     if (provider === "stripe") return stripeWebhookAdapter;
     if (provider === "alipay") return alipayWebhookAdapter;
     if (provider === "wechat") return wechatWebhookAdapter;
+    if (provider === "easypay") return easyPayWebhookAdapter;
     return customWebhookAdapter;
 }
 
@@ -202,6 +228,15 @@ export function verifyAlipaySignature(payload: Record<string, string>, paymentCo
         .map((key) => `${key}=${payload[key]}`)
         .join("&");
     return verifyRsaSha256(content, sign, loadPaymentPublicKey(paymentConfig, "VOZEB_PRO_ALIPAY_PUBLIC_KEY", "VOZEB_PRO_ALIPAY_PUBLIC_KEY_PATH"));
+}
+
+export function verifyEasyPaySignature(payload: Record<string, string>, paymentConfig: PaymentRuntimeConfig) {
+    const sign = payload.sign || "";
+    const pkey = getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_PKEY", "EASYPAY_PKEY");
+    const pid = getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_PID", "EASYPAY_PID");
+    if (!sign || !pkey) return false;
+    if (pid && payload.pid && payload.pid !== pid) return false;
+    return verifyEasyPaySign(payload, pkey, sign);
 }
 
 export function verifyWechatSignature(rawBody: string, headers: Headers, paymentConfig: PaymentRuntimeConfig) {
@@ -366,6 +401,13 @@ function normalizeOptionalIso(value: unknown) {
 }
 
 function parseAlipayDate(value: unknown) {
+    const text = normalizeText(value, "", 40);
+    if (!text) return undefined;
+    const date = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text) ? new Date(`${text.replace(" ", "T")}+08:00`) : new Date(text);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
+}
+
+function parseEasyPayDate(value: unknown) {
     const text = normalizeText(value, "", 40);
     if (!text) return undefined;
     const date = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text) ? new Date(`${text.replace(" ", "T")}+08:00`) : new Date(text);

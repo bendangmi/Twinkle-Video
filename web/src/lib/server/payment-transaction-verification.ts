@@ -7,6 +7,7 @@ import type { BillingOrderRecord, JsonValue } from "@/lib/server/database";
 import { getPaymentRuntimeConfig, getPaymentRuntimeEnv, getPaymentRuntimeValue, type PaymentRuntimeConfig } from "@/lib/server/payment-config-store";
 import { loadPaymentPublicKey, verifyRsaSha256 } from "@/lib/server/payment-signature-utils";
 import { fetchSafeOutbound } from "@/lib/server/safe-outbound-fetch";
+import { isEasyPaySuccessCode, normalizeEasyPayApiBase, normalizeEasyPayStatus } from "@/lib/server/payment-easypay";
 
 export type VerifiedPaymentTransaction = {
     status: "succeeded" | "pending" | "failed";
@@ -32,6 +33,7 @@ export async function verifyPaymentTransaction(provider: string, parsed: ParsedP
         if (provider === "stripe") queried = await queryStripePayment(order, callback, config);
         else if (provider === "alipay") queried = await queryAlipayPayment(order, callback, config);
         else if (provider === "wechat") queried = await queryWechatPayment(order, config);
+        else if (provider === "easypay") queried = await queryEasyPayPayment(order, callback, config);
         else if (provider === "payply") queried = await queryPayplyPayment(order, callback, config);
     } catch (error) {
         return { verified: false, reason: error instanceof Error ? error.message.slice(0, 300) : "支付商交易查询失败", payment: callback };
@@ -184,6 +186,37 @@ async function queryWechatPayment(order: BillingOrderRecord, config: PaymentRunt
         amountCents: optionalInteger(readPath(payload, "amount.payer_total") ?? readPath(payload, "amount.total")),
         currency: currency(readPath(payload, "amount.payer_currency") || readPath(payload, "amount.currency") || "CNY"),
         paidAt: optionalIso(payload.success_time),
+        rawPayload: sanitizeJson(payload),
+    };
+}
+
+async function queryEasyPayPayment(order: BillingOrderRecord, payment: VerifiedPaymentTransaction, config: PaymentRuntimeConfig): Promise<VerifiedPaymentTransaction> {
+    const pid = requiredConfig(config, "VOZEB_PRO_EASYPAY_PID", "EASYPAY_PID");
+    const pkey = requiredConfig(config, "VOZEB_PRO_EASYPAY_PKEY", "EASYPAY_PKEY");
+    const apiBase = normalizeEasyPayApiBase(requiredConfig(config, "VOZEB_PRO_EASYPAY_API_BASE", "EASYPAY_API_BASE"));
+    const params = new URLSearchParams({ act: "order", pid, key: pkey, out_trade_no: order.orderNo });
+    const response = await fetchSafeOutbound(`${apiBase}/api.php`, {
+        method: "POST",
+        headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
+        body: params,
+        signal: AbortSignal.timeout(15_000),
+    });
+    const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!response.ok) throw new BillingInputError(readError(payload, "易支付交易查询失败"), response.status >= 500 ? 502 : 400);
+    const data = objectValue(payload.data);
+    if (payload.code !== undefined && !isEasyPaySuccessCode(payload.code)) throw new BillingInputError(readError(payload, "易支付交易查询失败"), 400);
+    const tradeStatus = payload.trade_status ?? data.trade_status;
+    const statusValue = tradeStatus ?? payload.status ?? data.status;
+    const money = payload.money ?? data.money;
+    const tradeNo = clean(payload.trade_no || data.trade_no || payment.providerTradeId || payment.providerPaymentId, 160);
+    return {
+        status: normalizeEasyPayStatus(statusValue),
+        orderNo: clean(payload.out_trade_no || data.out_trade_no || order.orderNo, 120),
+        providerTradeId: tradeNo,
+        providerPaymentId: tradeNo,
+        amountCents: decimalToCents(money),
+        currency: "CNY",
+        paidAt: optionalIso(payload.success_time || payload.notify_time || data.success_time || data.notify_time),
         rawPayload: sanitizeJson(payload),
     };
 }

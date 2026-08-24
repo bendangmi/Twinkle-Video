@@ -1,4 +1,4 @@
-import { createSign } from "node:crypto";
+import { createHash, createSign } from "node:crypto";
 import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
 
@@ -41,8 +41,49 @@ async function handlePaymentRequest({ request, response, url, body, options }) {
     if (url.pathname === "/wechat/v3/refund/domestic/refunds") return sendSignedWechat(response, { refund_id: "wx_refund_fixture", status: "SUCCESS" }, options.wechatPrivateKey);
     if (url.pathname === "/payply/checkout") return sendJson(response, 200, { data: { paymentUrl: "https://checkout.fixture/payply", tradeId: "payply_trade_fixture", paymentId: "payply_payment_fixture" } });
     if (url.pathname === "/payply/refund") return sendJson(response, 200, { data: { status: "success", refundId: "payply_refund_fixture" } });
+    if (url.pathname === "/easypay/mapi.php") return handleEasyPayCheckout(response, body, options);
+    if (url.pathname === "/easypay/api.php") return handleEasyPayApi(response, url, body, options);
     if (url.pathname === "/alipay/gateway.do") return handleAlipay(response, body, options.alipayPrivateKey);
     return sendJson(response, 404, { error: { message: `payment fixture route not found: ${url.pathname}` } });
+}
+
+function handleEasyPayCheckout(response, body, options) {
+    const params = parseFormBody(body);
+    if (!validateEasyPayRequest(params, options, true)) return sendJson(response, 400, { code: 0, msg: "invalid EasyPay request" });
+    return sendJson(response, 200, { code: 1, msg: "success", trade_no: "easypay_trade_fixture", qrcode: "https://checkout.fixture/easypay-qr" });
+}
+
+function handleEasyPayApi(response, url, body, options) {
+    const params = parseFormBody(body);
+    const action = url.searchParams.get("act") || params.get("act");
+    if (action === "order") {
+        if (params.get("pid") !== options.easypayPid || params.get("key") !== options.easypayPkey) return sendJson(response, 400, { code: 0, msg: "invalid EasyPay credentials" });
+        return sendJson(response, 200, { code: 1, trade_status: "TRADE_SUCCESS", out_trade_no: params.get("out_trade_no"), trade_no: "easypay_trade_fixture", money: "12.99" });
+    }
+    if (action === "refund") {
+        if (params.get("pid") !== options.easypayPid || params.get("key") !== options.easypayPkey) return sendJson(response, 400, { code: 0, msg: "invalid EasyPay credentials" });
+        return sendJson(response, 200, { code: 1, msg: "success" });
+    }
+    return sendJson(response, 400, { code: 0, msg: "unsupported EasyPay action" });
+}
+
+function parseFormBody(body) {
+    return new URLSearchParams(body.toString("utf8"));
+}
+
+function validateEasyPayRequest(params, options, requireSignature) {
+    if (params.get("pid") !== options.easypayPid || params.get("key")) return false;
+    if (!params.get("money") || !params.get("out_trade_no")) return false;
+    return !requireSignature || params.get("sign") === easyPaySign(params, options.easypayPkey);
+}
+
+function easyPaySign(params, pkey) {
+    const content = [...params.entries()]
+        .filter(([key, value]) => key !== "sign" && key !== "sign_type" && key !== "key" && value !== "")
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, value]) => `${key}=${value}`)
+        .join("&");
+    return createHash("md5").update(`${content}${pkey}`).digest("hex");
 }
 
 function handleAlipay(response, body, privateKey) {

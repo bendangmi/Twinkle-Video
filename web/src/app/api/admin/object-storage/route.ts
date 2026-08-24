@@ -28,6 +28,7 @@ export async function PATCH(request: Request) {
         const body = parsed.data;
         const data = await saveObjectStorageAdminSettings({
             enabled: body.enabled === true,
+            customDomain: stringValue(body.customDomain),
             endpoint: stringValue(body.endpoint),
             region: stringValue(body.region),
             bucket: stringValue(body.bucket),
@@ -42,7 +43,7 @@ export async function PATCH(request: Request) {
             action: "admin.object-storage.update",
             actor: auditActorFromRequest(request, currentUser),
             target: { type: "object_storage", id: "primary" },
-            metadata: { enabled: body.enabled === true, forcePathStyle: body.forcePathStyle === true },
+            metadata: { enabled: body.enabled === true, customDomain: Boolean(stringValue(body.customDomain)), forcePathStyle: body.forcePathStyle === true },
         });
         return NextResponse.json({ code: 0, data, msg: "外部存储配置已保存" }, { headers: { "Cache-Control": "private, no-store" } });
     } catch (error) {

@@ -5,6 +5,7 @@ import { decryptSecretValue, encryptSecretValue } from "@/lib/server/secret-cryp
 export type ObjectStorageRuntimeConfig = {
     id: "default";
     enabled: boolean;
+    customDomain: string;
     endpoint: string;
     region: string;
     bucket: string;
@@ -38,6 +39,7 @@ export async function getObjectStorageAdminSettings(): Promise<ObjectStorageSett
     const stored = await readObjectStorageSettings();
     return {
         enabled: stored.enabled,
+        customDomain: stored.customDomain,
         endpoint: stored.endpoint,
         region: stored.region,
         bucket: stored.bucket,
@@ -51,6 +53,7 @@ export async function getObjectStorageAdminSettings(): Promise<ObjectStorageSett
 
 export async function saveObjectStorageAdminSettings(input: ObjectStorageSettingsUpdate) {
     const current = await readObjectStorageSettings();
+    const customDomain = normalizeCustomDomain(input.customDomain);
     const endpoint = normalizeEndpoint(input.endpoint);
     const region = text(input.region, 160) || "us-east-1";
     const bucket = normalizeBucket(input.bucket);
@@ -63,6 +66,7 @@ export async function saveObjectStorageAdminSettings(input: ObjectStorageSetting
     await writeObjectStorageSettings({
         id: "default",
         enabled: input.enabled === true,
+        customDomain,
         endpoint,
         region,
         bucket,
@@ -95,6 +99,7 @@ function toRuntimeConfig(stored: StoredObjectStorageSettings): ObjectStorageRunt
     return {
         id: "default",
         enabled: stored.enabled,
+        customDomain: stored.customDomain,
         endpoint: stored.endpoint,
         region: stored.region,
         bucket: stored.bucket,
@@ -120,6 +125,18 @@ function normalizeEndpoint(value: unknown) {
         return url.toString().replace(/\/$/, "");
     } catch {
         throw new Error("Endpoint 必须是有效的 HTTP 或 HTTPS 地址");
+    }
+}
+
+function normalizeCustomDomain(value: unknown) {
+    const domain = text(value, 2000).replace(/\/+$/, "");
+    if (!domain) return "";
+    try {
+        const url = new URL(domain);
+        if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password || url.search || url.hash) throw new Error();
+        return url.toString().replace(/\/$/, "");
+    } catch {
+        throw new Error("自定义访问域名必须是有效的 HTTP 或 HTTPS 地址，且不能包含查询参数");
     }
 }
 

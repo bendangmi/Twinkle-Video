@@ -48,6 +48,9 @@ describe("create Agent home layout", () => {
         expect(conversationList).toContain("group flex min-h-13");
         expect(page).not.toContain("最近创作");
         expect(page).toContain("<CreateInspirationGallery");
+        expect(overview).toContain("删除生成记录");
+        expect(overview).toContain("generationLogId");
+        expect(overview).toContain("deleteGenerationLog");
         expect(page.indexOf("<CreateWorkbenchOverview")).toBeLessThan(page.indexOf("<CreateInspirationGallery"));
         expect(page).not.toContain("composerHeight");
         expect(page).not.toContain("top-[117px]");

@@ -164,6 +164,20 @@ describe("admin models route", () => {
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it("returns actionable configuration when the base URL is private", async () => {
+        mocks.isSafeOutboundUrl.mockResolvedValue(false);
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+
+        const response = await POST(request({ baseUrl: "http://127.0.0.1:11434/v1", apiKey: "secret" }));
+
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({
+            error: "Base URL 不允许访问内网或保留地址；如需接入管理员控制的内网模型，请在服务端设置 VOZEB_PRO_ALLOW_PRIVATE_UPSTREAMS=1，并将精确 Host/IP 加入 VOZEB_PRO_PRIVATE_UPSTREAM_HOSTS 后重启服务",
+        });
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("applies capability-level custom protocol operations to newly discovered models", async () => {
         vi.stubGlobal(
             "fetch",
@@ -319,6 +333,18 @@ describe("admin models route", () => {
         const response = await POST(request({ channelId: "saved" }));
         expect(response.status).toBe(502);
         expect(await response.json()).toEqual({ error: "拉取模型超时，请稍后重试" });
+    });
+
+    it("returns a sanitized network diagnosis instead of hiding the provider error", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async () => Promise.reject(new Error("connect ECONNREFUSED 127.0.0.1:5199"))),
+        );
+
+        const response = await POST(request({ channelId: "saved" }));
+
+        expect(response.status).toBe(502);
+        expect(await response.json()).toEqual({ error: "拉取模型失败：connect ECONNREFUSED 127.0.0.1:5199" });
     });
 
     it("rejects an encrypted storage value before calling the provider", async () => {

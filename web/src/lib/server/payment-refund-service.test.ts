@@ -252,6 +252,26 @@ describe("payment refunds", () => {
         });
     });
 
+    it("creates an EasyPay refund with the provider order identifier", async () => {
+        mocks.runtimeConfig.valuesByEnvName = {
+            VOZEB_PRO_EASYPAY_PID: "epay-pid",
+            VOZEB_PRO_EASYPAY_PKEY: "epay-pkey",
+            VOZEB_PRO_EASYPAY_API_BASE: "https://easypay.test",
+        };
+        const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => Response.json({ code: 1, msg: "success" }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const result = await refundPaymentTransaction({ ...order, provider: "easypay", currency: "CNY" }, { ...payment, provider: "easypay", providerTradeId: "epay-trade-1", providerPaymentId: "epay-trade-1" });
+
+        expect(result).toMatchObject({ provider: "easypay", status: "succeeded", providerRefundId: order.orderNo });
+        expect(fetchMock).toHaveBeenCalledWith("https://easypay.test/api.php?act=refund", expect.objectContaining({ method: "POST" }));
+        const params = fetchMock.mock.calls[0]?.[1]?.body as URLSearchParams;
+        expect(params.get("pid")).toBe("epay-pid");
+        expect(params.get("key")).toBe("epay-pkey");
+        expect(params.get("out_trade_no")).toBe(order.orderNo);
+        expect(params.get("money")).toBe("12.99");
+    });
+
     it("sends configurable PayPly refund requests and reads provider result fields", async () => {
         mocks.runtimeConfig.valuesByEnvName = {
             VOZEB_PRO_PAYPLY_API_KEY: "payply-secret",

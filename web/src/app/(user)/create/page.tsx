@@ -601,7 +601,7 @@ export default function CreatePage() {
     );
 
     return (
-        <main className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#fcfdff_100%)] text-[#20242a] dark:bg-[linear-gradient(180deg,#111316_0%,#12151a_100%)] dark:text-[#f3f5f7]">
+        <main className="create-workspace-page relative flex h-full min-h-0 flex-col overflow-hidden bg-background text-foreground">
             <div className="flex min-h-0 flex-1">
                 {historyOpen && screens.lg ? <aside className="h-full min-h-0 w-[min(280px,24vw)] shrink-0 border-r border-[#eceef1] dark:border-[#2b3036]">{historyPanel}</aside> : null}
                 <div className="relative flex min-w-0 flex-1 flex-col">

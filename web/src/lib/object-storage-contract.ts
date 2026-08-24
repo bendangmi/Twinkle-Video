@@ -2,6 +2,7 @@ import type { ManagedMediaType } from "@/lib/local-media-storage-contract";
 
 export type ObjectStorageSettings = {
     enabled: boolean;
+    customDomain: string;
     endpoint: string;
     region: string;
     bucket: string;
@@ -14,6 +15,7 @@ export type ObjectStorageSettings = {
 
 export type ObjectStorageSettingsUpdate = {
     enabled: boolean;
+    customDomain: string;
     endpoint: string;
     region: string;
     bucket: string;

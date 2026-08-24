@@ -8,6 +8,7 @@ import { getPaymentRuntimeEnv, getPaymentRuntimeValue, type PaymentRuntimeConfig
 import type { BillingOrderRecord, JsonValue } from "@/lib/server/database";
 import { loadPaymentPublicKey, verifyRsaSha256 } from "@/lib/server/payment-signature-utils";
 import { fetchSafeOutbound } from "@/lib/server/safe-outbound-fetch";
+import { easyPaySign, isEasyPaySuccessCode, normalizeEasyPayApiBase, normalizeEasyPayPaymentMode, normalizeEasyPayPaymentType, resolveEasyPayChannelId } from "@/lib/server/payment-easypay";
 import type { CreatePaymentCheckoutOptions, PaymentCheckoutKind, PaymentCheckoutResult } from "./payment-checkout-types";
 import { normalizePaymentForm, type PaymentForm } from "./payment-form";
 
@@ -15,6 +16,7 @@ export async function createProviderCheckout(provider: string, order: BillingOrd
     if (provider === "stripe") return createStripeCheckout(order, options, paymentConfig);
     if (provider === "alipay") return createAlipayCheckout(order, options, paymentConfig);
     if (provider === "wechat") return createWechatNativeCheckout(order, options, paymentConfig);
+    if (provider === "easypay") return createEasyPayCheckout(order, options, paymentConfig);
     if (provider === "payply") return createPayplyCheckout(order, options, paymentConfig);
     if (provider === "manual" || provider === "custom") return createManualCheckout(provider, order);
     throw new BillingInputError("暂不支持该支付渠道", 400);
@@ -118,6 +120,61 @@ async function createAlipayCheckout(order: BillingOrderRecord, options: CreatePa
         url: `${gateway}?${new URLSearchParams(params).toString()}`,
         form: buildPaymentForm(gateway, params),
         providerOrderId: order.orderNo,
+        expiresAt: order.expiresAt,
+    };
+}
+
+async function createEasyPayCheckout(order: BillingOrderRecord, options: CreatePaymentCheckoutOptions, paymentConfig: PaymentRuntimeConfig): Promise<PaymentCheckoutResult> {
+    if (order.currency.toUpperCase() !== "CNY") throw new BillingInputError("易支付仅支持人民币 CNY 订单", 400);
+    const pid = requiredConfig(paymentConfig, "VOZEB_PRO_EASYPAY_PID", "EASYPAY_PID");
+    const pkey = requiredConfig(paymentConfig, "VOZEB_PRO_EASYPAY_PKEY", "EASYPAY_PKEY");
+    const apiBase = normalizeEasyPayApiBase(requiredConfig(paymentConfig, "VOZEB_PRO_EASYPAY_API_BASE", "EASYPAY_API_BASE"));
+    const paymentType = normalizeEasyPayPaymentType(getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_PAYMENT_TYPE", "EASYPAY_PAYMENT_TYPE") || "alipay");
+    const notifyUrl = getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_NOTIFY_URL", "EASYPAY_NOTIFY_URL") || `${resolveOrigin(options.origin)}/api/billing/webhooks/easypay`;
+    const returnUrl = getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_RETURN_URL", "EASYPAY_RETURN_URL") || `${resolveOrigin(options.origin)}/billing/success?orderId=${encodeURIComponent(order.id)}`;
+    const params: Record<string, string> = {
+        pid,
+        type: paymentType,
+        out_trade_no: order.orderNo,
+        notify_url: notifyUrl,
+        return_url: returnUrl,
+        name: order.subject,
+        money: centsToDecimal(order.amountCents),
+    };
+    const channelId = resolveEasyPayChannelId(paymentType, {
+        cid: getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_CID", "EASYPAY_CID"),
+        cidAlipay: getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_CID_ALIPAY", "EASYPAY_CID_ALIPAY"),
+        cidWxpay: getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_CID_WXPAY", "EASYPAY_CID_WXPAY"),
+    });
+    if (channelId) params.cid = channelId;
+    params.sign = easyPaySign(params, pkey);
+    params.sign_type = "MD5";
+
+    if (normalizeEasyPayPaymentMode(getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_PAYMENT_MODE", "EASYPAY_PAYMENT_MODE")) === "popup") {
+        return { provider: "easypay", orderId: order.id, orderNo: order.orderNo, kind: "redirect", url: `${apiBase}/submit.php?${new URLSearchParams(params).toString()}`, providerOrderId: order.orderNo, expiresAt: order.expiresAt };
+    }
+
+    const response = await fetchSafeOutbound(`${apiBase}/mapi.php`, {
+        method: "POST",
+        headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(params),
+        signal: AbortSignal.timeout(20_000),
+    });
+    const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!response.ok || !isEasyPaySuccessCode(payload.code)) throw new BillingInputError(normalizeText(payload.msg || payload.message, "易支付下单失败", 300), response.status >= 500 ? 502 : 400);
+    const tradeNo = normalizeOptionalText(payload.trade_no, 160);
+    const qrContent = normalizeOptionalText(payload.qrcode, 4000);
+    const payUrl = normalizeOptionalText(payload.payurl2 || payload.payurl, 2000);
+    if (!qrContent && !payUrl) throw new BillingInputError("易支付未返回有效支付参数", 502);
+    const kind = qrContent ? "qr" : "redirect";
+    return {
+        provider: "easypay",
+        orderId: order.id,
+        orderNo: order.orderNo,
+        kind,
+        url: qrContent || payUrl,
+        qrContent,
+        providerOrderId: tradeNo || order.orderNo,
         expiresAt: order.expiresAt,
     };
 }

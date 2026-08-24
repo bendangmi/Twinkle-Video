@@ -211,7 +211,7 @@ export function GenerationOperationsClient() {
                             </Button>
                         }
                     />
-                    <section className="grid grid-cols-2 gap-px bg-zinc-200 dark:bg-zinc-800 sm:grid-cols-3 xl:grid-cols-6">
+                    <section className="admin-metric-grid grid grid-cols-2 gap-px bg-zinc-200 dark:bg-zinc-800 sm:grid-cols-3 xl:grid-cols-6">
                         <SummaryMetric icon={<Activity />} label="任务总数" value={summary?.total || 0} detail="全部生成记录" />
                         <SummaryMetric icon={<Route />} label="执行中" value={summary?.active || 0} detail="排队与运行任务" />
                         <SummaryMetric icon={<CircleCheckBig />} label="成功" value={summary?.success || 0} detail="已完成任务" />
@@ -228,7 +228,7 @@ export function GenerationOperationsClient() {
                             description="拆分规划、首个结果、排队、上游保存与复盘耗时，定位实际瓶颈。"
                             actions={<Tag className={generationOperationThemeClasses.neutralTag}>{data.agentPerformance.sampleSize} 次样本</Tag>}
                         />
-                        <section className="grid grid-cols-2 gap-px bg-zinc-200 dark:bg-zinc-800 sm:grid-cols-4 xl:grid-cols-7">
+                        <section className="admin-metric-grid grid grid-cols-2 gap-px bg-zinc-200 dark:bg-zinc-800 sm:grid-cols-4 xl:grid-cols-7">
                             <PerformanceValue label="规划 P50" value={data.agentPerformance.planningP50Ms} detail="典型规划耗时" />
                             <PerformanceValue label="规划 P95" value={data.agentPerformance.planningP95Ms} detail="慢请求边界" />
                             <PerformanceValue label="首结果 P50" value={data.agentPerformance.firstResultP50Ms} detail="典型首屏等待" />
@@ -378,7 +378,7 @@ export function GenerationOperationsClient() {
 
 function SummaryMetric({ icon, label, value, detail, tone = "default" }: { icon: React.ReactNode; label: string; value: string | number; detail: string; tone?: "default" | "danger" }) {
     return (
-        <div className="flex min-h-[94px] min-w-0 flex-col justify-between bg-white p-3 dark:bg-zinc-950 sm:min-h-28 sm:p-4">
+        <div className="admin-metric-card flex min-h-[94px] min-w-0 flex-col justify-between p-3 sm:min-h-28 sm:p-4">
             <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 sm:text-xs">{label}</span>
                 <span className={`[&>svg]:size-4 ${tone === "danger" ? "text-red-600 dark:text-red-300" : "text-zinc-400 dark:text-zinc-500"}`}>{icon}</span>
@@ -393,7 +393,7 @@ function SummaryMetric({ icon, label, value, detail, tone = "default" }: { icon:
 
 function PerformanceValue({ label, value, detail, className = "" }: { label: string; value: number; detail: string; className?: string }) {
     return (
-        <div className={`min-h-[82px] min-w-0 bg-white p-3 dark:bg-zinc-950 sm:min-h-24 sm:p-4 ${className}`}>
+        <div className={`admin-metric-card min-h-[82px] min-w-0 p-3 sm:min-h-24 sm:p-4 ${className}`}>
             <div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{label}</div>
             <div className="mt-2 truncate text-base font-semibold tabular-nums text-zinc-950 dark:text-zinc-100 sm:text-lg">{formatDuration(value)}</div>
             <div className="mt-1 truncate text-[10px] text-zinc-400 dark:text-zinc-500">{detail}</div>

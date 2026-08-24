@@ -25,6 +25,7 @@ import { VIDEO_PROVIDER_MEDIA_KEYS, parseVideoProviderJson, readVideoProviderHtt
 import { buildSeedanceSpecialRequest } from "@/lib/seedance-special";
 import { assertVozebRecommendedVideoReferences, buildVozebRecommendedVideoRequest } from "@/lib/vozeb-recommended-video";
 import { assertGeminiVideoReferences, buildGeminiVideoRequest, geminiVideoCreatePath, normalizeGeminiVideoDuration, parseGeminiVideoCreateResponse } from "@/lib/server/gemini-video-provider";
+import { buildTwinkleModelVideoRequest } from "@/lib/twinkle-model";
 import { systemAiBillingHeaders } from "@/lib/server/system-ai-billing";
 import { maintenanceWorkerContextHeaders, requestRuntimeCredential } from "@/lib/server/maintenance-auth";
 import { resolvePublicRequestOrigin } from "@/lib/server/public-request-origin";
@@ -362,21 +363,35 @@ export async function createUpstream(
                     firstFrame: firstFrameUrl || undefined,
                     lastFrame: lastFrameUrl || undefined,
                 })
-              : globalPreset
-                ? buildGlobalAiOpcVideoRequest(globalPreset, {
+              : channel.advancedConfig?.protocol === "twinkle-model"
+                ? buildTwinkleModelVideoRequest({
                       model: channel.model,
                       prompt,
                       duration: values.duration as number,
-                      ratio: values.ratio as string,
-                      resolution: values.resolution as string,
-                      images: requestImages.length ? requestImages : requestImage ? [requestImage] : [],
+                      aspectRatio: values.aspect_ratio as string | undefined,
+                      resolution: values.resolution as string | undefined,
+                      generateAudio,
+                      images,
                       videos,
                       audios,
-                      generateAudio,
-                      firstFrame: firstFrameUrl || undefined,
-                      lastFrame: lastFrameUrl || undefined,
+                      startImageUrl: firstFrameUrl || undefined,
+                      endImageUrl: lastFrameUrl || undefined,
                   })
-                : buildVideoProviderRequest(channel.advancedConfig?.requestTemplate, defaults, values);
+                : globalPreset
+                  ? buildGlobalAiOpcVideoRequest(globalPreset, {
+                        model: channel.model,
+                        prompt,
+                        duration: values.duration as number,
+                        ratio: values.ratio as string,
+                        resolution: values.resolution as string,
+                        images: requestImages.length ? requestImages : requestImage ? [requestImage] : [],
+                        videos,
+                        audios,
+                        generateAudio,
+                        firstFrame: firstFrameUrl || undefined,
+                        lastFrame: lastFrameUrl || undefined,
+                    })
+                  : buildVideoProviderRequest(channel.advancedConfig?.requestTemplate, defaults, values);
     const requestBody = multipart
         ? await buildOpenAiVideoFormData({ model: channel.model, prompt, seconds: values.seconds as number, width: dimensions.width, height: dimensions.height, imageUrls: firstFrameUrl ? [firstFrameUrl] : images, origin, cookie })
         : JSON.stringify(payload);
@@ -387,7 +402,7 @@ export async function createUpstream(
             method: "POST",
             headers: {
                 ...(multipart ? {} : { "Content-Type": "application/json" }),
-                "Idempotency-Key": billingRequestId,
+                ...(channel.advancedConfig?.protocol === "twinkle-model" ? {} : { "Idempotency-Key": billingRequestId }),
                 "X-Client-Request-Id": billingRequestId,
                 ...systemAiBillingHeaders(generationModelId(channel), `video-request:${billingRequestId}`, channel.model),
             },

@@ -28,6 +28,7 @@ export type CreateOverviewTask = {
 
 export type CreateOverviewAsset = CreateOverviewMedia & {
     id: string;
+    generationLogId: string;
     title: string;
     createdAt: string;
 };

@@ -351,10 +351,22 @@ function mediaTargetRequest(baseUrl: string, apiFormat: ApiCallFormat, value: st
         if (mediaUrl.startsWith("/")) return { url: new URL(mediaUrl, apiBase.origin).toString(), includeAuth: true };
         const absolute = new URL(mediaUrl);
         if (!["http:", "https:"].includes(absolute.protocol)) return null;
-        return { url: absolute.toString(), includeAuth: absolute.origin === apiBase.origin };
+        return { url: absolute.toString(), includeAuth: absolute.origin === apiBase.origin || isLocalChannelMedia(apiBase, absolute) };
     } catch {
         return { url: new URL(mediaUrl, directoryBaseUrl(apiBase)).toString(), includeAuth: true };
     }
+}
+
+function isLocalChannelMedia(apiBase: URL, mediaUrl: URL) {
+    return isLoopbackHost(apiBase.hostname) && isLoopbackHost(mediaUrl.hostname);
+}
+
+function isLoopbackHost(hostname: string) {
+    const normalized = hostname
+        .trim()
+        .toLowerCase()
+        .replace(/^\[|\]$/g, "");
+    return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1" || normalized === "0:0:0:0:0:0:0:1";
 }
 
 function directoryBaseUrl(url: URL) {

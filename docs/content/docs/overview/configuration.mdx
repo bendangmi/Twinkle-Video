@@ -175,12 +175,13 @@ SMTP 在后台 `账号与邮箱` 配置。建议先测试邮箱，再开启邮�
 
 ## 支付
 
-后台支持 Stripe、支付宝、微信支付、PayPly 和人工确认。支付宝始终是一个用户支付渠道，管理员在“支付渠道”中使用“接入方式”二选一配置“官方支付”或“当面付”：官方支付跳转电脑网站收银台，当面付返回扫码二维码，两种方式共用 App ID、RSA2 回调验签和退款配置，不能同时启用。支付宝大陆支付商品使用人民币 `CNY`，非 CNY 订单会在请求上游前拒绝。密钥可以保存在后台加密配置中，也可以由环境变量提供兜底；环境变量 `VOZEB_PRO_ALIPAY_MODE` 可填写 `official`（默认）或 `face_to_face`。后台的回调、支付成功返回和取消返回地址均可留空，系统会自动使用当前网站地址；只有需要改用其他域名或自定义页面时才覆盖。当面付不使用同步返回地址。回调入口：
+后台支持 Stripe、支付宝、微信支付、易支付、PayPly 和人工确认。易支付兼容标准 `pid`/`pkey`/MD5 协议，可配置支付宝或微信支付类型，并选择 `mapi.php` 二维码/API 下单或 `submit.php` 跳转收银台；交易查询使用 `api.php`，整单退款使用 `api.php?act=refund`。支付宝始终是一个用户支付渠道，管理员在“支付渠道”中使用“接入方式”二选一配置“官方支付”或“当面付”：官方支付跳转电脑网站收银台，当面付返回扫码二维码，两种方式共用 App ID、RSA2 回调验签和退款配置，不能同时启用。支付宝大陆支付商品使用人民币 `CNY`，非 CNY 订单会在请求上游前拒绝。密钥可以保存在后台加密配置中，也可以由环境变量提供兜底；环境变量 `VOZEB_PRO_ALIPAY_MODE` 可填写 `official`（默认）或 `face_to_face`。后台的回调、支付成功返回和取消返回地址均可留空，系统会自动使用当前网站地址；只有需要改用其他域名或自定义页面时才覆盖。当面付不使用同步返回地址。回调入口：
 
 ```text
 /api/billing/webhooks/stripe
 /api/billing/webhooks/alipay
 /api/billing/webhooks/wechat
+/api/billing/webhooks/easypay
 /api/billing/webhooks/payply
 /api/billing/webhooks/custom
 ```

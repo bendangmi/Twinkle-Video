@@ -242,7 +242,7 @@ export async function createUpstreamVideoGenerationTask(
     const requestConfig = resolveModelRequestConfig(config, selectedModel);
     assertVideoConfig(requestConfig, requestConfig.model);
     const protocol = requestConfig.advancedConfig?.protocol === "sub2api" ? "auto" : requestConfig.advancedConfig?.protocol || "auto";
-    if (protocol === "yumeng") {
+    if (protocol === "yumeng" || protocol === "twinkle-model") {
         return createCompatibleVideoTask(requestConfig, selectedModel, prompt, references, options, videoReferences, audioReferences);
     }
     if (protocol === "seedance-special") {

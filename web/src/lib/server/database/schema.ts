@@ -494,6 +494,7 @@ CREATE INDEX IF NOT EXISTS local_media_assets_local_filter_idx ON local_media_as
 CREATE TABLE IF NOT EXISTS object_storage_settings (
     id text PRIMARY KEY DEFAULT 'default',
     enabled boolean NOT NULL DEFAULT false,
+    custom_domain text NOT NULL DEFAULT '',
     endpoint text NOT NULL DEFAULT '',
     region text NOT NULL DEFAULT 'us-east-1',
     bucket text NOT NULL DEFAULT '',
@@ -505,6 +506,8 @@ CREATE TABLE IF NOT EXISTS object_storage_settings (
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT object_storage_settings_singleton CHECK (id = 'default')
 );
+
+ALTER TABLE object_storage_settings ADD COLUMN IF NOT EXISTS custom_domain text NOT NULL DEFAULT '';
 
 INSERT INTO object_storage_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
 

@@ -21,6 +21,17 @@ describe("outbound url security", () => {
         expect(mocks.lookup).toHaveBeenCalledWith("provider.example", { all: true, verbatim: true });
     });
 
+    it("prefers a validated IPv4 address when localhost resolves to both address families", async () => {
+        vi.stubEnv("VOZEB_PRO_ALLOW_PRIVATE_UPSTREAMS", "1");
+        vi.stubEnv("VOZEB_PRO_PRIVATE_UPSTREAM_HOSTS", "localhost");
+        mocks.lookup.mockResolvedValue([
+            { address: "::1", family: 6 },
+            { address: "127.0.0.1", family: 4 },
+        ]);
+
+        await expect(resolveSafeOutboundTarget("http://localhost:5199/v1/models")).resolves.toMatchObject({ address: "127.0.0.1", family: 4 });
+    });
+
     it("rejects mixed public and private DNS answers", async () => {
         mocks.lookup.mockResolvedValue([
             { address: "8.8.8.8", family: 4 },
@@ -45,5 +56,13 @@ describe("outbound url security", () => {
         await expect(isSafeOutboundUrl("http://localhost:11434/v1/models")).resolves.toBe(true);
         await expect(isSafeOutboundUrl("http://169.254.169.254/latest/meta-data")).resolves.toBe(false);
         await expect(isSafeOutboundUrl("http://metadata.google.internal/computeMetadata/v1")).resolves.toBe(false);
+    });
+
+    it("allows an explicitly authorized host on the benchmark network", async () => {
+        vi.stubEnv("VOZEB_PRO_ALLOW_PRIVATE_UPSTREAMS", "1");
+        vi.stubEnv("VOZEB_PRO_PRIVATE_UPSTREAM_HOSTS", "big-model.smart-agi.com");
+        mocks.lookup.mockResolvedValue([{ address: "198.18.0.90", family: 4 }]);
+
+        await expect(resolveSafeOutboundTarget("https://big-model.smart-agi.com/v1/models")).resolves.toMatchObject({ address: "198.18.0.90", family: 4 });
     });
 });

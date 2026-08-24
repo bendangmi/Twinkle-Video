@@ -197,6 +197,16 @@
 - 普通用户提交的 `Idempotency-Key`、`X-Client-Request-Id` 或项目内部计费幂等头都不得直接成为本地消费流水身份；计费键必须由服务端绑定用户、业务请求、逻辑模型、渠道、上游模型和调用类型生成，并保存请求指纹。同一服务端业务身份对应不同正文或参数时必须返回 409，不能重复扣费或静默复用旧流水。
 - Docker 静态资源路径目前仍是待办项，文档中不要过度承诺生产部署已经完全验证。
 
+## 二开项目提交与同步规范
+
+- 本仓库是 VOZEB-PRO 的二开项目：`origin` 固定指向 `https://github.com/bendangmi/Twinkle-Video.git`，只允许向 `origin` 推送；官方仓库 `https://github.com/csyqlz/VOZEB-PRO` 使用 `official` 远程保存，官方远程只用于获取同步更新，不得直接推送。
+- 首次配置远程时，如已有 `origin` 指向官方仓库，先将其改名为 `official`，再添加二开仓库为 `origin`；提交前核对 `git remote -v`，禁止把二开提交推送到 `official`。
+- 同步官方更新必须先 `git fetch official`，再在独立同步分支检查差异并合并到本地工作分支；优先保留二开功能边界、数据库契约、权限校验和部署配置，冲突解决后必须重新运行相关测试与全量质量门禁，禁止直接覆盖本地改动或使用强制推送。
+- 提交信息使用 Conventional Commits：`feat`、`fix`、`refactor`、`docs`、`test`、`chore`、`build`、`ci`、`revert`；格式为 `<type>(<scope>): <简短目的>`，正文说明行为变化、兼容/部署影响和验证命令。一个提交只包含一个可回滚目的，不提交密钥、`.env`、数据库快照、构建缓存、日志或临时截图。
+- 二开代码优先沿用上游目录、TypeScript 类型、服务层边界、Ant Design/Tailwind 既有视觉语言和 PostgreSQL repository 访问方式；新增能力必须先复用现有协议注册表、Provider、全局 Store、服务和部署入口，禁止复制一套平行实现或为了兼容猜测未验证的上游接口。
+- 二开改动保持最小范围：先补测试再改实现，涉及支付、鉴权、出站请求、媒体存储、生成任务、数据库和部署的改动必须同时补充本地 fixture/集成回归与必要文档；无关格式化、重命名和大规模重构不得混入功能提交。
+- 推送前必须确认工作区没有未解释的用户改动，执行 `git diff --check`、类型检查、Lint、相关测试、全量 Vitest、格式检查和发布检查；失败项必须在提交说明或交付报告中明确区分代码失败与环境/网络失败。
+
 ## Mandatory Testing
 
 - After every code change, run the relevant automated checks and browser regression flow before reporting completion.

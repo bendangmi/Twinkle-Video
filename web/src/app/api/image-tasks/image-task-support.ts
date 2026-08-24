@@ -570,6 +570,7 @@ export async function inlineRemoteImageResult(value: string, origin: string, coo
     const fallbackUrl = remoteUrl || mediaSource.proxyUrl;
     const fetchUrl = url.startsWith("/") ? `${origin}${url}` : url;
     if (!isRemoteMediaUrl(fetchUrl)) return { dataUrl: url, remoteUrl: fallbackUrl };
+    const useInternalApi = url.startsWith("/") || (Boolean(mediaSource.proxyUrl) && sameOrigin(fetchUrl, origin));
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), INLINE_IMAGE_TIMEOUT_MS);
@@ -577,8 +578,8 @@ export async function inlineRemoteImageResult(value: string, origin: string, coo
         const workerHeaders = maintenanceWorkerContextHeaders(cookie);
         const headers = new Headers(workerHeaders || (cookie ? { cookie } : undefined));
         new Headers(internalHeaders).forEach((headerValue, key) => headers.set(key, headerValue));
-        const response = await (url.startsWith("/") ? fetchInternalApi : fetchSafeOutbound)(fetchUrl, {
-            headers: url.startsWith("/") ? headers : undefined,
+        const response = await (useInternalApi ? fetchInternalApi : fetchSafeOutbound)(fetchUrl, {
+            headers: useInternalApi ? headers : undefined,
             cache: "no-store",
             signal: controller.signal,
         });
@@ -594,6 +595,14 @@ export async function inlineRemoteImageResult(value: string, origin: string, coo
         return { dataUrl: url, remoteUrl: fallbackUrl };
     } finally {
         clearTimeout(timer);
+    }
+}
+
+function sameOrigin(value: string, origin: string) {
+    try {
+        return new URL(value).origin === origin;
+    } catch {
+        return false;
     }
 }
 

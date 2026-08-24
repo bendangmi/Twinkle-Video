@@ -327,6 +327,7 @@ function isChannelProtocol(value: unknown): value is SystemChannelProtocol {
         value === "stable-diffusion" ||
         value === "volcengine-video" ||
         value === "seedance-special" ||
+        value === "twinkle-model" ||
         value === "custom" ||
         value === "compatible"
     );

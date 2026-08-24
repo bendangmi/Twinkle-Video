@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export function Panel({ children }: { children: ReactNode }) {
-    return <section className="admin-panel-surface min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">{children}</section>;
+    return <section className="admin-panel-surface min-w-0 overflow-hidden rounded-lg border border-zinc-200">{children}</section>;
 }
 
 export function PanelHeader({ title, description, actions }: { title: string; description: string; actions?: ReactNode }) {
@@ -26,7 +26,7 @@ const metricToneClass = {
 
 export function Metric({ label, value, detail, icon, tone }: { label: string; value: number | string; detail: string; icon: ReactNode; tone: keyof typeof metricToneClass }) {
     return (
-        <div className="admin-metric-card flex min-h-[78px] items-start justify-between gap-2 bg-white p-2.5 dark:bg-zinc-950 sm:min-h-28 sm:gap-4 sm:p-5">
+        <div className="admin-metric-card flex min-h-[78px] items-start justify-between gap-2 p-2.5 sm:min-h-28 sm:gap-4 sm:p-5">
             <div className="min-w-0">
                 <div className="text-[10px] font-medium text-zinc-500 sm:text-xs dark:text-zinc-400">{label}</div>
                 <div className="mt-1.5 text-lg font-semibold leading-none tabular-nums text-zinc-950 sm:mt-3 sm:text-2xl dark:text-zinc-100">{value}</div>

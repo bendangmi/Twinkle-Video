@@ -385,6 +385,7 @@ function findModel(requestBody: unknown, blocks: unknown[], raw: string) {
 function inferProtocol(raw: string, endpoint: EndpointMatch | null, requestBody: unknown, current: SystemChannelProtocol): SystemChannelProtocol {
     const source = `${raw}\n${endpoint?.requestUrl || ""}`.toLowerCase();
     if (source.includes("/kyyreactapiserver/v2/model-center/tasks")) return "yumeng";
+    if (textContainsUrlHost(source, ["big-model.smart-agi.com"])) return "twinkle-model";
     if (source.includes("/v1/seedance-special/videos") || source.includes("sd_2.0_special_") || source.includes("sd_2.0_fast_special_")) return "custom";
     if (source.includes("/sdapi/v1/txt2img") || source.includes("/sdapi/v1/img2img") || source.includes("alwayson_scripts")) return "custom";
     if (source.includes("sub2api") || textContainsUrlHost(source, ["code2alita.com"])) return "sub2api";
@@ -595,6 +596,7 @@ function protocolLabel(protocol: SystemChannelProtocol) {
     if (protocol === "seedance") return "Seedance";
     if (protocol === "volcengine-video") return "火山方舟视频";
     if (protocol === "seedance-special") return "Seedance 2.0 特价版";
+    if (protocol === "twinkle-model") return "Twinkle Model";
     if (protocol === "custom") return "自定义协议";
     if (protocol === "compatible") return "通用兼容";
     if (protocol === "openai") return "OpenAI";

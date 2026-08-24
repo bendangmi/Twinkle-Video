@@ -2,6 +2,7 @@ import { createSign, generateKeyPairSync } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import type { PaymentRuntimeConfig } from "./payment-config-store";
+import { easyPaySign } from "./payment-easypay";
 import { resolveWebhookAdapter } from "./payment-webhook-adapters";
 
 const alipayKeyPair = generateKeyPairSync("rsa", { modulusLength: 2048 });
@@ -29,6 +30,32 @@ describe("Alipay payment webhook adapter", () => {
         params.set("total_amount", "0.01");
 
         const parsed = resolveWebhookAdapter("alipay").parse("alipay", params.toString(), new Headers(), alipayConfig());
+
+        expect(parsed.signatureValid).toBe(false);
+    });
+});
+
+describe("EasyPay payment webhook adapter", () => {
+    it("verifies and parses the standard form callback", () => {
+        const params = signedEasyPayCallback();
+        const parsed = resolveWebhookAdapter("easypay").parse("easypay", params.toString(), new Headers(), easyPayConfig());
+
+        expect(parsed).toMatchObject({
+            signatureValid: true,
+            status: "succeeded",
+            eventType: "easypay.trade_success",
+            orderNo: "VZ001",
+            providerTradeId: "epay-trade-1",
+            amountCents: 1299,
+            currency: "CNY",
+        });
+    });
+
+    it("rejects EasyPay callback data changed after signing", () => {
+        const params = signedEasyPayCallback();
+        params.set("money", "0.01");
+
+        const parsed = resolveWebhookAdapter("easypay").parse("easypay", params.toString(), new Headers(), easyPayConfig());
 
         expect(parsed.signatureValid).toBe(false);
     });
@@ -64,5 +91,28 @@ function alipayConfig(): PaymentRuntimeConfig {
             VOZEB_PRO_ALIPAY_APP_ID: "2026000000000000",
             VOZEB_PRO_ALIPAY_PUBLIC_KEY: alipayPublicKey,
         },
+    };
+}
+
+function signedEasyPayCallback() {
+    const params = new URLSearchParams({
+        pid: "epay-pid",
+        notify_id: "epay-notify-1",
+        trade_no: "epay-trade-1",
+        trade_status: "TRADE_SUCCESS",
+        out_trade_no: "VZ001",
+        money: "12.99",
+        notify_time: "2026-07-28 16:20:00",
+    });
+    params.set("sign", easyPaySign(Object.fromEntries(params.entries()), "epay-pkey"));
+    params.set("sign_type", "MD5");
+    return params;
+}
+
+function easyPayConfig(): PaymentRuntimeConfig {
+    return {
+        saved: { providers: {} },
+        providers: { easypay: { enabled: true, saved: true } },
+        valuesByEnvName: { VOZEB_PRO_EASYPAY_PID: "epay-pid", VOZEB_PRO_EASYPAY_PKEY: "epay-pkey" },
     };
 }

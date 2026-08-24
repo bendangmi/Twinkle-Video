@@ -70,7 +70,7 @@ export default async function RootLayout({
     });
 
     return (
-        <html lang="zh-CN" suppressHydrationWarning className="font-sans">
+        <html lang="zh-CN" data-ui-theme="anthropic" suppressHydrationWarning className="font-sans">
             <head>
                 <script id="theme-bootstrap" nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
                 <link rel="icon" href={iconHref} />
@@ -80,7 +80,7 @@ export default async function RootLayout({
             <body
                 className="bg-background text-foreground antialiased"
                 style={{
-                    fontFamily: '"SF Pro Display","SF Pro Text","PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif',
+                    fontFamily: "var(--anthropic-font-sans)",
                 }}
             >
                 <script id="website-json-ld" nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeStructuredData(websiteStructuredData) }} />

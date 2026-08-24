@@ -39,6 +39,7 @@ const PRIVATE_ALLOWLISTABLE_IPV4_ADDRESSES = addressBlockList([
     ["127.0.0.0", 8, "ipv4"],
     ["172.16.0.0", 12, "ipv4"],
     ["192.168.0.0", 16, "ipv4"],
+    ["198.18.0.0", 15, "ipv4"],
 ]);
 const PRIVATE_ALLOWLISTABLE_IPV6_ADDRESSES = addressBlockList([
     ["::1", 128, "ipv6"],
@@ -72,7 +73,8 @@ export async function resolveSafeOutboundTarget(value: string | URL, options?: {
     try {
         const addresses = dedupeAddresses(await lookup(hostname, { all: true, verbatim: true }));
         if (!addresses.length || !addresses.every((item) => addressAllowed(item.address, privateAllowed))) return null;
-        return { url, address: addresses[0].address, family: addresses[0].family as 4 | 6 };
+        const address = addresses.find((item) => item.family === 4) || addresses[0];
+        return { url, address: address.address, family: address.family as 4 | 6 };
     } catch {
         return null;
     }

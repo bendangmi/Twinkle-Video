@@ -18,7 +18,7 @@ export function HomeAgentHero() {
     const [prompt, setPrompt] = useState("");
     const [mode, setMode] = useState<HomeCreationMode>("agent");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const { startCreating } = useHomeActions();
+    const { site, startCreating, openProtectedPath } = useHomeActions();
     const currentMode = HOME_CREATION_MODES.find((item) => item.id === mode) ?? HOME_CREATION_MODES[0];
 
     const submit = () => {
@@ -52,10 +52,27 @@ export function HomeAgentHero() {
                 </span>
             </span>
             <div className={styles.heroContent}>
-                <h1 id="home-hero-title" className={styles.heroTitle}>
-                    一个入口 完成所有 <span>AI 创作</span>
-                </h1>
-                <p className={styles.heroSubtitle}>从图片、视频、音频到 Agent 编排，让每个想法直接进入完整创作流程</p>
+                <div className={styles.heroCopy}>
+                    <div className={styles.eyebrow}>MULTIMODAL CREATIVE WORKSPACE</div>
+                    <h1 id="home-hero-title" className={styles.heroBrand}>
+                        {site.title}
+                    </h1>
+                    <p className={styles.heroTagline}>From Ideas to Finished Creation</p>
+                    <p className={styles.heroSubtitle}>{site.seoDescription || "从图片、视频、音频到 Agent 编排，让每个想法直接进入完整创作流程。"}</p>
+                    <div className={styles.heroActions}>
+                        <button type="button" className={styles.heroPrimaryAction} onClick={() => startCreating()}>
+                            立即开始 <Send aria-hidden="true" />
+                        </button>
+                        <button type="button" className={styles.heroSecondaryAction} onClick={() => openProtectedPath("/create")}>
+                            探索创作 Agent
+                        </button>
+                    </div>
+                    <div className={styles.heroSignals} aria-label="平台能力">
+                        <span>↗ 多模态创作</span>
+                        <span>◷ 智能编排</span>
+                        <span>▥ 一站式工作流</span>
+                    </div>
+                </div>
 
                 <div className={styles.agentStage}>
                     <div className={styles.agentRing} data-testid="home-agent-halo" aria-hidden="true">

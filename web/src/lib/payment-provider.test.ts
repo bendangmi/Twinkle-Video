@@ -7,6 +7,8 @@ describe("payment provider normalization", () => {
         expect(normalizePaymentProvider("Stripe-Checkout")).toBe("stripe");
         expect(normalizePaymentProvider("ALI")).toBe("alipay");
         expect(normalizePaymentProvider("wechatPay")).toBe("wechat");
+        expect(normalizePaymentProvider("EPAY")).toBe("easypay");
+        expect(normalizePaymentProvider("easy_pay")).toBe("easypay");
         expect(normalizePaymentProvider("pay_ply")).toBe("payply");
     });
 

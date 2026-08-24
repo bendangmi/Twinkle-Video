@@ -416,6 +416,7 @@ export function providerIcon(provider: PaymentProviderConfig["id"]) {
     if (provider === "stripe") return CreditCard;
     if (provider === "alipay") return Landmark;
     if (provider === "wechat") return QrCode;
+    if (provider === "easypay") return WalletCards;
     if (provider === "payply") return WalletCards;
     return FileText;
 }
@@ -483,6 +484,7 @@ export function providerLabel(value: string) {
     if (value === "stripe") return "Stripe";
     if (value === "alipay") return "支付宝";
     if (value === "wechat") return "微信支付";
+    if (value === "easypay") return "易支付";
     if (value === "payply") return "PayPly";
     if (value === "manual") return "人工确认";
     return value || "-";

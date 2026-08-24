@@ -4,6 +4,8 @@
     --admin-shell-border: #e4e4e7;
     --admin-shell-shadow: none;
     --admin-panel-bg: #ffffff;
+    --admin-surface-raised: #fafafa;
+    --admin-surface-subtle: #f4f4f5;
     --admin-control-bg: #ffffff;
     --admin-control-bg-hover: #fafafa;
     --admin-control-border: #e4e4e7;
@@ -37,15 +39,17 @@
 }
 
 .dark .admin-console-page {
-    --admin-home-bg: #09090b;
-    --admin-shell-bg: #09090b;
-    --admin-shell-border: #27272a;
+    --admin-home-bg: #141413;
+    --admin-shell-bg: #1d1d1b;
+    --admin-shell-border: #383733;
     --admin-shell-shadow: none;
-    --admin-panel-bg: #09090b;
-    --admin-control-bg: #09090b;
-    --admin-control-bg-hover: #18181b;
-    --admin-control-border: #27272a;
-    --admin-control-border-hover: #3f3f46;
+    --admin-panel-bg: #22221f;
+    --admin-surface-raised: #292926;
+    --admin-surface-subtle: #30302c;
+    --admin-control-bg: #252522;
+    --admin-control-bg-hover: #30302c;
+    --admin-control-border: #45443f;
+    --admin-control-border-hover: #5b5952;
     --admin-control-shadow: none;
     --admin-control-text: #e4e4e7;
     --admin-control-text-hover: #ffffff;
@@ -53,7 +57,7 @@
     --admin-icon-bg: transparent;
     --admin-icon-color: #a1a1aa;
     --admin-icon-ring: none;
-    --admin-progress-track: #27272a;
+    --admin-progress-track: #45443f;
     --admin-progress-fill: #d4d4d8;
     --admin-chart-1: #2dd4bf;
     --admin-chart-2: #60a5fa;
@@ -61,14 +65,14 @@
     --admin-chart-4: #c4b5fd;
     --admin-chart-5: #34d399;
     --admin-chart-6: #f472b6;
-    --admin-chart-track: #27272a;
+    --admin-chart-track: #45443f;
     --admin-chart-area: rgb(250 250 250 / 0.08);
     --admin-nav-item-bg: transparent;
-    --admin-nav-item-active-bg: #18181b;
+    --admin-nav-item-active-bg: #30302c;
     --admin-nav-item-border: transparent;
     --admin-nav-item-active-border: transparent;
     --admin-nav-item-active-shadow: inset 2px 0 0 #fafafa;
-    --admin-nav-hover-bg: #18181b;
+    --admin-nav-hover-bg: #292926;
     background: var(--admin-home-bg) !important;
 }
 
@@ -98,9 +102,21 @@
 .dark .admin-panel-surface,
 .dark .admin-metric-card,
 .dark .admin-section-summary {
-    border-color: #27272a !important;
+    border-color: var(--admin-shell-border) !important;
     background: var(--admin-panel-bg) !important;
     box-shadow: none !important;
+}
+
+.dark .admin-console-page [class*="dark:bg-zinc-950"],
+.dark .admin-console-page [class*="dark:bg-stone-950"],
+.dark .admin-console-page [class*="dark:bg-neutral-950"] {
+    background: var(--admin-surface-raised) !important;
+}
+
+.dark .admin-console-page [class*="dark:bg-zinc-900"],
+.dark .admin-console-page [class*="dark:bg-stone-900"],
+.dark .admin-console-page [class*="dark:bg-neutral-900"] {
+    background: var(--admin-surface-subtle) !important;
 }
 
 .admin-section-nav,
@@ -130,7 +146,7 @@
 }
 
 .dark .admin-panel-header {
-    background: #09090b;
+    background: var(--admin-panel-bg);
 }
 
 .admin-stat-pill {
@@ -139,8 +155,8 @@
 }
 
 .dark .admin-stat-pill {
-    background: #18181b !important;
-    border-color: #27272a !important;
+    background: var(--admin-surface-raised) !important;
+    border-color: var(--admin-shell-border) !important;
 }
 
 .admin-dashboard-section-icon,
@@ -152,7 +168,7 @@
 
 .dark .admin-dashboard-section-icon,
 .dark .admin-section-title-icon {
-    background: #18181b !important;
+    background: var(--admin-surface-subtle) !important;
     color: #a1a1aa !important;
     box-shadow: none !important;
 }
@@ -345,12 +361,12 @@
 
 .dark .admin-metric-grid > .admin-metric-card:nth-child(-n + 2),
 .dark .admin-resource-grid > .admin-resource-stat:nth-child(-n + 2) {
-    border-bottom-color: #27272a;
+    border-bottom-color: var(--admin-shell-border);
 }
 
 .dark .admin-metric-grid > .admin-metric-card:nth-child(odd),
 .dark .admin-resource-grid > .admin-resource-stat:nth-child(odd) {
-    border-right-color: #27272a;
+    border-right-color: var(--admin-shell-border);
 }
 
 .admin-console-page .ant-btn,
@@ -400,13 +416,13 @@
 }
 
 .dark .admin-console-page .ant-table-wrapper .ant-table-thead > tr > th {
-    background: #18181b;
-    border-bottom-color: #27272a;
+    background: var(--admin-surface-raised);
+    border-bottom-color: var(--admin-shell-border);
     color: #a1a1aa;
 }
 
 .dark .admin-console-page .ant-table-wrapper .ant-table-tbody > tr > td {
-    border-bottom-color: #27272a;
+    border-bottom-color: var(--admin-shell-border);
 }
 
 @media (min-width: 1024px) {
@@ -420,7 +436,7 @@
     }
 
     .dark .admin-resource-grid > .admin-resource-stat {
-        border-right-color: #27272a;
+        border-right-color: var(--admin-shell-border);
     }
 }
 
@@ -435,7 +451,7 @@
     }
 
     .dark .admin-metric-grid > .admin-metric-card {
-        border-right-color: #27272a;
+        border-right-color: var(--admin-shell-border);
     }
 }
 

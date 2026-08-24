@@ -384,7 +384,8 @@ function expectProxyRequests(channel: ProxyChannel, createPath: string | undefin
     expect(request.path).toBe(upstreamPath(channel.upstreamBaseUrl, createPath.replace(":model", model)));
     expect(request.body.byteLength).toBeGreaterThan(0);
     expect(decodeURIComponent(request.path).includes(model) || body.includes(model)).toBe(true);
-    expect(request.headers["idempotency-key"]).toBeTruthy();
+    if (channel.config.advancedConfig?.protocol === "twinkle-model") expect(request.headers["idempotency-key"]).toBeUndefined();
+    else expect(request.headers["idempotency-key"]).toBeTruthy();
     expect(request.headers["x-client-request-id"]).toBeTruthy();
     Object.entries(channel.expectedAuthHeaders).forEach(([key, value]) => expect(request.headers[key.toLowerCase()]).toBe(value));
     expect(requestContainsReference(request)).toBe(referenceRequired);

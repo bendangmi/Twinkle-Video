@@ -232,6 +232,7 @@ function normalizePaymentProviderId(value: string): PaymentProviderId | undefine
     if (provider === "stripe") return "stripe";
     if (provider === "alipay" || provider === "ali") return "alipay";
     if (provider === "wechat" || provider === "wxpay" || provider === "wechatpay" || provider === "weixin") return "wechat";
+    if (provider === "easypay" || provider === "epay") return "easypay";
     if (provider === "payply") return "payply";
     if (provider === "manual" || provider === "custom") return "manual";
     return undefined;

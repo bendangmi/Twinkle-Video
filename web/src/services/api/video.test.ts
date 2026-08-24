@@ -362,6 +362,48 @@ describe("video API service", () => {
         await expect(createUpstreamVideoGenerationTask(yumeng, "生成视频", [], [reference])).resolves.toMatchObject({ id: "yumeng-task" });
         expect(post.mock.calls[0][1]).toMatchObject({ reference_videos: ["https://cdn.example.com/reference.mp4"] });
     });
+
+    it("uses only the Twinkle Model standard gateway paths and request shape", async () => {
+        const twinkle = {
+            ...config,
+            baseUrl: "/api/ai/system/twinkle",
+            apiKey: "system",
+            model: "Minimax-H3",
+            videoModel: "Minimax-H3",
+            advancedConfig: {
+                protocol: "twinkle-model",
+                createPath: "/v1/videos",
+                queryPath: "/v1/videos/:task_id",
+                referenceRule: "参考素材使用公网 HTTPS URL",
+            },
+        } as AiConfig;
+        const post = vi.spyOn(axios, "post").mockResolvedValue({ data: { id: "twinkle-task", status: "processing" }, headers: {} });
+        const imageReference = { id: "image-one", name: "参考图片", type: "image/png", url: "https://cdn.example.com/reference.png" } as ReferenceImage;
+        const firstFrame = { id: "image-first", name: "首帧", type: "image/png", url: "https://cdn.example.com/first.png", videoRole: "first_frame" } as ReferenceImage;
+        const lastFrame = { id: "image-last", name: "尾帧", type: "image/png", url: "https://cdn.example.com/last.png", videoRole: "last_frame" } as ReferenceImage;
+        const videoReference = { id: "video-one", name: "参考视频", type: "video/mp4", url: "https://cdn.example.com/reference.mp4" };
+        const audioReference = { id: "audio-one", name: "参考音频", type: "audio/mpeg", url: "https://cdn.example.com/reference.mp3" };
+
+        expect(compatibleVideoCreatePaths(twinkle, twinkle.model)).toEqual(["/v1/videos"]);
+        expect(compatibleVideoPollPaths(twinkle, { id: "twinkle-task", model: twinkle.model } as never)).toEqual(["/v1/videos/:task_id"]);
+        await expect(createUpstreamVideoGenerationTask(twinkle, "生成连续稳定的视频", [imageReference, firstFrame, lastFrame], [videoReference], [audioReference], { clientRequestId: "twinkle-request-1" })).resolves.toMatchObject({ id: "twinkle-task" });
+        expect(post).toHaveBeenCalledOnce();
+        expect(post.mock.calls[0][0]).toContain("/api/ai/system/twinkle/v1/videos");
+        expect(post.mock.calls[0]?.[2]?.headers || {}).not.toHaveProperty("Idempotency-Key");
+        expect(post.mock.calls[0][1]).toMatchObject({
+            model: "Minimax-H3",
+            prompt: "生成连续稳定的视频",
+            duration: 5,
+            resolution: "720p",
+            aspect_ratio: "16:9",
+            generate_audio: false,
+            images: ["https://cdn.example.com/reference.png"],
+            video_references: [{ url: "https://cdn.example.com/reference.mp4" }],
+            audio_references: [{ url: "https://cdn.example.com/reference.mp3" }],
+            start_image_url: "https://cdn.example.com/first.png",
+            end_image_url: "https://cdn.example.com/last.png",
+        });
+    });
 });
 
 function json(value: unknown) {

@@ -61,6 +61,7 @@ import {
 const config = {
     id: "default" as const,
     enabled: true,
+    customDomain: "",
     endpoint: "https://oss.example.com",
     region: "auto",
     bucket: "media",
@@ -136,6 +137,15 @@ describe("object storage media service", () => {
         expect(url).toBe("https://oss.example.com/signed");
         expect(mocks.signRead).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }), expect.objectContaining({ key: objectRegistration.externalObjectKey, contentDisposition: expect.stringContaining("attachment"), expiresIn: 600 }));
         expect(mocks.signRead).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ contentDisposition: expect.stringContaining(".png") }));
+    });
+
+    it("uses the custom access domain and object key for media URLs", async () => {
+        mocks.config.mockResolvedValue({ ...config, customDomain: "http://sub.bdmcom.cn" });
+        const objectRegistration = { ...registration, storageProvider: "object" as const, externalStorageId: "default", externalObjectKey: "vozeb-pro/media/generation/permanent/2026/08/23/images/result.png" };
+
+        await expect(createExternalMediaReadUrl(new Request("http://localhost/media"), objectRegistration)).resolves.toBe("http://sub.bdmcom.cn/vozeb-pro/media/generation/permanent/2026/08/23/images/result.png");
+        await expect(createExternalStorageImagePreviewUrl(objectRegistration.externalObjectKey, 320)).resolves.toBe("http://sub.bdmcom.cn/vozeb-pro/media/generation/permanent/2026/08/23/images/result.png.vozeb-preview/webp-320.webp");
+        expect(mocks.signRead).not.toHaveBeenCalled();
     });
 
     it("uses a bounded WebP object variant for image previews", async () => {

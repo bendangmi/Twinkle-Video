@@ -219,6 +219,42 @@ test("creative workspaces remain usable without horizontal overflow in light and
     await expectNoHorizontalOverflow(page, `${dramaRoute} dark`);
 });
 
+test("recent generation records can be manually deleted", async ({ page }) => {
+    let overviewCalls = 0;
+    let deleteCalls = 0;
+    await page.route("**/api/create/overview", (route) => {
+        overviewCalls += 1;
+        return route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                code: 0,
+                data: {
+                    overview: {
+                        runningTasks: [],
+                        recentAssets: deleteCalls === 0 ? [{ id: "log-one-0", generationLogId: "log-one", kind: "image", title: "待删除生成", url: "/api/generation-log-assets/fixture.png", createdAt: "2026-07-26T12:00:00.000Z" }] : [],
+                    },
+                },
+                msg: "OK",
+            }),
+        });
+    });
+    await page.route("**/api/generation-logs", (route) => {
+        if (route.request().method() !== "DELETE") return route.continue();
+        deleteCalls += 1;
+        return route.fulfill({ contentType: "application/json", body: JSON.stringify({ deleted: 1 }) });
+    });
+
+    await page.goto("/create", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText("待删除生成", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "删除生成记录" }).click();
+    const dialog = page.getByRole("dialog", { name: "删除这条生成记录？" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: /删\s*除/ }).click();
+    await expect(page.getByText("待删除生成", { exact: true })).toHaveCount(0);
+    expect(deleteCalls).toBe(1);
+    expect(overviewCalls).toBeGreaterThanOrEqual(2);
+});
+
 test("admin user editor groups permission controls and keeps the footer visible", async ({ page }, testInfo) => {
     await page.goto("/admin?section=users", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "用户管理" })).toBeVisible();

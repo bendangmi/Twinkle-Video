@@ -48,6 +48,8 @@ describe("release type-check and build contract", () => {
         expect(docsNextConfig).toContain("turbopack: { root: docsRoot }");
         expect(standaloneStart).toContain('process.env.NEXT_DIST_DIR?.trim() || ".next"');
         expect(developmentStart).toContain('NEXT_DIST_DIR: runtime.environment.NEXT_DIST_DIR?.trim() || ".next-dev"');
+        expect(developmentStart).toContain('"--turbopack"');
+        expect(developmentStart).not.toContain('"--webpack"');
         expect(standaloneStart).toContain("prepareStandaloneAssets");
         expect(dockerfile).toContain("pnpm run typecheck && NEXT_SKIP_BUILD_TYPECHECK=1 pnpm run build");
         expect(dockerfile).not.toContain("ARG NEXT_BUILD_CPUS=1");

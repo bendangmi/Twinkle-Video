@@ -8,6 +8,7 @@ import { objectStorageErrorMessage, testObjectStorageConnection } from "./object
 const config: ObjectStorageRuntimeConfig = {
     id: "default",
     enabled: true,
+    customDomain: "",
     endpoint: "",
     region: "auto",
     bucket: "media",

@@ -65,6 +65,7 @@ describe("parseChannelExampleConfig", () => {
         ["https://api.code2alita.com/v1/video/generations", "sub2api"],
         ["https://api.globalaiopc.com/v1/video/generations", "custom"],
         ["https://ark.cn-beijing.volces.com/api/v3/video/generations", "volcengine-video"],
+        ["https://big-model.smart-agi.com/v1/videos", "twinkle-model"],
     ])("recognizes the exact provider host in %s", (url, protocol) => {
         const channel = { id: "one", name: "测试", baseUrl: "", apiKey: "", apiFormat: "openai", models: [], enabled: false } satisfies SystemModelChannel;
         const result = parseChannelExampleConfig(`curl ${url} -d {"model":"video-v1","prompt":"test"}`, channel, advanced);

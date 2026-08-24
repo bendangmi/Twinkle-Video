@@ -62,6 +62,7 @@ export function AdminExternalStorage() {
                 setSettings(value);
                 form.setFieldsValue({
                     enabled: value.enabled,
+                    customDomain: value.customDomain,
                     endpoint: value.endpoint,
                     region: value.region,
                     bucket: value.bucket,
@@ -276,7 +277,10 @@ export function AdminExternalStorage() {
                             </div>
 
                             <div className="grid gap-x-4 md:grid-cols-2 xl:grid-cols-6">
-                                <Form.Item label="Endpoint" name="endpoint" className="!mb-5 xl:col-span-2" extra="AWS S3 可留空；其他服务填写 S3 Endpoint。">
+                                <Form.Item label="自定义访问域名" name="customDomain" className="!mb-5 xl:col-span-3" extra="配置后文件地址使用该域名拼接对象路径，例如 http://sub.example.com/vozeb-pro/media/...。">
+                                    <Input placeholder="http://sub.example.com" />
+                                </Form.Item>
+                                <Form.Item label="Endpoint" name="endpoint" className="!mb-5 xl:col-span-3" extra="AWS S3 可留空；其他服务填写 S3 Endpoint。">
                                     <Input placeholder="https://s3.example.com" />
                                 </Form.Item>
                                 <Form.Item label="Region" name="region" className="!mb-5 xl:col-span-2" rules={[{ required: true, message: "请输入 Region" }]}>

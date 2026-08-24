@@ -932,7 +932,7 @@ describe("split Postgres repositories", () => {
             [
                 {
                     running_tasks: [{ id: "pending-one", kind: "video", source: "agent", title: "生成短片", createdAt: timestamp }],
-                    recent_assets: [{ id: "success-one-0", kind: "image", title: "商品图", url: "/api/media/image.webp", createdAt: timestamp }],
+                    recent_assets: [{ id: "success-one-0", generationLogId: "success-one", kind: "image", title: "商品图", url: "/api/media/image.webp", createdAt: timestamp }],
                 },
             ],
         ]);
@@ -941,7 +941,7 @@ describe("split Postgres repositories", () => {
 
         expect(overview).toEqual({
             runningTasks: [{ id: "pending-one", kind: "video", source: "agent", title: "生成短片", createdAt: timestamp }],
-            recentAssets: [{ id: "success-one-0", kind: "image", title: "商品图", url: "/api/media/image.webp", createdAt: timestamp }],
+            recentAssets: [{ id: "success-one-0", generationLogId: "success-one", kind: "image", title: "商品图", url: "/api/media/image.webp", createdAt: timestamp }],
         });
         expect(query).toHaveBeenCalledTimes(1);
         const [statement, params] = queryArgs(query, 0);

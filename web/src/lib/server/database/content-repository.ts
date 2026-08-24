@@ -280,6 +280,7 @@ export class GenerationLogsRepository {
             asset_candidates AS (
                 SELECT
                     CONCAT(log.id, '-', asset.sort_order) AS id,
+                    log.id AS generation_log_id,
                     asset.type AS kind,
                     COALESCE(NULLIF(btrim(log.title), ''), CASE WHEN asset.type = 'video' THEN '生成视频' ELSE '生成图片' END) AS title,
                     COALESCE(NULLIF(asset.server_url, ''), NULLIF(asset.url, ''), NULLIF(asset.remote_url, '')) AS url,
@@ -304,7 +305,7 @@ export class GenerationLogsRepository {
                 FROM asset_candidates
             ),
             recent_rows AS (
-                SELECT id, kind, title, url, created_at, sort_order
+                SELECT id, generation_log_id, kind, title, url, created_at, sort_order
                 FROM ranked_assets
                 WHERE duplicate_rank = 1
                 ORDER BY created_at DESC, sort_order ASC
@@ -316,7 +317,7 @@ export class GenerationLogsRepository {
                     FROM running_rows
                 ), '[]'::jsonb) AS running_tasks,
                 COALESCE((
-                    SELECT jsonb_agg(jsonb_build_object('id', id, 'kind', kind, 'title', title, 'url', url, 'createdAt', created_at) ORDER BY created_at DESC, sort_order ASC)
+                    SELECT jsonb_agg(jsonb_build_object('id', id, 'generationLogId', generation_log_id, 'kind', kind, 'title', title, 'url', url, 'createdAt', created_at) ORDER BY created_at DESC, sort_order ASC)
                     FROM recent_rows
                 ), '[]'::jsonb) AS recent_assets
             `,
@@ -334,9 +335,10 @@ export class GenerationLogsRepository {
             recentAssets: jsonObjects(row.recent_assets)
                 .flatMap((item): CreateOverviewAsset[] => {
                     const id = textValue(item.id);
+                    const generationLogId = textValue(item.generationLogId);
                     const url = textValue(item.url);
-                    if (!id || !url || /^(data|blob):/i.test(url)) return [];
-                    return [{ id, kind: item.kind === "video" ? "video" : "image", title: textValue(item.title), url, createdAt: isoValue(item.createdAt) }];
+                    if (!id || !generationLogId || !url || /^(data|blob):/i.test(url)) return [];
+                    return [{ id, generationLogId, kind: item.kind === "video" ? "video" : "image", title: textValue(item.title), url, createdAt: isoValue(item.createdAt) }];
                 })
                 .slice(0, CREATE_OVERVIEW_RECENT_ASSET_LIMIT),
         };

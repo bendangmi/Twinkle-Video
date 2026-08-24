@@ -268,6 +268,7 @@ function ConnectionStep({ channel, onChange }: { channel: SystemModelChannel; on
                 </LabeledControl>
                 <LabeledControl label="Base URL">
                     <Input value={channel.baseUrl} placeholder="https://api.example.com" onChange={(event) => onChange({ baseUrl: event.target.value })} />
+                    <div className="mt-1 text-xs text-stone-500 dark:text-stone-400">公网地址直接填写；内网或本机地址需由部署者开启服务端白名单。</div>
                 </LabeledControl>
                 {custom ? (
                     <LabeledControl label="鉴权方式">

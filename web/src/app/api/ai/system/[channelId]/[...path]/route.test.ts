@@ -168,6 +168,19 @@ describe("system media proxy", () => {
         expect(new Headers(init?.headers).get("authorization")).toBe("Bearer secret");
         expect(new Headers(init?.headers).get("x-goog-api-key")).toBeNull();
     });
+
+    it("keeps channel authentication for local media returned by a separate loopback port", async () => {
+        mocks.getAuthSettings.mockResolvedValue({
+            systemChannels: [{ id: "channel-one", enabled: true, baseUrl: "http://localhost:5199", apiKey: "secret", apiFormat: "openai", models: [] }],
+        });
+        const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(pngBytes(), { headers: { "content-type": "image/png" } }));
+
+        const response = await GET(request("http://127.0.0.1:8081/media/result.png"), context);
+
+        expect(response.status).toBe(200);
+        expect(fetchMock.mock.calls[0][0]).toBe("http://127.0.0.1:8081/media/result.png");
+        expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("authorization")).toBe("Bearer secret");
+    });
 });
 
 describe("OpenAI Responses proxy", () => {

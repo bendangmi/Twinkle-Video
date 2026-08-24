@@ -155,7 +155,7 @@ export const adminHelpArticles: AdminHelpArticle[] = [
         category: "财务管理",
         title: "积分、支付渠道、CDK 与财务流水",
         summary: "统一核对模型扣费、支付配置、兑换码和资金及积分流水。",
-        keywords: ["积分", "模型单价", "倍率", "支付渠道", "Stripe", "支付宝", "微信支付", "PayPly", "CDK", "流水", "对账"],
+        keywords: ["积分", "模型单价", "倍率", "支付渠道", "Stripe", "支付宝", "微信支付", "易支付", "EasyPay", "PayPly", "CDK", "流水", "对账"],
         purpose: "保证一次购买、生成、退款或兑换都能在订单、支付流水、积分流水和套餐用量之间相互核对。",
         steps: [
             {

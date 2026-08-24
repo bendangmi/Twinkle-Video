@@ -29,13 +29,14 @@ const channel = {
 describe("channel protocol registry", () => {
     it("exposes only active protocols and keeps SD2 separate from Stable Diffusion", () => {
         const protocols = channelProtocolOptions().map((item) => item.value);
-        expect(protocols).toEqual(["openai", "yumeng", "gemini", "seedance", "stable-diffusion", "volcengine-video", "sub2api", "newapi", "custom", "compatible", "auto"]);
+        expect(protocols).toEqual(["openai", "yumeng", "gemini", "seedance", "stable-diffusion", "volcengine-video", "sub2api", "newapi", "twinkle-model", "custom", "compatible", "auto"]);
         expect(protocols).not.toEqual(expect.arrayContaining(["vozeb-recommended", "seedance-special", "globalaiopc"]));
         expect(channelProtocolDefinition("openai").modelCatalogPaths).toEqual(["/v1/models"]);
         expect(channelProtocolDefinition("sub2api").modelCatalogPaths).toEqual(["/v1/models"]);
         expect(channelProtocolDefinition("newapi").modelCatalogPaths).toEqual(["/v1/models"]);
         expect(channelProtocolDefinition("seedance").modelCatalogPaths).toEqual(["/models"]);
         expect(channelProtocolDefinition("volcengine-video").modelCatalogPaths).toEqual(["/api/v3/models"]);
+        expect(channelProtocolDefinition("twinkle-model").modelCatalogPaths).toEqual([]);
         expect(channelProtocolDefinition("stable-diffusion").modelCatalogPaths).toEqual(["/sdapi/v1/sd-models"]);
         expect(channelProtocolDefinition("gemini").modelCatalogPaths).toEqual(["/v1beta/models"]);
         expect(channelProtocolDefinition("yumeng")).toMatchObject({
@@ -59,6 +60,15 @@ describe("channel protocol registry", () => {
         expect(channelProtocolDefinition("newapi").operations).toEqual(channelProtocolDefinition("openai").operations);
         expect(channelProtocolDefinition("seedance").operations.video).toMatchObject({ createPath: "/contents/generations/tasks", queryPath: "/contents/generations/tasks/:task_id", resultField: "content.video_url" });
         expect(channelProtocolDefinition("volcengine-video").operations.video).toEqual(channelProtocolDefinition("seedance").operations.video);
+        expect(channelProtocolDefinition("twinkle-model").operations.video).toMatchObject({
+            createPath: "/v1/videos",
+            imageToVideoPath: "/v1/videos",
+            queryPath: "/v1/videos/:task_id",
+            resultField: "url",
+            supportsReferenceImage: true,
+            supportsReferenceVideo: true,
+            supportsReferenceAudio: true,
+        });
         expect(channelProtocolDefinition("stable-diffusion").operations.image).toMatchObject({ createPath: "/sdapi/v1/txt2img", editPath: "/sdapi/v1/img2img", resultField: "images[0]" });
         expect(channelProtocolDefinition("yumeng").operations).toMatchObject({
             image: { createPath: "/kyyReactApiServer/v2/model-center/tasks", queryPath: "/kyyReactApiServer/v2/model-center/tasks/:task_id", resultField: "result_url / image_url", supportsReferenceImage: true },
