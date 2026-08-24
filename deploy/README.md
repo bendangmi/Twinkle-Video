@@ -8,7 +8,7 @@
 
 ```powershell
 $tag = "twinkle-video:v0.0.7"
-docker build --pull -t $tag .
+docker build --pull --build-arg APT_MIRROR=http://mirrors.aliyun.com -t $tag .
 docker save $tag -o deploy/twinkle-video-v0.0.7.tar
 docker image inspect $tag --format '{{.Id}}'
 ```

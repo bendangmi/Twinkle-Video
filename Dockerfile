@@ -6,6 +6,9 @@ WORKDIR /app/web
 ARG BUILD_NODE_OPTIONS
 ARG NEXT_BUILD_CPUS
 ARG PNPM_VERSION=11.9.0
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+ARG APT_MIRROR=https://deb.debian.org
+ENV COREPACK_NPM_REGISTRY=${NPM_REGISTRY}
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV CI=1
 ENV NODE_OPTIONS=${BUILD_NODE_OPTIONS}
@@ -14,6 +17,7 @@ ENV PNPM_HOME=/pnpm
 ENV PATH=${PNPM_HOME}:${PATH}
 
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+RUN pnpm config set registry ${NPM_REGISTRY}
 
 COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile --store-dir=/pnpm/store
@@ -31,6 +35,7 @@ RUN set -eux; \
 FROM node:22-bookworm-slim
 
 WORKDIR /app
+ARG APT_MIRROR=https://deb.debian.org
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
@@ -40,7 +45,7 @@ ENV VOZEB_PRO_INTERNAL_ORIGIN=http://127.0.0.1:3000
 ENV NODE_OPTIONS=--max-old-space-size=384
 ENV UV_THREADPOOL_SIZE=2
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates ffmpeg fonts-noto-cjk postgresql-client && rm -rf /var/lib/apt/lists/*
+RUN sed -i -e "s|http://deb.debian.org/debian-security|${APT_MIRROR}/debian-security|g" -e "s|http://deb.debian.org/debian|${APT_MIRROR}/debian|g" /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends ca-certificates ffmpeg fonts-noto-cjk postgresql-client && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /app/web/scripts
 
 COPY VERSION /app/VERSION
