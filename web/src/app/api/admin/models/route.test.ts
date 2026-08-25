@@ -37,19 +37,20 @@ describe("admin models route", () => {
         expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/v1/models", expect.objectContaining({ headers: { authorization: "Bearer test-secret-value" } }));
     });
 
-    it("uses the bound admin key and returns the stable template ID for a Twinkle Model channel", async () => {
-        const fetchMock = vi.fn(async () => Response.json({ data: [{ id: "twinkle-text" }] }));
+    it("uses the bound admin key and documented video catalog for a Twinkle Model channel", async () => {
+        const fetchMock = vi.fn(async () => Response.json({ object: "list", data: [{ id: "Seedance-2.0-Fast-Official-480p", object: "video.model", type: "video" }] }));
         vi.stubGlobal("fetch", fetchMock);
 
-        const response = await POST(request({ protocol: "compatible", credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认" }));
+        const response = await POST(request({ protocol: "compatible", modelCatalogPaths: ["/v1/models"], credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认" }));
 
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({
-            models: ["twinkle-text"],
+            models: ["Seedance-2.0-Fast-Official-480p"],
+            modelCapabilities: { "seedance-2.0-fast-official-480p": "video" },
             recommendedConfig: { credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认", defaultApiKeyTemplateId: "template-37" },
         });
         expect(mocks.resolveTwinkleModelChannelCredential).toHaveBeenCalledWith("admin", { templateId: undefined, defaultKeyName: "VOZEB 默认" });
-        expect(fetchMock).toHaveBeenCalledWith("https://big-model.smart-agi.com/v1/models", expect.objectContaining({ headers: { authorization: "Bearer personal-key" } }));
+        expect(fetchMock).toHaveBeenCalledWith("https://big-model.smart-agi.com/v1/videos/models", expect.objectContaining({ headers: { authorization: "Bearer personal-key" } }));
     });
 
     it("loads a keyless Stable Diffusion model catalog without authentication", async () => {

@@ -62,7 +62,7 @@ export async function GET(request: Request, context: RouteContext) {
             emit(initialOrder);
             if (closed) return;
 
-            void subscribeBillingOrderEvent(id, () => void emitLatest().catch(close))
+            void subscribeBillingOrderEvent(initialOrder.id, () => void emitLatest().catch(close))
                 .then(async (release) => {
                     if (closed) {
                         release();

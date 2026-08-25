@@ -227,6 +227,9 @@ test("billing result applies the paid SSE event and closes the subscription", as
     });
 
     let eventRequests = 0;
+    await page.route(/\/api\/billing\/orders\/VZ-E2E-SSE-001\/check$/, async (route) => {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, data: { order: billingOrder("pending") }, msg: "支付状态已更新" }) });
+    });
     await page.route(/\/api\/billing\/orders\/e2e-sse-order\/events$/, async (route) => {
         eventRequests += 1;
         const serialize = (status: "pending" | "paid") => `data: ${JSON.stringify({ code: 0, data: { order: billingOrder(status) }, msg: "" })}\n\n`;
@@ -241,7 +244,7 @@ test("billing result applies the paid SSE event and closes the subscription", as
         });
     });
 
-    await page.goto("/billing/success?orderId=e2e-sse-order", { waitUntil: "domcontentloaded" });
+    await page.goto("/billing/success?out_trade_no=VZ-E2E-SSE-001", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "支付成功" })).toBeVisible();
     await expect(page.getByText("VZ-E2E-SSE-001", { exact: true })).toBeVisible();
     await expect(page.getByText("已支付", { exact: true })).toBeVisible();
@@ -249,4 +252,72 @@ test("billing result applies the paid SSE event and closes the subscription", as
     await expect.poll(() => page.evaluate(() => (window as typeof window & { __billingSseStats?: { created: number; closed: number; active: number } }).__billingSseStats)).toEqual({ created: 1, closed: 1, active: 0 });
     expect(eventRequests).toBe(1);
     await expectNoHorizontalOverflow(page, "billing paid result");
+});
+
+test("EasyPay QR checkout stays on the QR page and completes through status check", async ({ page }) => {
+    const pendingOrder = {
+        ...billingOrder("pending"),
+        id: "e2e-easypay-order",
+        orderNo: "VZ-E2E-EASYPAY-001",
+        provider: "easypay",
+        subject: "E2E 易支付二维码",
+        amountCents: 100,
+        listAmountCents: 100,
+    };
+    const paidOrder = { ...pendingOrder, status: "paid", paidAt: TIMESTAMP, updatedAt: "2026-08-11T00:00:01.000Z" };
+    const product = {
+        id: "e2e-easypay-product",
+        productKind: "points",
+        name: "易支付测试积分包",
+        description: "验证二维码支付流程",
+        amountCents: 100,
+        currency: "CNY",
+        pointsAmount: 10,
+        dailyPoints: 0,
+        periodDays: 0,
+        enabled: true,
+        sortOrder: 1,
+        pricing: { listUnitAmountCents: 100, saleUnitAmountCents: 100, discountCents: 0 },
+        createdAt: TIMESTAMP,
+        updatedAt: TIMESTAMP,
+    };
+
+    await page.route(/\/api\/billing\/products$/, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, data: { products: [product], paymentProviders: ["easypay"] }, msg: "OK" }) }));
+    await page.route(/\/api\/billing\/coupons(?:\?.*)?$/, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, data: { coupons: [], total: 0, page: 1, pageSize: 50 }, msg: "OK" }) }));
+    await page.route(/\/api\/billing\/quotes$/, (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ code: 0, data: { quote: { productId: product.id, quantity: 1, listAmountCents: 100, promotionDiscountCents: 0, couponDiscountCents: 0, payableAmountCents: 100, pricingSnapshot: null } }, msg: "OK" }),
+        }),
+    );
+    await page.route(/\/api\/billing\/orders$/, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, data: { order: pendingOrder }, msg: "订单已创建" }) }));
+    await page.route(/\/api\/billing\/orders\/e2e-easypay-order\/checkout$/, (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+                code: 0,
+                data: { checkout: { provider: "easypay", orderId: pendingOrder.id, orderNo: pendingOrder.orderNo, kind: "qr", url: "https://pay.example/qr/e2e", qrContent: "https://pay.example/qr/e2e" } },
+                msg: "支付参数已创建",
+            }),
+        }),
+    );
+    await page.route(/\/api\/billing\/orders\/e2e-easypay-order\/events$/, (route) =>
+        route.fulfill({ status: 200, headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache" }, body: `data: ${JSON.stringify({ code: 0, data: { order: pendingOrder }, msg: "" })}\n\n` }),
+    );
+    await page.route(/\/api\/billing\/orders\/e2e-easypay-order\/check$/, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, data: { order: paidOrder }, msg: "支付状态已更新" }) }));
+
+    await page.goto(`/billing/checkout?product=${product.id}`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: "确认订单并继续支付" }).click();
+
+    await expect(page.getByRole("heading", { name: "支付订单已创建" })).toBeVisible();
+    await expect(page.getByText(`订单号 ${pendingOrder.orderNo}`, { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "检查支付结果" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "前往支付" })).toHaveCount(0);
+    await page.getByRole("button", { name: "检查支付结果" }).click();
+
+    await expect(page.getByRole("heading", { name: "支付成功" })).toBeVisible();
+    await expect(page.getByText(pendingOrder.orderNo, { exact: true })).toBeVisible();
+    await expectNoHorizontalOverflow(page, "EasyPay QR checkout result");
 });

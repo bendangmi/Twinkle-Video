@@ -4,6 +4,50 @@ import { expect, test, type APIRequestContext, type Locator } from "@playwright/
 
 import { billingProductsFixture, expectDialogWithinViewport, expectNoHorizontalOverflow, masonryGalleryFixture, masonryLayoutIsReady, openCreativeHistory, readMasonryLayout } from "./responsive-helpers";
 
+test("Twinkle Model channel drafts advance before template_id is assigned", async ({ page, request }) => {
+    const beforeResponse = await request.get("/api/admin/settings");
+    expect(beforeResponse.ok(), await beforeResponse.text()).toBe(true);
+    const before = ((await beforeResponse.json()) as { settings: { systemChannels: unknown[]; logicalModels: unknown[]; defaultModels: Record<string, unknown> } }).settings;
+    const channelName = `E2E Twinkle Model ${randomUUID().slice(0, 8)}`;
+    const defaultKeyName = `E2E 默认密钥 ${randomUUID().slice(0, 8)}`;
+
+    try {
+        await page.goto("/admin?section=channels", { waitUntil: "domcontentloaded" });
+        await page.getByRole("button", { name: /接入(?:新)?渠道/ }).click();
+        const drawer = page.getByRole("dialog", { name: "接入新渠道" });
+        await expect(drawer).toBeVisible();
+        await drawer.getByRole("button", { name: /^OpenAI/ }).click();
+        await drawer.getByRole("button", { name: "开始配置" }).click();
+        await drawer.getByLabel("渠道名称").fill(channelName);
+        await drawer.getByLabel("密钥来源").click();
+        await page.locator(".ant-select-dropdown:visible").getByText("用户 Twinkle Model 个人密钥", { exact: true }).click();
+        await drawer.getByLabel("Twinkle Model 默认密钥名称").fill(defaultKeyName);
+
+        const next = drawer.getByRole("button", { name: "下一步" });
+        await expect(next).toBeEnabled();
+        await expect(drawer.getByText("同步模型后系统保存稳定 template_id", { exact: false })).toBeVisible();
+        await next.click();
+        await expect(drawer.getByText("上游模型", { exact: true })).toBeVisible();
+        await drawer.getByRole("button", { name: "保存草稿" }).click();
+        await expect(page.getByText("渠道草稿已保存", { exact: true })).toBeVisible();
+        await expect(drawer).toBeHidden();
+        await expectNoHorizontalOverflow(page);
+
+        const persistedResponse = await request.get("/api/admin/settings");
+        expect(persistedResponse.ok(), await persistedResponse.text()).toBe(true);
+        const persisted = (
+            (await persistedResponse.json()) as {
+                settings: { systemChannels: Array<{ name: string; enabled: boolean; advancedConfig?: { credentialSource?: string; defaultApiKeyName?: string; defaultApiKeyTemplateId?: string } }> };
+            }
+        ).settings.systemChannels.find((channel) => channel.name === channelName);
+        expect(persisted).toMatchObject({ enabled: false, advancedConfig: { credentialSource: "twinkle-model", defaultApiKeyName: defaultKeyName } });
+        expect(persisted?.advancedConfig).not.toHaveProperty("defaultApiKeyTemplateId");
+    } finally {
+        const restored = await request.patch("/api/admin/settings", { data: { systemChannels: before.systemChannels, logicalModels: before.logicalModels, defaultModels: before.defaultModels } });
+        expect(restored.ok(), await restored.text()).toBe(true);
+    }
+});
+
 test("creative workspaces remain usable without horizontal overflow in light and dark themes", async ({ page, request }) => {
     const created = await request.post("/api/drama/projects", { data: { title: "E2E 短剧项目", ratio: "9:16" } });
     expect(created.ok(), await created.text()).toBe(true);

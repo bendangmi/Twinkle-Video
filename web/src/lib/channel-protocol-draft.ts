@@ -86,7 +86,7 @@ export function parseDeterministicProtocolDraft(input: { text: string; documenta
                 ...(createPath ? { createPath } : {}),
                 ...(advanced.editPath ? { editPath: explicitPath || advanced.editPath } : {}),
                 ...(advanced.imageToVideoPath ? { imageToVideoPath: explicitPath || advanced.imageToVideoPath } : {}),
-                ...(role === "query" && request ? { queryPath: request.path } : role === "create" && advanced.queryPath ? { queryPath: advanced.queryPath } : {}),
+                ...(role === "query" && request ? { queryPath: request.path } : role === "result" && request ? { resultField: request.path } : role === "create" && advanced.queryPath ? { queryPath: advanced.queryPath } : {}),
                 ...(role === "cancel" && request ? { cancelPath: request.path, cancelMethod: request.method === "DELETE" ? "DELETE" : "POST" } : {}),
                 ...(role === "create" && advanced.requestTemplate ? { requestTemplate: advanced.requestTemplate } : {}),
                 ...(role !== "cancel" && advanced.resultField ? { resultField: advanced.resultField } : {}),
@@ -118,10 +118,27 @@ export function parseDeterministicProtocolDraft(input: { text: string; documenta
         ...auth,
         documentationUrl: input.documentationUrl,
         modelCatalogPaths,
-        operations: operations.map(({ baseUrl: _baseUrl, summary: _summary, ...operation }) => operation),
+        operations: operations.map(({ baseUrl: _baseUrl, summary: _summary, ...operation }) => ({ ...operation, config: normalizeOperationPaths(operation.config, baseUrl) })),
         summary: Array.from(new Set(operations.flatMap((item) => item.summary))).slice(0, 12),
         assisted: false,
     });
+}
+
+function normalizeOperationPaths(config: SystemChannelModelConfig, baseUrl: string): SystemChannelModelConfig {
+    let basePath = "";
+    try {
+        basePath = new URL(baseUrl).pathname.replace(/\/+$/, "");
+    } catch {
+        return config;
+    }
+    if (!basePath || basePath === "/") return config;
+    const pathKeys = ["createPath", "editPath", "imageToVideoPath", "queryPath", "cancelPath", "resultField"] as const;
+    return Object.fromEntries(
+        Object.entries(config).map(([key, value]) => {
+            if (!pathKeys.includes(key as (typeof pathKeys)[number]) || typeof value !== "string" || !value.startsWith(`${basePath}/`)) return [key, value];
+            return [key, value.slice(basePath.length)];
+        }),
+    ) as SystemChannelModelConfig;
 }
 
 function inferDocumentedBaseUrl(source: string, operations: Array<ChannelProtocolOperationDraft & { baseUrl?: string }>) {
@@ -259,7 +276,7 @@ function normalizeExampleRequest(methodValue: string, value: string): ExampleReq
 function requestRole(request: ExampleRequestLine | null) {
     if (!request) return "create" as const;
     if (request.method === "DELETE" || (request.method === "POST" && /(?:^|[/_-])(?:cancel|abort|terminate)(?:$|[/?_-])/i.test(request.path))) return "cancel" as const;
-    if (request.method === "GET" && /:task_id\b/i.test(request.path)) return "query" as const;
+    if (request.method === "GET" && /:task_id\b/i.test(request.path)) return /\/content(?:$|[/?])/i.test(request.path) ? ("result" as const) : ("query" as const);
     return "create" as const;
 }
 

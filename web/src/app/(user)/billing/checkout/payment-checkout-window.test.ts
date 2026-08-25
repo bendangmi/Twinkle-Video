@@ -37,6 +37,13 @@ describe("payment checkout window", () => {
         ).toEqual({ status: "blocked", fallbackValue: "https://pay.example/checkout" });
     });
 
+    it("never opens a second payment page for QR checkouts", () => {
+        const open = vi.fn();
+
+        expect(openPaymentCheckoutWindow(checkout({ kind: "qr", qrContent: "https://pay.example/qr" }), open)).toEqual({ status: "qr", fallbackValue: "https://pay.example/qr" });
+        expect(open).not.toHaveBeenCalled();
+    });
+
     it("rejects unsafe redirect urls before opening a blank page", () => {
         const open = vi.fn();
 

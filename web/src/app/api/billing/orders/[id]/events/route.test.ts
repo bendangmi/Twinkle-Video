@@ -54,6 +54,14 @@ describe("GET /api/billing/orders/[id]/events", () => {
         expect(mocks.subscribe).not.toHaveBeenCalled();
     });
 
+    it("subscribes with the internal ID when the route receives an order number", async () => {
+        mocks.getBillingOrderForUser.mockResolvedValue(pendingOrder);
+
+        const response = await GET(new Request("http://localhost/api/billing/orders/VZ001/events"), { params: Promise.resolve({ id: "VZ001" }) });
+        await vi.waitFor(() => expect(mocks.subscribe).toHaveBeenCalledWith("order-one", expect.any(Function)));
+        await response.body?.cancel();
+    });
+
     it("requires a signed-in user", async () => {
         mocks.getCurrentUser.mockResolvedValue(null);
 

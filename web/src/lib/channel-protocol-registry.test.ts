@@ -4,6 +4,8 @@ import type { SystemModelChannel } from "@/lib/auth/store";
 import {
     applyChannelProtocol,
     applyModelProtocol,
+    channelConnectionConfigured,
+    channelConnectionReady,
     channelCredentialsReady,
     channelProtocolDefinition,
     channelProtocolDefinitions,
@@ -143,6 +145,39 @@ describe("channel protocol registry", () => {
         expect(configured.advancedConfig?.authMode).toBe("none");
         expect(channelCredentialsReady(configured)).toBe(true);
         expect(protocolAuthHeaders("", configured.advancedConfig)).toEqual({});
+    });
+
+    it("lets a Twinkle Model channel reach model sync before template_id exists", () => {
+        const configured = {
+            ...applyChannelProtocol({ ...channel, apiKey: "", hasApiKey: false }, "openai"),
+            advancedConfig: {
+                ...applyChannelProtocol(channel, "openai").advancedConfig!,
+                credentialSource: "twinkle-model" as const,
+                defaultApiKeyName: "VOZEB 默认",
+            },
+        };
+
+        expect(channelConnectionConfigured(configured)).toBe(true);
+        expect(channelConnectionReady(configured)).toBe(false);
+        expect(channelProtocolValidationErrors(configured)).toEqual([]);
+
+        const synchronized = { ...configured, enabled: true, advancedConfig: { ...configured.advancedConfig, defaultApiKeyTemplateId: "template-37" } };
+        expect(channelConnectionReady(synchronized)).toBe(true);
+        expect(channelProtocolValidationErrors(synchronized)).toEqual([]);
+    });
+
+    it("requires the stable Twinkle template only when enabling the channel", () => {
+        const draft = {
+            ...applyChannelProtocol({ ...channel, apiKey: "", hasApiKey: false }, "openai"),
+            advancedConfig: {
+                ...applyChannelProtocol(channel, "openai").advancedConfig!,
+                credentialSource: "twinkle-model" as const,
+                defaultApiKeyName: "VOZEB 默认",
+            },
+        };
+
+        expect(channelProtocolValidationErrors(draft)).toEqual([]);
+        expect(channelProtocolValidationErrors({ ...draft, enabled: true })).toContain("测试渠道 必须先同步模型并确认默认密钥 template_id");
     });
 
     it("uses the Gemini API key header for the explicit Gemini protocol", () => {

@@ -158,6 +158,26 @@ describe("text task runtime recovery", () => {
         expect(state.attempts?.map(({ status }) => status)).toEqual(["failed", "succeeded"]);
     });
 
+    it("records local billing only after a personal Twinkle failure falls back to the static channel", async () => {
+        state = textTask(openAiConfig("twinkle-personal", "https://personal.example"), [openAiConfig("twinkle-video", "https://static.example")]);
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(Response.json({ error: { message: "个人密钥暂不可用" } }, { status: 503 }))
+            .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: "静态渠道成功" } }] }, { headers: { "x-vozeb-pro-points-cost": "2", "x-vozeb-pro-points-record-id": "static-points" } }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        await expect(runTextTaskStep(state, "http://internal", "")).resolves.toEqual({ state: "completed" });
+
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(state.config.channelId).toBe("twinkle-video");
+        expect(state.billing).toEqual({ pointsCost: 2, pointsRecordId: "static-points", refunded: false });
+        expect(state.attempts).toMatchObject([
+            { channelId: "twinkle-personal", status: "failed" },
+            { channelId: "twinkle-video", status: "succeeded", pointsCost: 2, pointsRecordId: "static-points" },
+        ]);
+        expect(state.attempts?.[0]).not.toHaveProperty("pointsRecordId");
+    });
+
     it("switches models instead of trying another protocol on the same model", async () => {
         state = textTask(responsesConfig("channel-one", "https://one.example"), [openAiConfig("channel-two", "https://two.example")]);
         const fetchMock = vi

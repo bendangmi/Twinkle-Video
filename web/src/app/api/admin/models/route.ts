@@ -118,7 +118,8 @@ export async function POST(request: Request) {
     advancedConfig.protocol = protocolDefinition.id;
     advancedConfig.authMode = resolveChannelAuthMode(advancedConfig);
     if (!apiKey && advancedConfig.authMode !== "none") return NextResponse.json({ error: "请先填写 Base URL 和 API Key" }, { status: 400 });
-    const modelCatalogPaths = body.modelCatalogPaths ?? savedChannel?.advancedConfig?.modelCatalogPaths ?? protocolDefinition.modelCatalogPaths;
+    const modelCatalogPaths =
+        advancedConfig.credentialSource === "twinkle-model" ? channelProtocolDefinition("twinkle-model").modelCatalogPaths : (body.modelCatalogPaths ?? savedChannel?.advancedConfig?.modelCatalogPaths ?? protocolDefinition.modelCatalogPaths);
     const hasConfiguredCatalog = Array.isArray(modelCatalogPaths) && modelCatalogPaths.some((path) => typeof path === "string" && path.trim());
 
     if (protocolDefinition.builtInModels?.length && !hasConfiguredCatalog) {

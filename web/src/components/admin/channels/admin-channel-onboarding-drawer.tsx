@@ -8,7 +8,17 @@ import { AdminChannelProtocolSetup } from "@/components/admin/admin-channel-prot
 import { LabeledControl } from "@/components/admin/admin-settings-controls";
 import { createSystemChannel } from "@/components/admin/admin-dashboard-elements";
 import type { LogicalModelCapability, SystemChannelAuthMode, SystemChannelProtocol, SystemModelChannel } from "@/lib/auth/store";
-import { applyChannelProtocol, channelConnectionReady, channelProtocolDefinition, channelProtocolOptions, channelRequiresApiKey, channelSupportsModelCatalog, protocolModelConfig, resolveChannelAuthMode } from "@/lib/channel-protocol-registry";
+import {
+    applyChannelProtocol,
+    channelConnectionConfigured,
+    channelConnectionReady,
+    channelProtocolDefinition,
+    channelProtocolOptions,
+    channelRequiresApiKey,
+    channelSupportsModelCatalog,
+    protocolModelConfig,
+    resolveChannelAuthMode,
+} from "@/lib/channel-protocol-registry";
 import { inferModelCapability, normalizeModelId } from "@/lib/model-capability";
 import { capabilityLabel, channelModelCapability, synchronizeLogicalModelsWithChannels } from "@/lib/model-routing-config";
 
@@ -118,7 +128,7 @@ export function AdminChannelOnboardingDrawer({ open, initialProtocol, settings, 
         return <ReviewStep channel={channel} settings={settings} />;
     };
 
-    const nextDisabled = step === 1 ? !channel?.name.trim() || !channelConnectionReady(channel) : step === 2 ? !channel?.models.length : step === 3 ? !modelsSynchronized : false;
+    const nextDisabled = step === 1 ? !channel?.name.trim() || !channelConnectionConfigured(channel) : step === 2 ? !channel?.models.length : step === 3 ? !modelsSynchronized : false;
 
     return (
         <Drawer
@@ -321,6 +331,8 @@ function ConnectionStep({ channel, twinkleModelBaseUrl, onChange }: { channel: S
                             <Input.Password value={channel.apiKey} autoComplete="off" placeholder="仅保存在服务端" onChange={(event) => onChange({ apiKey: event.target.value, clearApiKey: false })} />
                         </LabeledControl>
                     </div>
+                ) : twinkleCredential ? (
+                    <div className="sm:col-span-2 border-y border-stone-200 py-3 text-sm text-stone-600 dark:border-stone-800 dark:text-stone-300">无需在渠道中填写密钥；同步模型后系统保存稳定 template_id，运行时按当前用户绑定账号获取个人密钥。</div>
                 ) : (
                     <div className="sm:col-span-2 border-y border-stone-200 py-3 text-sm text-stone-600 dark:border-stone-800 dark:text-stone-300">当前协议无需 API Key，服务端不会发送鉴权请求头。</div>
                 )}

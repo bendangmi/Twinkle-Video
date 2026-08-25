@@ -7,7 +7,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CreditSymbol, formatCreditAmount } from "@/constant/credits";
 import { useCopyText } from "@/hooks/use-copy-text";
-import { createBillingOrder, createPaymentCheckout, listBillingCoupons, listBillingProducts, quoteBillingOrder, subscribeBillingOrder, type BillingProduct, type BillingQuote, type PaymentCheckout, type UserCoupon } from "@/services/api/billing";
+import {
+    checkBillingOrderPayment,
+    createBillingOrder,
+    createPaymentCheckout,
+    listBillingCoupons,
+    listBillingProducts,
+    quoteBillingOrder,
+    subscribeBillingOrder,
+    type BillingProduct,
+    type BillingQuote,
+    type PaymentCheckout,
+    type UserCoupon,
+} from "@/services/api/billing";
 import { openPaymentCheckoutWindow } from "./payment-checkout-window";
 
 const providers = [
@@ -36,6 +48,7 @@ export function BillingCheckoutPage({ productId }: { productId: string }) {
     const [mobileSection, setMobileSection] = useState<"summary" | "payment">("payment");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [checkingPayment, setCheckingPayment] = useState(false);
     const [checkout, setCheckout] = useState<PaymentCheckout | null>(null);
     const quoteRequest = useRef(0);
     const availableProviders = useMemo(() => providers.filter((item) => paymentProviders.includes(item.value)), [paymentProviders]);
@@ -136,6 +149,20 @@ export function BillingCheckoutPage({ productId }: { productId: string }) {
         }
         if (result.fallbackValue) copyText(result.fallbackValue, result.status === "blocked" ? "支付信息已复制，请粘贴到浏览器打开" : "支付信息已复制");
         message.warning(result.status === "blocked" ? "浏览器阻止了支付窗口，已复制支付信息。" : "支付地址无效或无法打开，请复制支付信息后手动打开。");
+    };
+
+    const checkCheckoutPayment = async () => {
+        if (!checkout || checkingPayment) return;
+        setCheckingPayment(true);
+        try {
+            const { order } = await checkBillingOrderPayment(checkout.orderId);
+            if (order.status === "paid") window.location.assign(`/billing/success?orderId=${encodeURIComponent(order.id)}`);
+            else message.info("暂未查询到支付成功，请完成扫码支付后再检查");
+        } catch (error) {
+            message.error(error instanceof Error ? error.message : "检查支付状态失败");
+        } finally {
+            setCheckingPayment(false);
+        }
     };
 
     useEffect(() => {
@@ -399,9 +426,15 @@ export function BillingCheckoutPage({ productId }: { productId: string }) {
                                     <Button icon={<Copy className="size-4" />} onClick={() => copyText(checkout.qrContent || checkout.url || checkout.orderNo, "支付信息已复制")}>
                                         复制支付信息
                                     </Button>
-                                    <Button type="primary" className="profile-primary-button" icon={<ExternalLink className="size-4" />} onClick={openCheckout}>
-                                        {checkout.kind === "manual" ? "查看订单说明" : "前往支付"}
-                                    </Button>
+                                    {checkout.kind === "qr" ? (
+                                        <Button icon={<RefreshCw className="size-4" />} loading={checkingPayment} onClick={() => void checkCheckoutPayment()}>
+                                            检查支付结果
+                                        </Button>
+                                    ) : (
+                                        <Button type="primary" className="profile-primary-button" icon={<ExternalLink className="size-4" />} onClick={openCheckout}>
+                                            {checkout.kind === "manual" ? "查看订单说明" : "前往支付"}
+                                        </Button>
+                                    )}
                                 </div>
                                 <Link href="/profile?section=orders" className="mt-5 text-sm font-medium text-stone-500 hover:text-stone-950 dark:text-stone-400 dark:hover:text-white">
                                     返回个人中心查看订单

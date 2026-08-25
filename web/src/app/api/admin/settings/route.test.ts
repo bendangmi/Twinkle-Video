@@ -50,6 +50,43 @@ describe("admin settings model routing", () => {
         expect(mocks.safeRecordAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "admin.settings.update", metadata: { fields: expect.arrayContaining(["systemChannels", "logicalModels", "defaultModels"]) } }));
     });
 
+    it("saves a disabled Twinkle Model draft before model sync assigns template_id", async () => {
+        const draft = {
+            id: "twinkle-draft",
+            name: "Twinkle Model 渠道",
+            baseUrl: "https://big-model.smart-agi.com",
+            apiKey: "",
+            apiFormat: "openai",
+            models: [],
+            enabled: false,
+            advancedConfig: { protocol: "openai", credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认" },
+        };
+
+        const response = await PATCH(request({ systemChannels: [...savedSettings.systemChannels, draft] }));
+
+        expect(response.status).toBe(200);
+        expect(mocks.setAuthSettings).toHaveBeenCalledWith(expect.objectContaining({ systemChannels: expect.arrayContaining([expect.objectContaining({ id: "twinkle-draft", enabled: false })]) }));
+    });
+
+    it("rejects enabling a Twinkle Model channel until model sync assigns template_id", async () => {
+        const channel = {
+            id: "twinkle-live",
+            name: "Twinkle Model 渠道",
+            baseUrl: "https://big-model.smart-agi.com",
+            apiKey: "",
+            apiFormat: "openai",
+            models: ["twinkle-text"],
+            enabled: true,
+            advancedConfig: { protocol: "openai", credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认" },
+        };
+
+        const response = await PATCH(request({ systemChannels: [...savedSettings.systemChannels, channel] }));
+
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({ error: "Twinkle Model 渠道 必须先同步模型并确认默认密钥 template_id" });
+        expect(mocks.setAuthSettings).not.toHaveBeenCalled();
+    });
+
     it("deletes a channel together with stale logical bindings and defaults", async () => {
         const response = await PATCH(request({ systemChannels: [], logicalModels: savedSettings.logicalModels, defaultModels: savedSettings.defaultModels }));
         expect(response.status).toBe(200);

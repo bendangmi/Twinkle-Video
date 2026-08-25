@@ -262,6 +262,27 @@ describe("Twinkle Model personal credential proxy", () => {
         expect(mocks.consumeUserPoints).not.toHaveBeenCalled();
         expect(mocks.resolveTwinkleCredential).toHaveBeenCalledWith("user-one", expect.objectContaining({ templateId: "template-one" }));
     });
+
+    it("refreshes the user's key once after an upstream 401 and still avoids local billing", async () => {
+        mocks.resolveTwinkleCredential
+            .mockResolvedValueOnce({ apiKey: "stale-personal-key", templateId: "template-one", templateName: "VOZEB 默认" })
+            .mockResolvedValueOnce({ apiKey: "fresh-personal-key", templateId: "template-one", templateName: "VOZEB 默认" });
+        const authorizationHeaders: Array<string | null> = [];
+        const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+            authorizationHeaders.push(new Headers(init?.headers).get("authorization"));
+            return authorizationHeaders.length === 1
+                ? new Response(JSON.stringify({ error: "invalid key" }), { status: 401, headers: { "content-type": "application/json" } })
+                : new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { headers: { "content-type": "application/json" } });
+        });
+
+        const response = await POST(chatRequest({ model: "vendor-text", messages: [{ role: "user", content: "hello" }] }), textContext());
+
+        expect(response.status).toBe(200);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(authorizationHeaders).toEqual(["Bearer stale-personal-key", "Bearer fresh-personal-key"]);
+        expect(mocks.resolveTwinkleCredential).toHaveBeenLastCalledWith("user-one", expect.objectContaining({ templateId: "template-one", forceRefresh: true }));
+        expect(mocks.consumeUserPoints).not.toHaveBeenCalled();
+    });
 });
 
 describe("GlobalAiOpc native text proxy", () => {

@@ -150,9 +150,11 @@ export function SystemChannelEditor({
                         <div className="mt-1 truncate text-xs text-stone-500 dark:text-stone-400">{channel.baseUrl || "未填写 Base URL"}</div>
                         <div className="mt-1 text-xs text-stone-400 dark:text-stone-500">
                             {canSyncModels
-                                ? requiresApiKey
-                                    ? "填写名称、Base URL 和 API Key，再同步上游模型。"
-                                    : "填写名称和 Base URL 后即可同步上游模型；当前协议无需 API Key。"
+                                ? twinkleCredential
+                                    ? "填写默认密钥名称后同步模型；同步成功会保存稳定 template_id，运行时使用当前用户个人密钥。"
+                                    : requiresApiKey
+                                      ? "填写名称、Base URL 和 API Key，再同步上游模型。"
+                                      : "填写名称和 Base URL 后即可同步上游模型；当前协议无需 API Key。"
                                 : hasDocumentedModels
                                   ? "填写连接信息后即可使用官方文档预置模型。"
                                   : "填写连接信息后手动添加上游模型 ID。"}

@@ -1,5 +1,6 @@
 import { BillingResultPage } from "../billing-result-page";
+import { resolveBillingResultOrderReference } from "../billing-result-order-reference";
 
-export default async function BillingSuccessPage({ searchParams }: { searchParams: Promise<{ orderId?: string }> }) {
-    return <BillingResultPage mode="success" orderId={(await searchParams).orderId?.trim() || ""} />;
+export default async function BillingSuccessPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+    return <BillingResultPage mode="success" orderId={resolveBillingResultOrderReference(await searchParams)} />;
 }

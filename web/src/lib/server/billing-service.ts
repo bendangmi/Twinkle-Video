@@ -150,9 +150,18 @@ export async function getAdminBillingSummary(input: { startDate?: unknown; endDa
     });
 }
 
-export async function getBillingOrderForUser(userId: string, orderId: string) {
-    await expirePendingBillingOrders({ orderId });
-    const order = await createPostgresRepositories().billing.getOrderById(normalizeId(orderId));
+export async function getBillingOrderForUser(userId: string, orderReference: string) {
+    const reference = normalizeId(orderReference);
+    await expirePendingBillingOrders({ orderId: reference });
+    const repository = createPostgresRepositories().billing;
+    let order = await repository.getOrderById(reference);
+    if (!order) {
+        order = await repository.getOrderByOrderNo(reference);
+        if (order) {
+            await expirePendingBillingOrders({ orderId: order.id });
+            order = await repository.getOrderById(order.id);
+        }
+    }
     if (!order || order.userId !== userId) throw new BillingInputError("订单不存在", 404);
     return order;
 }

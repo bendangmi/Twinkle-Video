@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, Clock3, ReceiptText, RefreshCw, RotateCcw, XCi
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { cancelBillingOrder, getBillingOrder, subscribeBillingOrder, type BillingOrder } from "@/services/api/billing";
+import { cancelBillingOrder, checkBillingOrderPayment, subscribeBillingOrder, type BillingOrder } from "@/services/api/billing";
 import { useUserStore, type LocalUser } from "@/stores/use-user-store";
 
 export function BillingResultPage({ mode, orderId }: { mode: "success" | "cancel"; orderId: string }) {
@@ -43,17 +43,29 @@ export function BillingResultPage({ mode, orderId }: { mode: "success" | "cancel
             return;
         }
         if (mode === "success") {
-            const unsubscribe = subscribeBillingOrder(
-                orderId,
-                (nextOrder) => {
-                    if (active) applyOrder(nextOrder);
-                },
-                () => {
+            let unsubscribe: () => void = () => undefined;
+            void checkBillingOrderPayment(orderId)
+                .then(({ order: nextOrder }) => {
                     if (!active) return;
+                    applyOrder(nextOrder);
+                    if (nextOrder.status !== "pending") return;
+                    unsubscribe = subscribeBillingOrder(
+                        nextOrder.id,
+                        (updatedOrder) => {
+                            if (active) applyOrder(updatedOrder);
+                        },
+                        () => {
+                            if (!active) return;
+                            setLoading(false);
+                            setError("实时状态连接暂时中断，正在自动恢复，也可以手动检查订单。");
+                        },
+                    );
+                })
+                .catch((value) => {
+                    if (!active) return;
+                    setError(value instanceof Error ? value.message : "支付结果加载失败");
                     setLoading(false);
-                    setError("实时状态连接暂时中断，正在自动恢复，也可以手动检查订单。");
-                },
-            );
+                });
             return () => {
                 active = false;
                 unsubscribe();
@@ -78,7 +90,7 @@ export function BillingResultPage({ mode, orderId }: { mode: "success" | "cancel
         if (!orderId || checking) return;
         setChecking(true);
         try {
-            applyOrder((await getBillingOrder(orderId)).order);
+            applyOrder((await checkBillingOrderPayment(order?.id || orderId)).order);
         } catch (value) {
             setError(value instanceof Error ? value.message : "支付结果加载失败");
         } finally {

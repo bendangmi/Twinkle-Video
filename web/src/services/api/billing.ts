@@ -155,6 +155,10 @@ export async function getBillingOrder(orderId: string) {
     return requestBilling<{ order: BillingOrder }>(`/api/billing/orders/${encodeURIComponent(orderId)}`);
 }
 
+export async function checkBillingOrderPayment(orderId: string) {
+    return requestBilling<{ order: BillingOrder }>(`/api/billing/orders/${encodeURIComponent(orderId)}/check`, { method: "POST" });
+}
+
 export function subscribeBillingOrder(orderId: string, onOrder: (order: BillingOrder) => void, onError: () => void) {
     const source = new EventSource(`/api/billing/orders/${encodeURIComponent(orderId)}/events`);
     source.onmessage = (event) => {

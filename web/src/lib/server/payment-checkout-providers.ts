@@ -130,8 +130,9 @@ async function createEasyPayCheckout(order: BillingOrderRecord, options: CreateP
     const pkey = requiredConfig(paymentConfig, "VOZEB_PRO_EASYPAY_PKEY", "EASYPAY_PKEY");
     const apiBase = normalizeEasyPayApiBase(requiredConfig(paymentConfig, "VOZEB_PRO_EASYPAY_API_BASE", "EASYPAY_API_BASE"));
     const paymentType = normalizeEasyPayPaymentType(getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_PAYMENT_TYPE", "EASYPAY_PAYMENT_TYPE") || "alipay");
-    const notifyUrl = getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_NOTIFY_URL", "EASYPAY_NOTIFY_URL") || `${resolveOrigin(options.origin)}/api/billing/webhooks/easypay`;
-    const returnUrl = getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_RETURN_URL", "EASYPAY_RETURN_URL") || `${resolveOrigin(options.origin)}/billing/success?orderId=${encodeURIComponent(order.id)}`;
+    const origin = resolveOrigin(options.origin);
+    const notifyUrl = getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_NOTIFY_URL", "EASYPAY_NOTIFY_URL") || `${origin}/api/billing/webhooks/easypay`;
+    const returnUrl = appendUrlParameter(getPaymentRuntimeValue(paymentConfig, "VOZEB_PRO_EASYPAY_RETURN_URL", "EASYPAY_RETURN_URL") || `${origin}/billing/success`, "orderId", order.id, origin);
     const params: Record<string, string> = {
         pid,
         type: paymentType,
@@ -177,6 +178,18 @@ async function createEasyPayCheckout(order: BillingOrderRecord, options: CreateP
         providerOrderId: tradeNo || order.orderNo,
         expiresAt: order.expiresAt,
     };
+}
+
+function appendUrlParameter(value: string, key: string, parameterValue: string, origin: string) {
+    try {
+        const url = new URL(value, origin);
+        url.searchParams.set(key, parameterValue);
+        return url.toString();
+    } catch {
+        const [url, hash = ""] = value.split("#", 2);
+        const separator = url.includes("?") ? (url.endsWith("?") || url.endsWith("&") ? "" : "&") : "?";
+        return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(parameterValue)}${hash ? `#${hash}` : ""}`;
+    }
 }
 
 async function createAlipayFaceToFaceCheckout(gateway: string, params: Record<string, string>, order: BillingOrderRecord, paymentConfig: PaymentRuntimeConfig): Promise<PaymentCheckoutResult> {

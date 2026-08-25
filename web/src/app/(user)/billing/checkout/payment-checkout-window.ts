@@ -2,7 +2,7 @@ import type { PaymentCheckout } from "@/services/api/billing";
 
 import { safePaymentHttpUrl } from "@/lib/payment-url";
 
-export type PaymentCheckoutOpenResult = { status: "opened" | "blocked" | "invalid" | "manual"; fallbackValue?: string };
+export type PaymentCheckoutOpenResult = { status: "opened" | "blocked" | "invalid" | "manual" | "qr"; fallbackValue?: string };
 
 type CheckoutWindow = Pick<Window, "close" | "document" | "location"> & { opener: Window["opener"] };
 type WindowOpen = (url?: string | URL, target?: string, features?: string) => Window | null;
@@ -10,6 +10,7 @@ type WindowOpen = (url?: string | URL, target?: string, features?: string) => Wi
 export function openPaymentCheckoutWindow(checkout: PaymentCheckout, openWindow: WindowOpen = (url, target, features) => window.open(url, target, features)): PaymentCheckoutOpenResult {
     const fallbackValue = checkout.qrContent || checkout.url || checkout.orderNo;
     if (checkout.kind === "manual") return { status: "manual", fallbackValue };
+    if (checkout.kind === "qr") return { status: "qr", fallbackValue };
 
     if (checkout.kind === "redirect") {
         if (!safePaymentUrl(checkout.url)) return { status: "invalid", fallbackValue };

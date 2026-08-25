@@ -3,7 +3,25 @@ import { describe, expect, it } from "vitest";
 import { parseDeterministicProtocolDraft, protocolDraftFromUnknown, redactProtocolSecrets } from "./channel-protocol-draft";
 import { safeProtocolDocumentationUrl } from "./channel-protocol-security";
 
+const twinkleDocument = `
+GET https://big-model.smart-agi.com/v1/videos/models
+POST https://big-model.smart-agi.com/v1/videos
+curl -X POST 'https://big-model.smart-agi.com/v1/videos' -d '{"model":"Seedance-2.0-Fast-Official-480p","prompt":"test"}'
+GET https://big-model.smart-agi.com/v1/videos/{id}
+GET https://big-model.smart-agi.com/v1/videos/{id}/content
+`;
+
 describe("custom channel protocol drafts", () => {
+    it("keeps the Twinkle video catalog and binary content result path", () => {
+        const draft = parseDeterministicProtocolDraft({ text: twinkleDocument });
+
+        expect(draft).toMatchObject({
+            baseUrl: "https://big-model.smart-agi.com/v1",
+            modelCatalogPaths: ["/v1/videos/models"],
+            operations: [{ capability: "video", config: { createPath: "/videos", queryPath: "/videos/:task_id", resultField: "/videos/:task_id/content" } }],
+        });
+    });
+
     it("extracts a complete image operation and model catalog from examples", () => {
         const draft = parseDeterministicProtocolDraft({
             text: `GET https://api.example.com/v1/models

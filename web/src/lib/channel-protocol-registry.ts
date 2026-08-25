@@ -444,6 +444,15 @@ export function channelCredentialsReady(channel: Pick<SystemModelChannel, "apiKe
     return !channelRequiresApiKey(channel) || Boolean(channel.apiKey.trim() || channel.hasApiKey);
 }
 
+export function channelCredentialsConfigured(channel: Pick<SystemModelChannel, "apiKey" | "hasApiKey" | "advancedConfig">) {
+    if (channel.advancedConfig?.credentialSource === "twinkle-model") return Boolean(channel.advancedConfig.defaultApiKeyName?.trim());
+    return channelCredentialsReady(channel);
+}
+
+export function channelConnectionConfigured(channel: Pick<SystemModelChannel, "baseUrl" | "apiKey" | "hasApiKey" | "advancedConfig">) {
+    return Boolean(channel.baseUrl.trim() && channelCredentialsConfigured(channel));
+}
+
 export function channelConnectionReady(channel: Pick<SystemModelChannel, "baseUrl" | "apiKey" | "hasApiKey" | "advancedConfig">) {
     return Boolean(channel.baseUrl.trim() && channelCredentialsReady(channel));
 }
@@ -452,8 +461,8 @@ export function channelProtocolValidationErrors(channel: SystemModelChannel) {
     const advanced = channel.advancedConfig;
     if (!advanced) return [];
     const errors: string[] = [];
-    if (advanced.credentialSource === "twinkle-model" && !advanced.defaultApiKeyName?.trim()) errors.push(`${channel.name || "渠道"} 必须填写 Twinkle Model 默认密钥名称`);
-    if (advanced.credentialSource === "twinkle-model" && !advanced.defaultApiKeyTemplateId?.trim()) errors.push(`${channel.name || "渠道"} 必须先同步模型并确认默认密钥 template_id`);
+    if (channel.enabled && advanced.credentialSource === "twinkle-model" && !advanced.defaultApiKeyName?.trim()) errors.push(`${channel.name || "渠道"} 必须填写 Twinkle Model 默认密钥名称`);
+    if (channel.enabled && advanced.credentialSource === "twinkle-model" && !advanced.defaultApiKeyTemplateId?.trim()) errors.push(`${channel.name || "渠道"} 必须先同步模型并确认默认密钥 template_id`);
     const definition = channelProtocolDefinition(advanced.protocol);
     if (definition.strict && advanced.authMode && advanced.authMode !== definition.authMode) errors.push(`${channel.name || "渠道"} 的鉴权方式必须使用 ${definition.label} 协议预设`);
     if (advanced.authMode === "custom-header" && !isSafeAuthHeaderName(advanced.authHeader)) errors.push(`${channel.name || "渠道"} 的自定义鉴权请求头名称无效`);

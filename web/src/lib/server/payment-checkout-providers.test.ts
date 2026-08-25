@@ -196,6 +196,20 @@ describe("payment checkout providers", () => {
         expect(params.get("sign")).toBe(easyPaySign(Object.fromEntries(params.entries()), "epay-pkey"));
         expect(fetchMock).not.toHaveBeenCalled();
     });
+
+    it("adds the internal order ID to a configured EasyPay return URL", async () => {
+        const checkout = await createProviderCheckout(
+            "easypay",
+            { ...order, provider: "easypay", currency: "CNY" },
+            { origin: "https://app.test" },
+            easyPayConfig({ VOZEB_PRO_EASYPAY_PAYMENT_MODE: "popup", VOZEB_PRO_EASYPAY_RETURN_URL: "https://app.test/billing/success?source=easypay" }),
+        );
+        const params = new URL(checkout.url || "").searchParams;
+        const returnUrl = new URL(params.get("return_url") || "");
+
+        expect(returnUrl.searchParams.get("source")).toBe("easypay");
+        expect(returnUrl.searchParams.get("orderId")).toBe(order.id);
+    });
 });
 
 function alipayConfig(mode = "official"): PaymentRuntimeConfig {
