@@ -16,6 +16,7 @@ export type TextTaskConfig = {
     model: string;
     channelId?: string;
     logicalModel?: string;
+    credentialMode?: "system" | "twinkle-model";
     capabilityProfile?: LogicalModelCapabilityProfile;
     advancedConfig?: SystemChannelAdvancedConfig;
     systemPrompt?: string;

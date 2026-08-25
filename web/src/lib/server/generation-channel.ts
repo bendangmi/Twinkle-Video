@@ -11,6 +11,7 @@ export type SystemGenerationChannelConfig = {
     model: string;
     channelId?: string;
     logicalModel?: string;
+    credentialMode?: ResolvedLogicalModel["credentialMode"];
     advancedConfig?: import("@/lib/auth/store").SystemChannelAdvancedConfig;
     capabilityProfile?: ReturnType<typeof import("@/lib/model-routing-config").resolveLogicalModelCapabilityProfile>;
 };
@@ -30,7 +31,7 @@ function sanitizeSystemGenerationChannel(config?: { apiSource?: string; baseUrl?
 
 export function resolveSystemGenerationChannel(config: { apiSource?: string; baseUrl?: string; apiFormat?: string; model?: string } | undefined, channels: Array<{ id: string; enabled: boolean; apiFormat: GenerationApiFormat; models: string[] }>) {
     const sanitized = sanitizeSystemGenerationChannel(config);
-    const match = sanitized?.baseUrl.match(/^\/api\/ai\/system\/([^/?#]+)\/?$/);
+    const match = sanitized?.baseUrl.match(/^\/api\/ai\/system\/([^/?#]+)(?:\/_twinkle-model)?\/?$/);
     if (!sanitized || !match) return null;
     let channelId = "";
     try {
@@ -47,12 +48,13 @@ export function toSystemGenerationChannel(resolved: ResolvedLogicalModel): Syste
     const modelConfig = resolveChannelModelConfig(resolved.channel.advancedConfig, resolved.upstreamModel);
     return {
         apiSource: "system",
-        baseUrl: `/api/ai/system/${encodeURIComponent(resolved.channelId)}`,
+        baseUrl: systemAiProxyBasePath(resolved),
         apiKey: "system",
         apiFormat: modelConfig?.apiFormat || resolved.channel.apiFormat,
         model: resolved.upstreamModel,
         channelId: resolved.channelId,
         logicalModel: resolved.logicalModelId,
+        credentialMode: resolved.credentialMode,
         advancedConfig: resolveModelAdvancedConfig(resolved.channel.advancedConfig, resolved.upstreamModel),
         capabilityProfile: resolved.capabilityProfile,
     };
@@ -81,13 +83,17 @@ export function generationModelId(config: { model: string; logicalModel?: string
 }
 
 export function systemGenerationChannelId(baseUrl: string) {
-    const match = baseUrl.match(/^\/api\/ai\/system\/([^/?#]+)\/?$/);
+    const match = baseUrl.match(/^\/api\/ai\/system\/([^/?#]+)(?:\/_twinkle-model)?\/?$/);
     if (!match) return "";
     try {
         return decodeURIComponent(match[1]);
     } catch {
         return "";
     }
+}
+
+export function systemAiProxyBasePath(candidate: Pick<ResolvedLogicalModel, "channelId"> & { credentialMode?: ResolvedLogicalModel["credentialMode"] }) {
+    return `/api/ai/system/${encodeURIComponent(candidate.channelId)}${candidate.credentialMode === "twinkle-model" ? "/_twinkle-model" : ""}`;
 }
 
 export function rawModelName(value: string) {

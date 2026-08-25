@@ -37,20 +37,19 @@ describe("admin models route", () => {
         expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/v1/models", expect.objectContaining({ headers: { authorization: "Bearer test-secret-value" } }));
     });
 
-    it("uses the bound admin key and documented video catalog for a Twinkle Model channel", async () => {
+    it("uses the administrator URL and key for a Twinkle Model video catalog", async () => {
         const fetchMock = vi.fn(async () => Response.json({ object: "list", data: [{ id: "Seedance-2.0-Fast-Official-480p", object: "video.model", type: "video" }] }));
         vi.stubGlobal("fetch", fetchMock);
 
-        const response = await POST(request({ protocol: "compatible", modelCatalogPaths: ["/v1/models"], credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认" }));
+        const response = await POST(request({ baseUrl: "https://admin-twinkle.example.com", apiKey: "admin-key", protocol: "twinkle-model" }));
 
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({
             models: ["Seedance-2.0-Fast-Official-480p"],
             modelCapabilities: { "seedance-2.0-fast-official-480p": "video" },
-            recommendedConfig: { credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认", defaultApiKeyTemplateId: "template-37" },
         });
-        expect(mocks.resolveTwinkleModelChannelCredential).toHaveBeenCalledWith("admin", { templateId: undefined, defaultKeyName: "VOZEB 默认" });
-        expect(fetchMock).toHaveBeenCalledWith("https://big-model.smart-agi.com/v1/videos/models", expect.objectContaining({ headers: { authorization: "Bearer personal-key" } }));
+        expect(mocks.resolveTwinkleModelChannelCredential).not.toHaveBeenCalled();
+        expect(fetchMock).toHaveBeenCalledWith("https://admin-twinkle.example.com/v1/videos/models", expect.objectContaining({ headers: { authorization: "Bearer admin-key" } }));
     });
 
     it("loads a keyless Stable Diffusion model catalog without authentication", async () => {

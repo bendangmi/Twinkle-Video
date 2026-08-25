@@ -1,6 +1,7 @@
 import { getAuthSettings, refundUserPoints } from "@/lib/auth/store";
 import { parseDeterministicProtocolDraft, protocolDraftFromUnknown, redactProtocolSecrets, type ChannelProtocolDraft } from "@/lib/channel-protocol-draft";
 import { fetchInternalApi, resolveInternalOrigin } from "@/lib/server/internal-origin";
+import { systemAiProxyBasePath } from "@/lib/server/generation-channel";
 import { resolveLogicalModelCandidates } from "@/lib/server/logical-model-router";
 import { TEXT_MODEL_REQUEST_TIMEOUT_MS } from "@/lib/server/model-request-policy";
 import { strictJsonObjectText } from "@/lib/server/structured-model-output";
@@ -68,7 +69,7 @@ async function assistProtocolDraftWithTextModel(input: { requestUrl: string; coo
             cookie: input.cookie,
             ...systemAiBillingHeaders(logicalModel, systemAiIdempotencyKey("protocol-draft", input.userId, candidate.channel.id, candidate.upstreamModel, source.slice(0, 4_000)), candidate.upstreamModel),
         };
-        const response = await fetchInternalApi(`${origin}/api/ai/system/${encodeURIComponent(candidate.channel.id)}/chat/completions`, {
+        const response = await fetchInternalApi(`${origin}${systemAiProxyBasePath(candidate)}/chat/completions`, {
             method: "POST",
             headers,
             cache: "no-store",

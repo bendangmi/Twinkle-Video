@@ -1,7 +1,8 @@
 import { getAuthSettings, refundUserPoints } from "@/lib/auth/store";
 import { normalizeCreativeReview, unavailableCreativeReview, type CreativeFoundation, type CreativeMediaType, type CreativeReview } from "@/lib/creative-agent-contract";
 import { fetchInternalApi } from "@/lib/server/internal-origin";
-import { resolveLogicalModel } from "@/lib/server/logical-model-router";
+import { resolveLogicalModelCandidates } from "@/lib/server/logical-model-router";
+import { systemAiProxyBasePath } from "@/lib/server/generation-channel";
 import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import { fetchOptionalResponses } from "@/lib/server/responses-request";
 import { TEXT_MODEL_REQUEST_TIMEOUT_MS } from "@/lib/server/model-request-policy";
@@ -28,8 +29,8 @@ export async function reviewCreativeOutputs(input: { origin: string; cookie: str
 
     const settings = await getAuthSettings();
     const model = settings.defaultModels.textModel;
-    const resolved = resolveLogicalModel(settings, "text", model, "", await twinkleModelRoutingPreference(input.userId));
-    if (!model || !resolved?.channel) return unavailableCreativeReview("后台没有可用的默认文本模型，生成结果已保留，但本轮未执行自动复盘。");
+    const candidates = resolveLogicalModelCandidates(settings, "text", model, "", await twinkleModelRoutingPreference(input.userId));
+    if (!model || !candidates.length) return unavailableCreativeReview("后台没有可用的默认文本模型，生成结果已保留，但本轮未执行自动复盘。");
 
     const mode = imageInputs.length ? "visual" : "text";
     const system = `你是 ${resolveSiteTitle(settings.site.title)} 创作质检 Agent。${mode === "visual" ? "你必须结合实际图片检查主体、构图、色彩、光线、文字可读性、参考一致性和整套视觉一致性。" : "当前只有文本结果，只能进行文本一致性检查，禁止声称看过图片或视频画面。"}只有存在明确影响使用的问题才返回 needs_revision；一般审美偏好不应触发自动重做。retryTaskIds 只能选择确实需要重做的任务。必须调用 review_creative_outputs，不得暴露隐藏思维链。`;
@@ -43,28 +44,31 @@ export async function reviewCreativeOutputs(input: { origin: string; cookie: str
         { role: "user", content: [{ type: "text", text: reviewContext }, ...imageInputs.map((item) => ({ type: "image_url", image_url: { url: item.url } }))] },
     ];
 
-    try {
-        const idempotencyKey = input.billingId ? systemAiIdempotencyKey("creative-review", input.userId, input.billingId, resolved.channel.id) : undefined;
-        const headers = { "Content-Type": "application/json", cookie: input.cookie, ...systemAiBillingHeaders(model, idempotencyKey, resolved.upstreamModel) };
-        let call = await callResponses(input.origin, resolved.channel.id, resolved.upstreamModel, responsesInput, headers, input.userId, model);
-        if (!call) call = await callChat(input.origin, resolved.channel.id, resolved.upstreamModel, chatMessages, headers, input.userId, model);
-        if (!call) return unavailableCreativeReview("默认文本模型没有返回有效复盘结果，生成结果已保留。");
-        let review: CreativeReview | null = null;
+    for (const candidate of candidates) {
         try {
-            review = normalizeCreativeReview(JSON.parse(call.arguments), validTaskIds);
+            const idempotencyKey = input.billingId ? systemAiIdempotencyKey("creative-review", input.userId, input.billingId, candidate.channelId, candidate.credentialMode) : undefined;
+            const headers = { "Content-Type": "application/json", cookie: input.cookie, ...systemAiBillingHeaders(model, idempotencyKey, candidate.upstreamModel) };
+            const basePath = systemAiProxyBasePath(candidate);
+            let call = await callResponses(input.origin, basePath, candidate.upstreamModel, responsesInput, headers, input.userId, model);
+            if (!call) call = await callChat(input.origin, basePath, candidate.upstreamModel, chatMessages, headers, input.userId, model);
+            if (!call) continue;
+            let review: CreativeReview | null = null;
+            try {
+                review = normalizeCreativeReview(JSON.parse(call.arguments), validTaskIds);
+            } catch {
+                review = null;
+            }
+            if (review) return { ...review, mode };
+            if (hasSystemAiCharge(call)) await refundUserPoints(input.userId, model, call.pointsCost, "text", 1, undefined, call.pointsRecordId);
         } catch {
-            review = null;
+            continue;
         }
-        if (review) return { ...review, mode };
-        if (hasSystemAiCharge(call)) await refundUserPoints(input.userId, model, call.pointsCost, "text", 1, undefined, call.pointsRecordId);
-        return unavailableCreativeReview("默认文本模型返回了无效复盘结构，相关积分已退款，生成结果已保留。");
-    } catch {
-        return unavailableCreativeReview("自动复盘服务暂时不可用，生成结果已保留，可稍后根据实际画面继续调整。");
     }
+    return unavailableCreativeReview("自动复盘服务暂时不可用，生成结果已保留，可稍后根据实际画面继续调整。");
 }
 
-async function callResponses(origin: string, channelId: string, upstreamModel: string, input: unknown[], headers: Record<string, string>, userId: string, billingModel: string) {
-    const response = await fetchOptionalResponses(`${origin}/api/ai/system/${encodeURIComponent(channelId)}/responses`, {
+async function callResponses(origin: string, basePath: string, upstreamModel: string, input: unknown[], headers: Record<string, string>, userId: string, billingModel: string) {
+    const response = await fetchOptionalResponses(`${origin}${basePath}/responses`, {
         method: "POST",
         headers,
         cache: "no-store",
@@ -78,8 +82,8 @@ async function callResponses(origin: string, channelId: string, upstreamModel: s
     return null;
 }
 
-async function callChat(origin: string, channelId: string, upstreamModel: string, messages: unknown[], headers: Record<string, string>, userId: string, billingModel: string) {
-    const response = await fetchInternalApi(`${origin}/api/ai/system/${encodeURIComponent(channelId)}/chat/completions`, {
+async function callChat(origin: string, basePath: string, upstreamModel: string, messages: unknown[], headers: Record<string, string>, userId: string, billingModel: string) {
+    const response = await fetchInternalApi(`${origin}${basePath}/chat/completions`, {
         method: "POST",
         headers,
         cache: "no-store",

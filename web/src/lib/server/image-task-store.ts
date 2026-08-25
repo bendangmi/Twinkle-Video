@@ -17,6 +17,7 @@ export type ImageTaskConfig = {
     model: string;
     channelId?: string;
     logicalModel?: string;
+    credentialMode?: "system" | "twinkle-model";
     capabilityProfile?: LogicalModelCapabilityProfile;
     quality?: string;
     size?: string;

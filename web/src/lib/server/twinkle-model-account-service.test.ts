@@ -38,7 +38,7 @@ const binding = {
 describe("Twinkle Model account service", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.getAuthSettings.mockResolvedValue({ twinkleModel: { baseUrl: "https://big-model.smart-agi.com" } });
+        mocks.getAuthSettings.mockResolvedValue({ twinkleModel: { baseUrl: "https://big-model.smart-agi.com", defaultApiKeyName: "VOZEB 默认" } });
         mocks.readBinding.mockResolvedValue(binding);
         mocks.upsertBinding.mockImplementation(async (value) => value);
     });
@@ -46,10 +46,17 @@ describe("Twinkle Model account service", () => {
     it("matches one active system-default key by exact name and persists template_id", async () => {
         mocks.fetchSafeOutbound.mockResolvedValue(jsonResponse({ code: 0, data: { items: [{ key: "personal-key", name: "VOZEB 默认", origin: "system_default", status: "active", template_id: 37 }], pages: 1 } }));
 
-        const result = await resolveTwinkleModelChannelCredential("user-one", { defaultKeyName: "VOZEB 默认" });
+        const result = await resolveTwinkleModelChannelCredential("user-one");
 
         expect(result).toEqual({ apiKey: "personal-key", templateId: "37", templateName: "VOZEB 默认" });
         expect(mocks.upsertBinding).toHaveBeenCalledWith(expect.objectContaining({ apiKeys: [expect.objectContaining({ templateId: "37", keyCiphertext: "enc:personal-key" })] }));
+    });
+
+    it("reuses the cached key selected by the global default name", async () => {
+        mocks.readBinding.mockResolvedValue({ ...binding, apiKeys: [{ templateId: "stable-template", templateName: "VOZEB 默认", keyCiphertext: "enc:stable-key", updatedAt: now }] });
+
+        await expect(resolveTwinkleModelChannelCredential("user-one")).resolves.toEqual({ apiKey: "stable-key", templateId: "stable-template", templateName: "VOZEB 默认" });
+        expect(mocks.fetchSafeOutbound).not.toHaveBeenCalled();
     });
 
     it("fails when multiple active default keys share the configured name", async () => {

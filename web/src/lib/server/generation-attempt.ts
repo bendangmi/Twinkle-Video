@@ -12,9 +12,10 @@ export type GenerationAttempt = {
     pointsRecordId?: string;
     error?: string;
     capability?: LogicalModelCapability;
+    credentialMode?: "system" | "twinkle-model";
 };
 
-export function startGenerationAttempt(attempts: GenerationAttempt[] | undefined, input: Pick<GenerationAttempt, "channelId" | "model" | "capability">) {
+export function startGenerationAttempt(attempts: GenerationAttempt[] | undefined, input: Pick<GenerationAttempt, "channelId" | "model" | "capability" | "credentialMode">) {
     const attempt: GenerationAttempt = { attemptNo: (attempts?.length || 0) + 1, ...input, status: "running", startedAt: Date.now() };
     return { attempt, attempts: [...(attempts || []), attempt] };
 }
@@ -23,7 +24,7 @@ export function finishGenerationAttempt(attempts: GenerationAttempt[], attemptNo
     return attempts.map((attempt) => {
         if (attempt.attemptNo !== attemptNo) return attempt;
         const completed = { ...attempt, ...patch, completedAt: patch.completedAt || Date.now() };
-        if (attempt.capability && attempt.channelId) {
+        if (attempt.capability && attempt.channelId && attempt.credentialMode !== "twinkle-model") {
             if (patch.status === "succeeded") recordChannelRuntimeSuccess(attempt.channelId, attempt.capability, completed.completedAt);
             if (patch.status === "failed") recordChannelRuntimeFailure(attempt.channelId, attempt.capability, patch.error, completed.completedAt);
         }

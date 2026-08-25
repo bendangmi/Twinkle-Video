@@ -34,7 +34,7 @@ export async function createAudioTaskUpstreamStep(task: AudioTask, origin: strin
     let attempts = running.attempts || [];
     let latestError = "没有可用的音频渠道";
     for (const [index, config] of candidates.entries()) {
-        const started = startGenerationAttempt(attempts, { channelId: config.channelId, model: generationModelId(config), capability: "audio" });
+        const started = startGenerationAttempt(attempts, { channelId: config.channelId, model: generationModelId(config), capability: "audio", credentialMode: config.credentialMode });
         attempts = started.attempts;
         const candidate = { ...running, config, candidateConfigs: candidates.slice(index + 1), attempts, attemptNo: started.attempt.attemptNo, upstream: undefined, billing: undefined };
         await updateAudioTask(task.id, { config, candidateConfigs: candidate.candidateConfigs, attempts, attemptNo: candidate.attemptNo, upstream: undefined, billing: undefined });

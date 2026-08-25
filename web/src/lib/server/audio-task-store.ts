@@ -12,6 +12,7 @@ export type AudioTaskConfig = {
     model: string;
     channelId?: string;
     logicalModel?: string;
+    credentialMode?: "system" | "twinkle-model";
     capabilityProfile?: LogicalModelCapabilityProfile;
     advancedConfig?: SystemChannelAdvancedConfig;
     voice?: string;

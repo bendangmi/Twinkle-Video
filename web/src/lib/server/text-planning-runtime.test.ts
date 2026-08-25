@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SystemChannelAdvancedConfig, SystemModelChannel } from "@/lib/auth/store";
+import { recordChannelRuntimeFailure, recordChannelRuntimeSuccess } from "@/lib/server/channel-runtime-health";
 import { fetchInternalApi } from "@/lib/server/internal-origin";
 import { getTextPlanningRuntime, isStructuredTextFailure, rankTextPlanningCandidates, requestStructuredText, resetTextPlanningRuntime, type TextPlanningCandidate } from "./text-planning-runtime";
 
@@ -14,6 +15,7 @@ describe("text planning runtime protocol matrix", () => {
     beforeEach(() => {
         resetTextPlanningRuntime();
         mockedFetch.mockReset();
+        vi.clearAllMocks();
         vi.useRealTimers();
     });
 
@@ -362,6 +364,25 @@ describe("text planning runtime protocol matrix", () => {
 
         expect(rankTextPlanningCandidates([failed, healthy])).toEqual([healthy, failed]);
         expect(getTextPlanningRuntime(failed)?.cooldownUntil).toBeGreaterThan(Date.now());
+    });
+
+    it("个人凭证与系统凭证使用独立运行状态且不改写共享渠道健康", async () => {
+        const configured = candidate("newapi", { id: "shared" });
+        const personal = { ...configured, credentialMode: "twinkle-model" as const };
+        const system = { ...configured, credentialMode: "system" as const };
+        mockedFetch.mockRejectedValueOnce(new Error("personal connection refused"));
+
+        await expect(requestStructuredText(requestInput(personal))).rejects.toThrow("暂时无法连接");
+
+        expect(getTextPlanningRuntime(personal)?.failureCount).toBe(1);
+        expect(getTextPlanningRuntime(system)).toBeUndefined();
+        expect(recordChannelRuntimeFailure).not.toHaveBeenCalled();
+
+        mockedFetch.mockResolvedValueOnce(chatJsonResponse());
+        await requestStructuredText(requestInput(system));
+
+        expect(getTextPlanningRuntime(system)?.successCount).toBe(1);
+        expect(recordChannelRuntimeSuccess).toHaveBeenCalledWith("shared", "text");
     });
 
     it("不会把 HTML 网关错误原文返回给用户", async () => {

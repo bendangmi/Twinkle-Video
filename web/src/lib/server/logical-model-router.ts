@@ -9,6 +9,7 @@ export type ResolvedLogicalModel = {
     upstreamModel: string;
     channelId: string;
     channel: SystemModelChannel;
+    credentialMode: "system" | "twinkle-model";
     capabilityProfile?: ReturnType<typeof resolveLogicalModelCapabilityProfile>;
 };
 export type ModelProviderPreference = "twinkle-model" | "twinkle-video";
@@ -39,7 +40,15 @@ export function resolveLogicalModelCandidates(
         const resolved: ResolvedLogicalModel[] = [];
         for (const binding of preferred ? [preferred, ...bindings.filter((item) => item !== preferred)] : bindings) {
             const channel = settings.systemChannels.find((item) => item.id === binding.channelId && item.enabled && channelConnectionReady(item) && channelSupportsModel(item.models, binding.upstreamModel));
-            if (channel) resolved.push({ logicalModelId: logical.id, upstreamModel: binding.upstreamModel, channelId: channel.id, channel, capabilityProfile: resolveLogicalModelCapabilityProfile(binding, capability, channel, binding.upstreamModel) });
+            if (channel)
+                resolved.push({
+                    logicalModelId: logical.id,
+                    upstreamModel: binding.upstreamModel,
+                    channelId: channel.id,
+                    channel,
+                    credentialMode: "system",
+                    capabilityProfile: resolveLogicalModelCapabilityProfile(binding, capability, channel, binding.upstreamModel),
+                });
         }
         // Text planning tracks health per channel + upstream model in
         // text-planning-runtime. A channel-level cooldown must not hide a healthy
@@ -50,13 +59,13 @@ export function resolveLogicalModelCandidates(
     const ordered = preferredChannelId ? [...settings.systemChannels.filter((channel) => channel.id === preferredChannelId), ...settings.systemChannels.filter((channel) => channel.id !== preferredChannelId)] : settings.systemChannels;
     const resolved = ordered
         .filter((item) => item.enabled && channelConnectionReady(item) && channelSupportsModel(item.models, requested) && channelModelCapability(item, requested) === capability)
-        .map((channel) => ({ logicalModelId: requested, upstreamModel: requested, channelId: channel.id, channel, capabilityProfile: resolveLogicalModelCapabilityProfile({}, capability, channel, requested) }));
+        .map((channel) => ({ logicalModelId: requested, upstreamModel: requested, channelId: channel.id, channel, credentialMode: "system" as const, capabilityProfile: resolveLogicalModelCapabilityProfile({}, capability, channel, requested) }));
     return orderCandidatesByProvider(capability === "text" ? resolved : filterHealthyRuntimeCandidates(resolved, capability), providerPreference);
 }
 
 export function orderCandidatesByProvider(candidates: ResolvedLogicalModel[], providerPreference: ModelProviderPreference) {
-    if (providerPreference === "twinkle-video") return candidates.filter((candidate) => candidate.channel.advancedConfig?.credentialSource !== "twinkle-model");
-    return [...candidates].sort((left, right) => Number(right.channel.advancedConfig?.credentialSource === "twinkle-model") - Number(left.channel.advancedConfig?.credentialSource === "twinkle-model"));
+    if (providerPreference === "twinkle-video") return candidates.map((candidate) => ({ ...candidate, credentialMode: "system" as const }));
+    return candidates.map((candidate) => ({ ...candidate, credentialMode: "twinkle-model" as const }));
 }
 
 export function resolveLogicalBillingModel(logicalModels: AuthSettings["logicalModels"], capability: LogicalModelCapability, channelId: string, upstreamModel: string, preferredLogicalModelId = "") {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { channelSupportsModel, generationModelId, resolveModelAdvancedConfig, resolveSystemGenerationChannel, systemGenerationChannelId } from "./generation-channel";
+import { channelSupportsModel, generationModelId, resolveModelAdvancedConfig, resolveSystemGenerationChannel, systemAiProxyBasePath, systemGenerationChannelId, toSystemGenerationChannel } from "./generation-channel";
 
 const channels = [{ id: "channel-1", enabled: true, apiFormat: "gemini" as const, models: ["models/video-v1"] }];
 
@@ -29,8 +29,26 @@ describe("resolveSystemGenerationChannel", () => {
 
     it("extracts only an exact system channel path", () => {
         expect(systemGenerationChannelId("/api/ai/system/channel-1")).toBe("channel-1");
+        expect(systemGenerationChannelId("/api/ai/system/channel-1/_twinkle-model")).toBe("channel-1");
         expect(systemGenerationChannelId("/api/ai/system/channel-1/extra")).toBe("");
         expect(systemGenerationChannelId("/api/ai/system/%E0%A4%A")).toBe("");
+    });
+
+    it("persists the external billing marker in system task configuration", () => {
+        const resolved = {
+            logicalModelId: "video",
+            upstreamModel: "vendor-video",
+            channelId: "channel-1",
+            credentialMode: "twinkle-model" as const,
+            channel: { id: "channel-1", name: "Admin", enabled: true, baseUrl: "https://admin.example.com", apiKey: "admin-key", apiFormat: "openai" as const, models: ["vendor-video"] },
+        };
+
+        expect(systemAiProxyBasePath(resolved)).toBe("/api/ai/system/channel-1/_twinkle-model");
+        expect(toSystemGenerationChannel(resolved)).toMatchObject({ baseUrl: "/api/ai/system/channel-1/_twinkle-model", credentialMode: "twinkle-model" });
+        expect(resolveSystemGenerationChannel({ apiSource: "system", baseUrl: "/api/ai/system/channel-1/_twinkle-model", model: "video-v1" }, channels)).toMatchObject({
+            baseUrl: "/api/ai/system/channel-1/_twinkle-model",
+            model: "video-v1",
+        });
     });
 
     it("matches model prefixes and casing consistently", () => {

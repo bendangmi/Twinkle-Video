@@ -50,7 +50,7 @@ describe("admin settings model routing", () => {
         expect(mocks.safeRecordAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "admin.settings.update", metadata: { fields: expect.arrayContaining(["systemChannels", "logicalModels", "defaultModels"]) } }));
     });
 
-    it("saves a disabled Twinkle Model draft before model sync assigns template_id", async () => {
+    it("saves an incomplete disabled channel draft", async () => {
         const draft = {
             id: "twinkle-draft",
             name: "Twinkle Model 渠道",
@@ -59,7 +59,7 @@ describe("admin settings model routing", () => {
             apiFormat: "openai",
             models: [],
             enabled: false,
-            advancedConfig: { protocol: "openai", credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认" },
+            advancedConfig: { protocol: "openai" },
         };
 
         const response = await PATCH(request({ systemChannels: [...savedSettings.systemChannels, draft] }));
@@ -68,23 +68,13 @@ describe("admin settings model routing", () => {
         expect(mocks.setAuthSettings).toHaveBeenCalledWith(expect.objectContaining({ systemChannels: expect.arrayContaining([expect.objectContaining({ id: "twinkle-draft", enabled: false })]) }));
     });
 
-    it("rejects enabling a Twinkle Model channel until model sync assigns template_id", async () => {
-        const channel = {
-            id: "twinkle-live",
-            name: "Twinkle Model 渠道",
-            baseUrl: "https://big-model.smart-agi.com",
-            apiKey: "",
-            apiFormat: "openai",
-            models: ["twinkle-text"],
-            enabled: true,
-            advancedConfig: { protocol: "openai", credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认" },
-        };
+    it("does not require a Twinkle template on an enabled administrator channel", async () => {
+        const channel = { ...savedSettings.systemChannels[0], id: "second", name: "第二渠道", apiKey: "administrator-key" };
 
         const response = await PATCH(request({ systemChannels: [...savedSettings.systemChannels, channel] }));
 
-        expect(response.status).toBe(400);
-        expect(await response.json()).toEqual({ error: "Twinkle Model 渠道 必须先同步模型并确认默认密钥 template_id" });
-        expect(mocks.setAuthSettings).not.toHaveBeenCalled();
+        expect(response.status).toBe(200);
+        expect(mocks.setAuthSettings).toHaveBeenCalledWith(expect.objectContaining({ systemChannels: expect.arrayContaining([expect.objectContaining({ id: "second", apiKey: "administrator-key" })]) }));
     });
 
     it("deletes a channel together with stale logical bindings and defaults", async () => {

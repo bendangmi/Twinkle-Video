@@ -35,7 +35,7 @@ export async function createImageTaskUpstreamStep(task: ImageTask, origin: strin
     const authContext = cookie || maintenanceWorkerContext(workerUserId || task.userId);
     const config = running.config;
     let attempts = running.attempts || [];
-    const started = startGenerationAttempt(attempts, { channelId: config.channelId, model: generationModelId(config), capability: "image" });
+    const started = startGenerationAttempt(attempts, { channelId: config.channelId, model: generationModelId(config), capability: "image", credentialMode: config.credentialMode });
     attempts = started.attempts;
     const candidate = { ...running, config, attempts, attemptNo: started.attempt.attemptNo, upstream: undefined, billing: undefined };
     await updateImageTask(task.id, { config, attempts, attemptNo: candidate.attemptNo, upstream: undefined, billing: undefined });

@@ -97,31 +97,23 @@ describe("resolveLogicalModel", () => {
         expect(resolveLogicalModel(settings, "image", "sd2.0")).toBeNull();
     });
 
-    it("orders personal Twinkle channels first and keeps static fallback", () => {
+    it("keeps external billing on the personal route", () => {
         const staticChannel = channel("static", ["upstream"]);
-        const personalChannel = {
-            ...channel("personal", ["upstream"]),
-            apiKey: "",
-            advancedConfig: { protocol: "openai" as const, credentialSource: "twinkle-model" as const, defaultApiKeyName: "默认", defaultApiKeyTemplateId: "template" },
-        };
         const settings = {
-            systemChannels: [staticChannel, personalChannel],
+            systemChannels: [staticChannel],
             logicalModels: [
                 {
                     id: "writer",
                     name: "Writer",
                     capability: "text" as const,
                     enabled: true,
-                    bindings: [
-                        { id: "static", channelId: "static", upstreamModel: "upstream", enabled: true, priority: 1 },
-                        { id: "personal", channelId: "personal", upstreamModel: "upstream", enabled: true, priority: 2 },
-                    ],
+                    bindings: [{ id: "static", channelId: "static", upstreamModel: "upstream", enabled: true, priority: 1 }],
                 },
             ],
         };
 
-        expect(resolveLogicalModelCandidates(settings, "text", "writer", "", "twinkle-model").map((item) => item.channelId)).toEqual(["personal", "static"]);
-        expect(resolveLogicalModelCandidates(settings, "text", "writer", "", "twinkle-video").map((item) => item.channelId)).toEqual(["static"]);
+        expect(resolveLogicalModelCandidates(settings, "text", "writer", "", "twinkle-model").map((item) => [item.channelId, item.credentialMode])).toEqual([["static", "twinkle-model"]]);
+        expect(resolveLogicalModelCandidates(settings, "text", "writer", "", "twinkle-video").map((item) => [item.channelId, item.credentialMode])).toEqual([["static", "system"]]);
     });
 
     it("uses the logical model id as the billing key for its bound upstream model", () => {

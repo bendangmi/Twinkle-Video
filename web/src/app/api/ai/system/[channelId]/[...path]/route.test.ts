@@ -234,7 +234,7 @@ describe("Twinkle Model personal credential proxy", () => {
         mocks.safeUrl.mockResolvedValue(true);
         mocks.resolveTwinkleCredential.mockReset().mockResolvedValue({ apiKey: "personal-key", templateId: "template-one", templateName: "VOZEB 默认" });
         mocks.getAuthSettings.mockResolvedValue({
-            twinkleModel: { baseUrl: "https://big-model.smart-agi.com" },
+            twinkleModel: { baseUrl: "https://big-model.smart-agi.com", defaultApiKeyName: "VOZEB 默认" },
             generationPointMultipliers: {},
             logicalModels: [logicalModel("writer", "text", "vendor-text")],
             systemChannels: [
@@ -242,10 +242,10 @@ describe("Twinkle Model personal credential proxy", () => {
                     id: "channel-one",
                     enabled: true,
                     baseUrl: "https://stale.example.com",
-                    apiKey: "",
+                    apiKey: "admin-key",
                     apiFormat: "openai",
                     models: ["vendor-text"],
-                    advancedConfig: { protocol: "compatible", credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认", defaultApiKeyTemplateId: "template-one" },
+                    advancedConfig: { protocol: "compatible" },
                 },
             ],
         });
@@ -254,13 +254,23 @@ describe("Twinkle Model personal credential proxy", () => {
     it("uses the user key and global address without consuming local points", async () => {
         const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { headers: { "content-type": "application/json" } }));
 
-        const response = await POST(chatRequest({ model: "vendor-text", messages: [{ role: "user", content: "hello" }] }), textContext());
+        const response = await POST(chatRequest({ model: "vendor-text", messages: [{ role: "user", content: "hello" }] }, systemAiBillingHeaders("writer", "test-request", "vendor-text")), textContext(true));
 
         expect(response.status).toBe(200);
         expect(fetchMock.mock.calls[0][0]).toBe("https://big-model.smart-agi.com/v1/chat/completions");
         expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("authorization")).toBe("Bearer personal-key");
         expect(mocks.consumeUserPoints).not.toHaveBeenCalled();
-        expect(mocks.resolveTwinkleCredential).toHaveBeenCalledWith("user-one", expect.objectContaining({ templateId: "template-one" }));
+        expect(mocks.resolveTwinkleCredential).toHaveBeenCalledWith("user-one");
+    });
+
+    it("rejects unsigned external create requests before calling the provider", async () => {
+        const fetchMock = vi.spyOn(globalThis, "fetch");
+
+        const response = await POST(chatRequest({ model: "vendor-text", messages: [{ role: "user", content: "hello" }] }), textContext(true));
+
+        expect(response.status).toBe(403);
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(mocks.consumeUserPoints).not.toHaveBeenCalled();
     });
 
     it("refreshes the user's key once after an upstream 401 and still avoids local billing", async () => {
@@ -275,12 +285,12 @@ describe("Twinkle Model personal credential proxy", () => {
                 : new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { headers: { "content-type": "application/json" } });
         });
 
-        const response = await POST(chatRequest({ model: "vendor-text", messages: [{ role: "user", content: "hello" }] }), textContext());
+        const response = await POST(chatRequest({ model: "vendor-text", messages: [{ role: "user", content: "hello" }] }, systemAiBillingHeaders("writer", "test-request", "vendor-text")), textContext(true));
 
         expect(response.status).toBe(200);
         expect(fetchMock).toHaveBeenCalledTimes(2);
         expect(authorizationHeaders).toEqual(["Bearer stale-personal-key", "Bearer fresh-personal-key"]);
-        expect(mocks.resolveTwinkleCredential).toHaveBeenLastCalledWith("user-one", expect.objectContaining({ templateId: "template-one", forceRefresh: true }));
+        expect(mocks.resolveTwinkleCredential).toHaveBeenLastCalledWith("user-one", { forceRefresh: true });
         expect(mocks.consumeUserPoints).not.toHaveBeenCalled();
     });
 });
@@ -1015,12 +1025,12 @@ function request(url = "https://cdn.example.com/media.png", headers?: HeadersIni
     return new Request(`http://localhost/api/ai/system/channel-one/_media?url=${encodeURIComponent(url)}`, { headers });
 }
 
-function textContext() {
-    return { params: Promise.resolve({ channelId: "channel-one", path: ["chat", "completions"] }) };
+function textContext(twinkleModel = false) {
+    return { params: Promise.resolve({ channelId: "channel-one", path: [...(twinkleModel ? ["_twinkle-model"] : []), "chat", "completions"] }) };
 }
 
-function chatRequest(body: unknown) {
-    return new Request("http://localhost/api/ai/system/channel-one/chat/completions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+function chatRequest(body: unknown, headers?: HeadersInit) {
+    return new Request("http://localhost/api/ai/system/channel-one/chat/completions", { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
 }
 
 function logicalModel(id: string, capability: "text" | "image" | "video" | "audio", upstreamModel: string) {

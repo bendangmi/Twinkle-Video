@@ -69,7 +69,7 @@ export async function runTextTaskStep(task: TextTask, origin: string, cookie: st
     let attempts = running.attempts || [];
     let latestError: unknown;
     for (const [index, config] of candidates.entries()) {
-        const started = startGenerationAttempt(attempts, { channelId: config.channelId, model: generationModelId(config), capability: "text" });
+        const started = startGenerationAttempt(attempts, { channelId: config.channelId, model: generationModelId(config), capability: "text", credentialMode: config.credentialMode });
         attempts = started.attempts;
         const candidateTask = { ...running, config, candidateConfigs: candidates.slice(index + 1), attemptNo: started.attempt.attemptNo, attempts };
         await updateTextTask(task.id, { config, candidateConfigs: candidateTask.candidateConfigs, attemptNo: candidateTask.attemptNo, attempts });

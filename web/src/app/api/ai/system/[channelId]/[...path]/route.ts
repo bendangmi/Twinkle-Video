@@ -70,20 +70,16 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
     const userId = currentUser?.id || authorizedWorkerUserId(request);
     if (!userId) return NextResponse.json({ error: "请先登录" }, { status: 401 });
 
-    const { channelId, path } = await context.params;
+    const { channelId, path: requestedPath } = await context.params;
+    const dynamicCredential = requestedPath[0] === "_twinkle-model";
+    const path = dynamicCredential ? requestedPath.slice(1) : requestedPath;
     const settings = await getAuthSettings();
     const channel = settings.systemChannels.find((item) => item.id === channelId && item.enabled);
     if (!channel || !channelConnectionReady(channel)) return NextResponse.json({ error: "默认接口未配置或已停用" }, { status: 404 });
     let apiKey = channel.apiKey;
-    const dynamicCredential = channel.advancedConfig?.credentialSource === "twinkle-model";
     if (dynamicCredential) {
         try {
-            apiKey = (
-                await resolveTwinkleModelChannelCredential(userId, {
-                    templateId: channel.advancedConfig?.defaultApiKeyTemplateId,
-                    defaultKeyName: channel.advancedConfig?.defaultApiKeyName,
-                })
-            ).apiKey;
+            apiKey = (await resolveTwinkleModelChannelCredential(userId)).apiKey;
         } catch (error) {
             if (error instanceof TwinkleModelAccountError) return NextResponse.json({ error: error.message }, { status: error.status });
             throw error;
@@ -168,7 +164,9 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
     const authConfig = modelConfig?.protocol ? { ...channel.advancedConfig, protocol: modelConfig.protocol } : channel.advancedConfig;
     Object.entries(protocolAuthHeaders(apiKey, authConfig, globalChannel ? "openai" : apiFormat)).forEach(([key, value]) => headers.set(key, value));
     const callType = `${access.capability}:${access.operation}:/${(globalAdaptation?.path || path).join("/")}`;
-    const businessRequestId = readVerifiedSystemAiBusinessRequestId(request.headers, access.logicalModelId, upstreamModel) || `direct:${randomUUID()}`;
+    const verifiedBusinessRequestId = readVerifiedSystemAiBusinessRequestId(request.headers, access.logicalModelId, upstreamModel);
+    if (dynamicCredential && access.operation === "create" && !verifiedBusinessRequestId) return NextResponse.json({ error: "站外模型请求缺少有效的服务端签名" }, { status: 403 });
+    const businessRequestId = verifiedBusinessRequestId || `direct:${randomUUID()}`;
     const pointsIdempotencyKey = billedPointsRequest ? systemAiPointsIdempotencyKey({ userId, businessRequestId, logicalModel: access.logicalModelId, channelId: channel.id, upstreamModel, callType }) : undefined;
     const requestFingerprint = billedPointsRequest
         ? systemAiRequestFingerprint({
@@ -214,13 +212,7 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
         });
         if (dynamicCredential && upstream.status === 401) {
             await upstream.body?.cancel().catch(() => undefined);
-            apiKey = (
-                await resolveTwinkleModelChannelCredential(userId, {
-                    templateId: channel.advancedConfig?.defaultApiKeyTemplateId,
-                    defaultKeyName: channel.advancedConfig?.defaultApiKeyName,
-                    forceRefresh: true,
-                })
-            ).apiKey;
+            apiKey = (await resolveTwinkleModelChannelCredential(userId, { forceRefresh: true })).apiKey;
             Object.entries(protocolAuthHeaders(apiKey, authConfig, globalChannel ? "openai" : apiFormat)).forEach(([key, value]) => headers.set(key, value));
             upstream = await fetchSafeOutbound(target, {
                 method: request.method,

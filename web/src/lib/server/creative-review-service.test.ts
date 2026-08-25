@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getAuthSettings, refundUserPoints, fetchInternalApi, resolveLogicalModel } = vi.hoisted(() => ({ getAuthSettings: vi.fn(), refundUserPoints: vi.fn(), fetchInternalApi: vi.fn(), resolveLogicalModel: vi.fn() }));
+const { getAuthSettings, refundUserPoints, fetchInternalApi, resolveLogicalModelCandidates } = vi.hoisted(() => ({ getAuthSettings: vi.fn(), refundUserPoints: vi.fn(), fetchInternalApi: vi.fn(), resolveLogicalModelCandidates: vi.fn() }));
 
 vi.mock("@/lib/auth/store", () => ({ getAuthSettings, refundUserPoints }));
 vi.mock("@/lib/server/internal-origin", () => ({ fetchInternalApi }));
-vi.mock("@/lib/server/logical-model-router", () => ({ resolveLogicalModel }));
+vi.mock("@/lib/server/logical-model-router", () => ({ resolveLogicalModelCandidates }));
 vi.mock("@/lib/server/twinkle-model-account-service", () => ({ twinkleModelRoutingPreference: vi.fn(async () => "twinkle-video") }));
 vi.mock("@/lib/server/structured-model-output", () => ({ strictJsonObjectText: (value: unknown) => (typeof value === "string" ? value : "") }));
 
@@ -16,7 +16,7 @@ describe("creative review service", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         getAuthSettings.mockResolvedValue({ site: { title: "星河创作" }, defaultModels: { textModel: "planner" } });
-        resolveLogicalModel.mockReturnValue({ upstreamModel: "vendor-planner", channel: { id: "text-channel" } });
+        resolveLogicalModelCandidates.mockReturnValue([{ logicalModelId: "planner", upstreamModel: "vendor-planner", channelId: "text-channel", credentialMode: "system", channel: { id: "text-channel" } }]);
     });
 
     it("returns an explicit unavailable result when no visual or text input exists", async () => {

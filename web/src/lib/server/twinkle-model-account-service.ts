@@ -74,7 +74,7 @@ export async function twinkleModelRoutingPreference(userId: string): Promise<Twi
     return "twinkle-model";
 }
 
-export async function resolveTwinkleModelChannelCredential(userId: string, input: { templateId?: string; defaultKeyName?: string; forceRefresh?: boolean }) {
+export async function resolveTwinkleModelChannelCredential(userId: string, input: { templateId?: string; defaultKeyName?: string; forceRefresh?: boolean } = {}) {
     return withBindingQueue(userId, async () => {
         const settings = await getAuthSettings();
         let binding = await readTwinkleModelBinding(userId);
@@ -82,18 +82,19 @@ export async function resolveTwinkleModelChannelCredential(userId: string, input
         if (binding.providerBaseUrl !== settings.twinkleModel.baseUrl) throw new TwinkleModelAccountError("Twinkle Model 地址已变更，请重新绑定账号", 409);
 
         const templateId = input.templateId?.trim() || "";
-        if (templateId && !input.forceRefresh) {
-            const cached = binding.apiKeys.find((item) => item.templateId === templateId);
+        const defaultKeyName = input.defaultKeyName?.trim() || settings.twinkleModel.defaultApiKeyName?.trim() || "";
+        if (!input.forceRefresh) {
+            const cached = templateId ? binding.apiKeys.find((item) => item.templateId === templateId) : binding.apiKeys.find((item) => item.templateName === defaultKeyName);
             if (cached) return { apiKey: decryptSecretValue(cached.keyCiphertext), templateId: cached.templateId, templateName: cached.templateName };
         }
 
-        const listed = await listActiveDefaultKeys(binding, input.defaultKeyName?.trim());
+        const listed = await listActiveDefaultKeys(binding, defaultKeyName);
         binding = listed.binding;
-        const matches = templateId ? listed.keys.filter((item) => item.templateId === templateId) : listed.keys.filter((item) => item.name === input.defaultKeyName?.trim());
-        if (!templateId && !input.defaultKeyName?.trim()) throw new TwinkleModelAccountError("Twinkle Model 渠道缺少默认密钥名称", 400);
-        if (matches.length > 1) throw new TwinkleModelAccountError(`Twinkle Model 中存在多个同名默认密钥“${input.defaultKeyName}”，请先处理重名`, 409);
+        const matches = templateId ? listed.keys.filter((item) => item.templateId === templateId) : listed.keys.filter((item) => item.name === defaultKeyName);
+        if (!templateId && !defaultKeyName) throw new TwinkleModelAccountError("站点尚未配置 Twinkle Model 默认密钥名称", 400);
+        if (matches.length > 1) throw new TwinkleModelAccountError(`Twinkle Model 中存在多个同名默认密钥“${defaultKeyName}”，请先处理重名`, 409);
         const matched = matches[0];
-        if (!matched) throw new TwinkleModelAccountError(templateId ? "当前 Twinkle Model 账号没有该默认密钥，请检查密钥状态" : `未找到默认密钥“${input.defaultKeyName}”`, 404);
+        if (!matched) throw new TwinkleModelAccountError(templateId ? "当前 Twinkle Model 账号没有该默认密钥，请检查密钥状态" : `未找到默认密钥“${defaultKeyName}”`, 404);
 
         const now = new Date().toISOString();
         const cached: StoredTwinkleModelApiKey = { templateId: matched.templateId, templateName: matched.name, keyCiphertext: encryptSecretValue(matched.key), updatedAt: now };

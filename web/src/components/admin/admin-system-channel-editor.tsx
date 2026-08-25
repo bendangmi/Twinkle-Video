@@ -9,10 +9,10 @@ import { parseChannelExampleConfig } from "@/lib/channel-example-parser";
 import { buildGlobalAiOpcSelection, GLOBAL_AIOPC_PRESETS, globalAiOpcPresetOptions, resolveGlobalAiOpcCatalogPresets, resolveGlobalAiOpcPresets } from "@/lib/globalaiopc-catalog";
 import type { LogicalModelCapability, SystemChannelAdvancedConfig, SystemChannelModelConfig, SystemChannelProtocol, SystemModelChannel } from "@/lib/auth/store";
 import { capabilityLabel, channelDetectedCapabilities, channelModelCapability } from "@/lib/model-routing-config";
-import { normalizeModelId } from "@/lib/model-capability";
+import { inferModelCapability, normalizeModelId } from "@/lib/model-capability";
 import { revealAdminChannelApiKey } from "@/services/api/admin-settings";
 import { AdminChannelProtocolSetup } from "@/components/admin/admin-channel-protocol-setup";
-import { applyModelProtocol, channelProtocolDefinition, channelProtocolOptions, channelRequiresApiKey, channelSupportsModelCatalog, emptyAdvancedConfig } from "@/lib/channel-protocol-registry";
+import { applyModelProtocol, channelProtocolDefinition, channelProtocolOptions, channelRequiresApiKey, channelSupportsModelCatalog, emptyAdvancedConfig, protocolModelConfig } from "@/lib/channel-protocol-registry";
 
 const protocolOptions = channelProtocolOptions().map(({ value, label }) => ({ value, label }));
 const ALL_GLOBAL_AIOPC_PRESETS = "__all_globalaiopc_presets__";
@@ -28,21 +28,7 @@ export function createDefaultChannelAdvancedConfig(): SystemChannelAdvancedConfi
     return emptyAdvancedConfig();
 }
 
-export function SystemChannelEditor({
-    channel,
-    twinkleModelBaseUrl,
-    fetching,
-    onChange,
-    onDelete,
-    onFetchModels,
-}: {
-    channel: SystemModelChannel;
-    twinkleModelBaseUrl: string;
-    fetching: boolean;
-    onChange: (patch: Partial<SystemModelChannel>) => void;
-    onDelete: () => void;
-    onFetchModels: () => void;
-}) {
+export function SystemChannelEditor({ channel, fetching, onChange, onDelete, onFetchModels }: { channel: SystemModelChannel; fetching: boolean; onChange: (patch: Partial<SystemModelChannel>) => void; onDelete: () => void; onFetchModels: () => void }) {
     const { message } = App.useApp();
     const [exampleText, setExampleText] = useState("");
     const [revealedApiKey, setRevealedApiKey] = useState("");
@@ -57,6 +43,21 @@ export function SystemChannelEditor({
     const selectedGlobalPresets = resolveGlobalAiOpcPresets(advanced);
     const multipleGlobalPresets = advanced.protocol === "globalaiopc" && selectedGlobalPresets.length > 1;
     const updateAdvanced = (patch: Partial<SystemChannelAdvancedConfig>) => onChange({ advancedConfig: { ...advanced, ...patch } });
+    const updateModels = (values: string[]) => {
+        const models = values.map((model) => model.trim()).filter(Boolean);
+        const modelCapabilities = { ...(advanced.modelCapabilities || {}) };
+        const modelConfigs = { ...(advanced.modelConfigs || {}) };
+        for (const model of models) {
+            const key = normalizeModelId(model);
+            const inferred = protocolDefinition.strict && protocolDefinition.capabilities.length === 1 ? protocolDefinition.capabilities[0] : modelCapabilities[key] || inferModelCapability(model);
+            const capability = protocolDefinition.capabilities.includes(inferred) ? inferred : protocolDefinition.capabilities[0];
+            if (!capability) continue;
+            modelCapabilities[key] = capability;
+            const config = protocolModelConfig(advanced.protocol, capability, model);
+            if (config) modelConfigs[key] = config;
+        }
+        onChange({ models, advancedConfig: { ...advanced, modelCapabilities, modelConfigs } });
+    };
     const applyGlobalAiOpcPresets = (values: string[]) => {
         const requested = values.includes(ALL_GLOBAL_AIOPC_PRESETS)
             ? (resolveGlobalAiOpcCatalogPresets(channel.baseUrl, { protocol: "auto" }).length ? resolveGlobalAiOpcCatalogPresets(channel.baseUrl, { protocol: "auto" }) : GLOBAL_AIOPC_PRESETS).map((preset) => preset.id)
@@ -130,7 +131,6 @@ export function SystemChannelEditor({
     };
     const displayedApiKey = channel.apiKey || revealedApiKey;
     const requiresApiKey = channelRequiresApiKey(channel);
-    const twinkleCredential = advanced.credentialSource === "twinkle-model";
     return (
         <>
             <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm shadow-stone-200/40 sm:p-4 dark:border-stone-800 dark:bg-stone-950 dark:shadow-black/20">
@@ -150,11 +150,9 @@ export function SystemChannelEditor({
                         <div className="mt-1 truncate text-xs text-stone-500 dark:text-stone-400">{channel.baseUrl || "未填写 Base URL"}</div>
                         <div className="mt-1 text-xs text-stone-400 dark:text-stone-500">
                             {canSyncModels
-                                ? twinkleCredential
-                                    ? "填写默认密钥名称后同步模型；同步成功会保存稳定 template_id，运行时使用当前用户个人密钥。"
-                                    : requiresApiKey
-                                      ? "填写名称、Base URL 和 API Key，再同步上游模型。"
-                                      : "填写名称和 Base URL 后即可同步上游模型；当前协议无需 API Key。"
+                                ? requiresApiKey
+                                    ? "填写名称、Base URL 和 API Key，再同步上游模型。"
+                                    : "填写名称和 Base URL 后即可同步上游模型；当前协议无需 API Key。"
                                 : hasDocumentedModels
                                   ? "填写连接信息后即可使用官方文档预置模型。"
                                   : "填写连接信息后手动添加上游模型 ID。"}
@@ -173,9 +171,9 @@ export function SystemChannelEditor({
                         <Input value={channel.name} placeholder="青岩智影、123NHH、自建接口" onChange={(event) => onChange({ name: event.target.value })} />
                     </LabeledControl>
                     <LabeledControl label="Base URL">
-                        <Input value={twinkleCredential ? twinkleModelBaseUrl : channel.baseUrl} disabled={twinkleCredential} placeholder="https://api.example.com/v1" onChange={(event) => onChange({ baseUrl: event.target.value })} />
+                        <Input value={channel.baseUrl} placeholder="https://api.example.com/v1" onChange={(event) => onChange({ baseUrl: event.target.value })} />
                     </LabeledControl>
-                    {requiresApiKey && !twinkleCredential ? (
+                    {requiresApiKey ? (
                         <LabeledControl label="API Key">
                             <div className="flex min-w-0 items-center gap-2">
                                 <Input
@@ -216,30 +214,6 @@ export function SystemChannelEditor({
                             <Input value="无需 API Key" disabled />
                         </LabeledControl>
                     )}
-                </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <LabeledControl label="密钥来源">
-                        <Select
-                            className="w-full"
-                            value={twinkleCredential ? "twinkle-model" : "system"}
-                            options={[
-                                { label: "管理员静态密钥（Twinkle Video）", value: "system" },
-                                { label: "用户 Twinkle Model 个人密钥", value: "twinkle-model" },
-                            ]}
-                            onChange={(credentialSource) =>
-                                onChange({
-                                    ...(credentialSource === "twinkle-model" ? { baseUrl: twinkleModelBaseUrl } : {}),
-                                    advancedConfig: { ...advanced, credentialSource: credentialSource as "system" | "twinkle-model", defaultApiKeyTemplateId: undefined },
-                                })
-                            }
-                        />
-                    </LabeledControl>
-                    {twinkleCredential ? (
-                        <LabeledControl label="Twinkle Model 默认密钥名称">
-                            <Input value={advanced.defaultApiKeyName} placeholder="精确匹配系统默认密钥名称" onChange={(event) => updateAdvanced({ defaultApiKeyName: event.target.value, defaultApiKeyTemplateId: undefined })} />
-                            <div className="mt-1 text-xs text-stone-500 dark:text-stone-400">同步模型时按名称确认并保存 template_id；后续名称变化不影响用户个人密钥解析。</div>
-                        </LabeledControl>
-                    ) : null}
                 </div>
                 <details className="mt-3 rounded-lg border border-stone-200 bg-stone-50/70 dark:border-stone-800 dark:bg-stone-900/40">
                     <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-stone-800 dark:text-stone-100">高级设置</summary>
@@ -304,7 +278,7 @@ export function SystemChannelEditor({
                                 tokenSeparators={[",", "，", "\n"]}
                                 value={channel.models}
                                 placeholder={canSyncModels ? "同步后自动填，也可输入模型 ID" : "输入模型 ID 后按 Enter，可添加多个"}
-                                onChange={(models) => onChange({ models: models.map((model) => model.trim()).filter(Boolean) })}
+                                onChange={updateModels}
                             />
                         </LabeledControl>
                         {detectedCapabilities.has("text") ? (

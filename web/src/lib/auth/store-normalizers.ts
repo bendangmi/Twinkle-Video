@@ -240,7 +240,10 @@ export function normalizeSettings(settings: AuthSettings): AuthSettings {
     const site = normalizeSiteSettings(settings.site);
     return {
         site,
-        twinkleModel: { baseUrl: normalizeTwinkleModelBaseUrl(settings.twinkleModel?.baseUrl) },
+        twinkleModel: {
+            baseUrl: normalizeTwinkleModelBaseUrl(settings.twinkleModel?.baseUrl),
+            defaultApiKeyName: typeof settings.twinkleModel?.defaultApiKeyName === "string" ? settings.twinkleModel.defaultApiKeyName.trim().slice(0, 120) : "",
+        },
         registrationEnabled: Boolean(settings.registrationEnabled),
         emailRegistrationEnabled: Boolean(settings.emailRegistrationEnabled),
         freeDailyPointsEnabled: settings.freeDailyPointsEnabled !== false,

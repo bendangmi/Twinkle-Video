@@ -4,6 +4,7 @@ import { isCreativeAutoValue, type CreativeAsset, type CreativeGenerationPrefere
 import { creativeAssetReferenceAliases } from "@/lib/creative-asset-references";
 import { fetchInternalApi } from "@/lib/server/internal-origin";
 import { resolveLogicalModel, resolveLogicalModelCandidates } from "@/lib/server/logical-model-router";
+import { toSystemGenerationChannel } from "@/lib/server/generation-channel";
 import { assertCapabilityConstraints } from "@/lib/server/capability-constraints";
 import { reviewCreativeOutputs } from "@/lib/server/creative-review-service";
 import { requestStructuredText, type TextPlanningCandidate } from "@/lib/server/text-planning-runtime";
@@ -716,11 +717,12 @@ export async function dispatchTask(task: AgentRunTask, origin: string, cookie: s
     const resolved = resolveLogicalModel(settings, task.type, model || "", "", await twinkleModelRoutingPreference(run.userId));
     const channel = resolved?.channel;
     if (!model || !channel || !resolved) throw new Error(`后台尚未配置可用的默认${task.type === "image" ? "图片" : task.type === "video" ? "视频" : task.type === "audio" ? "音频" : "文本"}模型`);
+    const executionChannel = toSystemGenerationChannel(resolved);
     const config = {
         apiSource: "system",
-        baseUrl: `/api/ai/system/${encodeURIComponent(channel.id)}`,
+        baseUrl: executionChannel.baseUrl,
         apiKey: "",
-        apiFormat: channel.apiFormat || "openai",
+        apiFormat: executionChannel.apiFormat,
         model,
         ...(task.type === "image" ? { ...(task.quality ? { quality: task.quality } : {}), ...(task.ratio ? { size: task.ratio } : {}) } : {}),
         ...(task.type === "video"

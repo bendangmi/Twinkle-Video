@@ -114,9 +114,6 @@ export async function requestAdminModels(channel: SystemModelChannel): Promise<A
             modelCapabilities: advanced?.modelCapabilities,
             modelConfigs: advanced?.modelConfigs,
             operationConfigs: advanced?.operationConfigs,
-            credentialSource: advanced?.credentialSource,
-            defaultApiKeyName: advanced?.defaultApiKeyName,
-            defaultApiKeyTemplateId: advanced?.defaultApiKeyTemplateId,
         }),
     });
     const payload = (await response.json()) as AdminModelsResult & { error?: string };

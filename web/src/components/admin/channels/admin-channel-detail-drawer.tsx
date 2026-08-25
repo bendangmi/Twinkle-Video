@@ -15,7 +15,6 @@ type Props = {
     open: boolean;
     channel?: SystemModelChannel;
     settings: ChannelWorkspaceSettings;
-    twinkleModelBaseUrl: string;
     fetching: boolean;
     onClose: () => void;
     onChange: (patch: Partial<SystemModelChannel>) => void;
@@ -23,7 +22,7 @@ type Props = {
     onFetchModels: () => void;
 };
 
-export function AdminChannelDetailDrawer({ open, channel, settings, twinkleModelBaseUrl, fetching, onClose, onChange, onDelete, onFetchModels }: Props) {
+export function AdminChannelDetailDrawer({ open, channel, settings, fetching, onClose, onChange, onDelete, onFetchModels }: Props) {
     if (!channel) return null;
     const status = channelWorkspaceStatus(channel);
     return (
@@ -41,7 +40,6 @@ export function AdminChannelDetailDrawer({ open, channel, settings, twinkleModel
                         children: (
                             <SystemChannelEditor
                                 channel={channel}
-                                twinkleModelBaseUrl={twinkleModelBaseUrl}
                                 fetching={fetching}
                                 onChange={onChange}
                                 onDelete={async () => {

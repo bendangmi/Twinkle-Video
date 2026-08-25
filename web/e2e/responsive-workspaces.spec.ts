@@ -3,45 +3,66 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Locator } from "@playwright/test";
 
 import { billingProductsFixture, expectDialogWithinViewport, expectNoHorizontalOverflow, masonryGalleryFixture, masonryLayoutIsReady, openCreativeHistory, readMasonryLayout } from "./responsive-helpers";
+import { E2E_PROTOCOL_ORIGIN } from "./support";
 
-test("Twinkle Model channel drafts advance before template_id is assigned", async ({ page, request }) => {
+test("administrator channels enable manual OpenAI and Twinkle video models without credential-source controls", async ({ page, request }) => {
     const beforeResponse = await request.get("/api/admin/settings");
     expect(beforeResponse.ok(), await beforeResponse.text()).toBe(true);
     const before = ((await beforeResponse.json()) as { settings: { systemChannels: unknown[]; logicalModels: unknown[]; defaultModels: Record<string, unknown> } }).settings;
-    const channelName = `E2E Twinkle Model ${randomUUID().slice(0, 8)}`;
-    const defaultKeyName = `E2E 默认密钥 ${randomUUID().slice(0, 8)}`;
+    const suffix = randomUUID().slice(0, 8);
+    const channels = [
+        { protocol: /^OpenAI/, name: `E2E OpenAI ${suffix}`, model: "gpt-5.6-sol", capability: "text" },
+        { protocol: /^Twinkle Model/, name: `E2E Twinkle Video ${suffix}`, model: "Minimax-H3-933-480p", capability: "video" },
+    ] as const;
 
     try {
-        await page.goto("/admin?section=channels", { waitUntil: "domcontentloaded" });
-        await page.getByRole("button", { name: /接入(?:新)?渠道/ }).click();
-        const drawer = page.getByRole("dialog", { name: "接入新渠道" });
-        await expect(drawer).toBeVisible();
-        await drawer.getByRole("button", { name: /^OpenAI/ }).click();
-        await drawer.getByRole("button", { name: "开始配置" }).click();
-        await drawer.getByLabel("渠道名称").fill(channelName);
-        await drawer.getByLabel("密钥来源").click();
-        await page.locator(".ant-select-dropdown:visible").getByText("用户 Twinkle Model 个人密钥", { exact: true }).click();
-        await drawer.getByLabel("Twinkle Model 默认密钥名称").fill(defaultKeyName);
+        for (const channel of channels) {
+            await page.goto("/admin?section=channels", { waitUntil: "domcontentloaded" });
+            await page.getByRole("button", { name: /接入(?:新)?渠道/ }).click();
+            const drawer = page.getByRole("dialog", { name: "接入新渠道" });
+            await expect(drawer).toBeVisible();
+            await drawer.getByRole("button", { name: channel.protocol }).click();
+            await drawer.getByRole("button", { name: "开始配置" }).click();
+            await drawer.getByLabel("渠道名称").fill(channel.name);
+            await drawer.getByLabel("Base URL").fill(`${E2E_PROTOCOL_ORIGIN}/v1`);
+            await drawer.getByLabel("API Key").fill("e2e-admin-key");
+            await expect(drawer.getByLabel("密钥来源")).toHaveCount(0);
+            await expect(drawer.getByLabel("Twinkle Model 默认密钥名称")).toHaveCount(0);
 
-        const next = drawer.getByRole("button", { name: "下一步" });
-        await expect(next).toBeEnabled();
-        await expect(drawer.getByText("同步模型后系统保存稳定 template_id", { exact: false })).toBeVisible();
-        await next.click();
-        await expect(drawer.getByText("上游模型", { exact: true })).toBeVisible();
-        await drawer.getByRole("button", { name: "保存草稿" }).click();
-        await expect(page.getByText("渠道草稿已保存", { exact: true })).toBeVisible();
-        await expect(drawer).toBeHidden();
-        await expectNoHorizontalOverflow(page);
+            const next = drawer.getByRole("button", { name: "下一步" });
+            await expect(next).toBeEnabled();
+            await next.click();
+            await expect(drawer.getByText("上游模型", { exact: true })).toBeVisible();
+            const modelInput = drawer.getByRole("combobox", { name: "模型 ID" });
+            await modelInput.fill(channel.model);
+            await modelInput.press("Enter");
+            await expect(drawer.locator("span.min-w-0.truncate").filter({ hasText: channel.model })).toBeVisible();
+            await expect(next).toBeEnabled();
+            await next.click();
+            await expect(next).toBeEnabled();
+            await next.click();
+            const enable = drawer.getByRole("button", { name: "启用渠道" });
+            await expect(enable).toBeEnabled();
+            await enable.click();
+            await expect(page.getByText("渠道已启用", { exact: true })).toBeVisible();
+            await expect(drawer).toBeHidden();
+            await expectNoHorizontalOverflow(page);
+        }
 
         const persistedResponse = await request.get("/api/admin/settings");
         expect(persistedResponse.ok(), await persistedResponse.text()).toBe(true);
-        const persisted = (
+        const persistedChannels = (
             (await persistedResponse.json()) as {
-                settings: { systemChannels: Array<{ name: string; enabled: boolean; advancedConfig?: { credentialSource?: string; defaultApiKeyName?: string; defaultApiKeyTemplateId?: string } }> };
+                settings: { systemChannels: Array<{ name: string; enabled: boolean; models: string[]; advancedConfig?: { protocol?: string; modelCapabilities?: Record<string, string> } }> };
             }
-        ).settings.systemChannels.find((channel) => channel.name === channelName);
-        expect(persisted).toMatchObject({ enabled: false, advancedConfig: { credentialSource: "twinkle-model", defaultApiKeyName: defaultKeyName } });
-        expect(persisted?.advancedConfig).not.toHaveProperty("defaultApiKeyTemplateId");
+        ).settings.systemChannels;
+        for (const channel of channels) {
+            const persisted = persistedChannels.find((item) => item.name === channel.name);
+            expect(persisted).toMatchObject({ enabled: true, models: [channel.model], advancedConfig: { modelCapabilities: { [channel.model.toLowerCase()]: channel.capability } } });
+            expect(persisted?.advancedConfig).not.toHaveProperty("credentialSource");
+            expect(persisted?.advancedConfig).not.toHaveProperty("defaultApiKeyName");
+            expect(persisted?.advancedConfig).not.toHaveProperty("defaultApiKeyTemplateId");
+        }
     } finally {
         const restored = await request.patch("/api/admin/settings", { data: { systemChannels: before.systemChannels, logicalModels: before.logicalModels, defaultModels: before.defaultModels } });
         expect(restored.ok(), await restored.text()).toBe(true);

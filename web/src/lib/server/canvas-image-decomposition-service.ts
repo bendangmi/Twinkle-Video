@@ -4,6 +4,7 @@ import { getAuthSettings, refundUserPoints } from "@/lib/auth/store";
 import { normalizeCanvasImageDecomposition, canvasImageDecompositionInstruction, canvasImageDecompositionTool, type CanvasImageDecomposition } from "@/lib/canvas-image-decomposition";
 import { CREATIVE_UPLOAD_MAX_BYTES } from "@/lib/creative-upload";
 import { toSafeGenerationErrorMessage } from "@/lib/server/generation-errors";
+import { systemAiProxyBasePath } from "@/lib/server/generation-channel";
 import { fetchInternalApi } from "@/lib/server/internal-origin";
 import { resolveLogicalModelCandidates, type ResolvedLogicalModel } from "@/lib/server/logical-model-router";
 import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
@@ -63,7 +64,7 @@ async function requestDecomposition(candidate: ResolvedLogicalModel, source: Sou
         "X-Client-Request-Id": idempotencyKey,
         ...systemAiBillingHeaders(billingModel, idempotencyKey, candidate.upstreamModel),
     };
-    const response = await fetchInternalApi(`${origin}/api/ai/system/${encodeURIComponent(candidate.channelId)}${normalizePath(protocol.path)}`, {
+    const response = await fetchInternalApi(`${origin}${systemAiProxyBasePath(candidate)}${normalizePath(protocol.path)}`, {
         method: "POST",
         headers,
         body: JSON.stringify(body),

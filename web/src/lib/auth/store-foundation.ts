@@ -150,7 +150,7 @@ export const DEFAULT_ENTITLEMENT_SETTINGS: EntitlementSettings = {
 };
 export const DEFAULT_SETTINGS: AuthSettings = {
     site: DEFAULT_SITE_SETTINGS,
-    twinkleModel: { baseUrl: DEFAULT_TWINKLE_MODEL_BASE_URL },
+    twinkleModel: { baseUrl: DEFAULT_TWINKLE_MODEL_BASE_URL, defaultApiKeyName: "" },
     registrationEnabled: true,
     emailRegistrationEnabled: false,
     freeDailyPointsEnabled: true,

@@ -1,6 +1,7 @@
 import type { SystemModelChannel } from "@/lib/auth/store";
 import { recordChannelRuntimeFailure, recordChannelRuntimeSuccess } from "@/lib/server/channel-runtime-health";
 import { fetchInternalApi } from "@/lib/server/internal-origin";
+import { systemAiProxyBasePath } from "@/lib/server/generation-channel";
 import { resolveModelRequestTimeoutMs } from "@/lib/server/model-request-policy";
 import { buildProviderRequest, isProviderBusinessError, readProviderError, readProviderString, readProviderValue } from "@/lib/server/provider-task-config";
 import { extractJsonObjectText } from "@/lib/server/structured-model-output";
@@ -13,6 +14,7 @@ export type TextPlanningCandidate = {
     channelId: string;
     upstreamModel: string;
     channel: SystemModelChannel;
+    credentialMode?: "system" | "twinkle-model";
     capabilityProfile?: { timeoutMs?: number };
 };
 export type TextPlanningTool = { name: string; description: string; parameters: Record<string, unknown> };
@@ -251,7 +253,7 @@ function parsePromptJsonValue(value: string) {
 }
 
 async function requestTextProtocol(input: StructuredTextRequest, request: ProtocolRequest) {
-    const base = `${input.origin}/api/ai/system/${encodeURIComponent(input.candidate.channelId)}`;
+    const base = `${input.origin}${systemAiProxyBasePath(input.candidate)}`;
     const headers = request.variant === "repair" ? repairRequestHeaders(input) : new Headers(request.variant !== "tool" && input.fallbackHeaders ? input.fallbackHeaders : input.headers);
     headers.set("content-type", "application/json");
     if (input.cookie) headers.set("cookie", input.cookie);
@@ -524,7 +526,7 @@ function recordTextSuccess(candidate: TextPlanningCandidate, protocol: TextPlann
         averageLatencyMs: current.averageLatencyMs === undefined ? elapsedMs : Math.round(current.averageLatencyMs * 0.7 + elapsedMs * 0.3),
         lastSuccessAt: Date.now(),
     });
-    recordChannelRuntimeSuccess(candidate.channelId, "text");
+    if (candidate.credentialMode !== "twinkle-model") recordChannelRuntimeSuccess(candidate.channelId, "text");
 }
 
 function recordTextFailure(candidate: TextPlanningCandidate, error: unknown) {
@@ -532,7 +534,7 @@ function recordTextFailure(candidate: TextPlanningCandidate, error: unknown) {
     const current = states.get(key) || emptyState();
     const consecutiveFailures = current.consecutiveFailures + 1;
     states.set(key, { ...current, consecutiveFailures, failureCount: current.failureCount + 1, cooldownUntil: Date.now() + FAILURE_COOLDOWN_MS * Math.min(4, consecutiveFailures), lastFailureAt: Date.now() });
-    recordChannelRuntimeFailure(candidate.channelId, "text", error instanceof Error ? error.message : String(error || "文本规划失败"));
+    if (candidate.credentialMode !== "twinkle-model") recordChannelRuntimeFailure(candidate.channelId, "text", error instanceof Error ? error.message : String(error || "文本规划失败"));
 }
 
 function emptyState(): RuntimeState {
@@ -540,7 +542,7 @@ function emptyState(): RuntimeState {
 }
 
 function runtimeKey(candidate: TextPlanningCandidate) {
-    return `${candidate.channelId}:${candidate.upstreamModel.toLowerCase()}`;
+    return `${candidate.channelId}:${candidate.upstreamModel.toLowerCase()}:${candidate.credentialMode || "system"}`;
 }
 
 function safeUpstreamError(value: string, status: number) {

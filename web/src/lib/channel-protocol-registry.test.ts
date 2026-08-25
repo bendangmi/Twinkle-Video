@@ -147,37 +147,23 @@ describe("channel protocol registry", () => {
         expect(protocolAuthHeaders("", configured.advancedConfig)).toEqual({});
     });
 
-    it("lets a Twinkle Model channel reach model sync before template_id exists", () => {
-        const configured = {
-            ...applyChannelProtocol({ ...channel, apiKey: "", hasApiKey: false }, "openai"),
-            advancedConfig: {
-                ...applyChannelProtocol(channel, "openai").advancedConfig!,
-                credentialSource: "twinkle-model" as const,
-                defaultApiKeyName: "VOZEB 默认",
-            },
-        };
+    it("uses only the administrator channel key for channel readiness", () => {
+        const incomplete = applyChannelProtocol({ ...channel, apiKey: "", hasApiKey: false }, "openai");
+        const configured = { ...incomplete, apiKey: "admin-key" };
 
+        expect(channelConnectionConfigured(incomplete)).toBe(false);
+        expect(channelConnectionReady(incomplete)).toBe(false);
         expect(channelConnectionConfigured(configured)).toBe(true);
-        expect(channelConnectionReady(configured)).toBe(false);
-        expect(channelProtocolValidationErrors(configured)).toEqual([]);
-
-        const synchronized = { ...configured, enabled: true, advancedConfig: { ...configured.advancedConfig, defaultApiKeyTemplateId: "template-37" } };
-        expect(channelConnectionReady(synchronized)).toBe(true);
-        expect(channelProtocolValidationErrors(synchronized)).toEqual([]);
+        expect(channelConnectionReady(configured)).toBe(true);
     });
 
-    it("requires the stable Twinkle template only when enabling the channel", () => {
-        const draft = {
-            ...applyChannelProtocol({ ...channel, apiKey: "", hasApiKey: false }, "openai"),
-            advancedConfig: {
-                ...applyChannelProtocol(channel, "openai").advancedConfig!,
-                credentialSource: "twinkle-model" as const,
-                defaultApiKeyName: "VOZEB 默认",
-            },
-        };
+    it("keeps opaque Twinkle models classified as video when enabled", () => {
+        const draft = applyChannelProtocol({ ...channel, models: ["Minimax-H3-933-480p"] }, "twinkle-model");
 
+        expect(draft.advancedConfig?.modelCapabilities?.["minimax-h3-933-480p"]).toBe("video");
+        expect(draft.advancedConfig?.modelConfigs?.["minimax-h3-933-480p"]).toMatchObject({ capability: "video", protocol: "twinkle-model" });
         expect(channelProtocolValidationErrors(draft)).toEqual([]);
-        expect(channelProtocolValidationErrors({ ...draft, enabled: true })).toContain("测试渠道 必须先同步模型并确认默认密钥 template_id");
+        expect(channelProtocolValidationErrors({ ...draft, enabled: true })).toEqual([]);
     });
 
     it("uses the Gemini API key header for the explicit Gemini protocol", () => {
@@ -248,7 +234,7 @@ describe("channel protocol registry", () => {
                 modelConfigs: { ...configured.advancedConfig!.modelConfigs, [key]: { ...configured.advancedConfig!.modelConfigs![key], imageToVideoPath: "/wrong" } },
             },
         };
-        expect(channelProtocolValidationErrors(tampered)).toContain(`${model} 的图生视频路径必须为 /v1/seedance-special/videos`);
+        expect(channelProtocolValidationErrors({ ...tampered, enabled: true })).toContain(`${model} 的图生视频路径必须为 /v1/seedance-special/videos`);
     });
 
     it("allows a model-level Seedance route inside an OpenAI channel", () => {

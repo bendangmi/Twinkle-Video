@@ -39,7 +39,20 @@ export function AdminSiteSection({ controller }: { controller: AdminDashboardCon
                                     value={settings.twinkleModel.baseUrl}
                                     maxLength={2000}
                                     placeholder="https://big-model.smart-agi.com"
-                                    onChange={(event) => controller.setSettings((current) => ({ ...current, twinkleModel: { baseUrl: event.target.value } }))}
+                                    onChange={(event) => controller.setSettings((current) => ({ ...current, twinkleModel: { ...current.twinkleModel, baseUrl: event.target.value } }))}
+                                />
+                            </LabeledControl>
+                            <LabeledControl label="Twinkle Model 默认密钥名称">
+                                <Input
+                                    value={settings.twinkleModel.defaultApiKeyName}
+                                    maxLength={120}
+                                    placeholder="精确匹配 Twinkle Model 系统默认密钥名称"
+                                    onChange={(event) =>
+                                        controller.setSettings((current) => ({
+                                            ...current,
+                                            twinkleModel: { ...current.twinkleModel, defaultApiKeyName: event.target.value },
+                                        }))
+                                    }
                                 />
                             </LabeledControl>
                             <LabeledControl label="网站标题">

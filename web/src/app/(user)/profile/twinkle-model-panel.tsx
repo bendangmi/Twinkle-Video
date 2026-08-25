@@ -109,7 +109,7 @@ export function TwinkleModelPanel() {
                             <Radio.Button value="twinkle-video">Twinkle Video（本站积分）</Radio.Button>
                         </Radio.Group>
                     </div>
-                    <div className="text-xs leading-5 text-stone-500 dark:text-stone-400">Twinkle Model 不可用时，创建任务会自动回退到 Twinkle Video，并按本站积分规则扣费。</div>
+                    <div className="text-xs leading-5 text-stone-500 dark:text-stone-400">两种方式严格互斥：Twinkle Model 使用个人密钥且不扣本站积分；Twinkle Video 使用站内渠道并按本站积分规则扣费。</div>
                     <div className="grid gap-3 sm:grid-cols-2">
                         <Input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Twinkle Model 邮箱" autoComplete="off" disabled={saving} />
                         <Input.Password value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Twinkle Model 密码" autoComplete="new-password" disabled={saving} />

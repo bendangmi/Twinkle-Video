@@ -41,9 +41,6 @@ export type SystemChannelStreamingConfig = {
 
 export type SystemChannelAdvancedConfig = {
     protocol: SystemChannelProtocol;
-    credentialSource?: "system" | "twinkle-model";
-    defaultApiKeyName?: string;
-    defaultApiKeyTemplateId?: string;
     authMode?: SystemChannelAuthMode;
     authHeader?: string;
     authPrefix?: string;
@@ -488,6 +485,7 @@ export type AuthSettings = {
 
 export type TwinkleModelSettings = {
     baseUrl: string;
+    defaultApiKeyName: string;
 };
 
 export type AuthDatabase = {

@@ -141,7 +141,7 @@ export async function POST(request: Request) {
                     capabilityError = error;
                     continue;
                 }
-                const started = startGenerationAttempt(attempts, { channelId: channel.channelId, model: generationModelId(channel), capability: "video" });
+                const started = startGenerationAttempt(attempts, { channelId: channel.channelId, model: generationModelId(channel), capability: "video", credentialMode: channel.credentialMode });
                 attempts = started.attempts;
                 const pendingUpstream = {
                     id: "",
