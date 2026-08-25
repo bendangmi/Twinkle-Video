@@ -14,6 +14,7 @@ vi.mock("@/lib/auth/store", () => ({ getAuthSettings: mocks.getAuthSettings, isA
 vi.mock("@/lib/server/internal-origin", () => ({ resolveInternalOrigin: vi.fn((origin: string) => origin) }));
 vi.mock("@/lib/server/logical-model-router", () => ({ resolveLogicalModelCandidates: mocks.resolveLogicalModelCandidates }));
 vi.mock("@/lib/server/security", () => ({ checkRateLimit: mocks.checkRateLimit }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => ({ twinkleModelRoutingPreference: vi.fn(async () => "twinkle-video") }));
 vi.mock("@/lib/server/text-planning-runtime", () => ({ isStructuredTextFailure: vi.fn(() => false), rankTextPlanningCandidates: vi.fn((items: unknown[]) => items), requestStructuredText: mocks.requestStructuredText }));
 
 import { POST } from "./route";

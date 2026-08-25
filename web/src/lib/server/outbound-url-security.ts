@@ -46,6 +46,7 @@ const PRIVATE_ALLOWLISTABLE_IPV6_ADDRESSES = addressBlockList([
     ["fc00::", 7, "ipv6"],
     ["fec0::", 10, "ipv6"],
 ]);
+const PROXY_ROUTED_IPV4_ADDRESSES = addressBlockList([["198.18.0.0", 15, "ipv4"]]);
 
 export type SafeOutboundTarget = {
     url: URL;
@@ -90,6 +91,13 @@ export function isPublicIpAddress(address: string) {
     const mapped = mappedIpv4(address);
     if (mapped) return isPublicIpAddress(mapped);
     return !addressBlockListContains(address, version, NON_PUBLIC_IPV4_ADDRESSES, NON_PUBLIC_IPV6_ADDRESSES);
+}
+
+export function isProxyRoutedIpAddress(address: string) {
+    const version = isIP(address);
+    const mapped = mappedIpv4(address);
+    if (mapped) return isProxyRoutedIpAddress(mapped);
+    return version === 4 && PROXY_ROUTED_IPV4_ADDRESSES.check(address, "ipv4");
 }
 
 function addressAllowed(address: string, privateAllowed: boolean) {

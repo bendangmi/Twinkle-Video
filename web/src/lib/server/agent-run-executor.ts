@@ -17,6 +17,7 @@ import { buildAgentRunPlannerAudit } from "@/lib/server/agent-run-audit";
 import { agentRequestDigest, buildAgentRequest, serializeAgentRequest } from "@/lib/server/agent-prompt-json";
 import { orderCreativeAssetsByIds } from "@/lib/creative-asset-references";
 import { withDirectAgentExecutionContext } from "./agent-run-direct-context";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 
 const globalAgentExecutors = globalThis as typeof globalThis & { __vozebProAgentRunControllers?: Map<string, AbortController> };
 const controllers = (globalAgentExecutors.__vozebProAgentRunControllers ??= new Map<string, AbortController>());
@@ -93,7 +94,7 @@ export async function executeAgentRun(run: AgentRun, origin: string, cookie: str
         const referencedAssets = usesMemoryCandidates ? memoryAssets : explicitAssets;
         const referenceSource = claimed.referencedAssetIds.length ? "current-turn-explicit" : usesMemoryCandidates && referencedAssets.length ? "conversation-memory-candidates" : "none";
         const model = settings.defaultModels.textModel;
-        const candidates = resolveLogicalModelCandidates(settings, "text", model);
+        const candidates = resolveLogicalModelCandidates(settings, "text", model, "", await twinkleModelRoutingPreference(claimed.userId));
         if (!model || !candidates.length) throw new Error("后台尚未配置可用的默认文本模型");
         const fallbackExample = agentPlanFallbackExample(availableModels);
         const plannerContext = buildAgentPlannerInput(claimed, conversationContext, referencedAssets, referenceSource, skillOptions, availableModels, settings);

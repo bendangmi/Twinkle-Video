@@ -2,6 +2,7 @@ import { getAuthSettings, refundUserPoints } from "@/lib/auth/store";
 import { normalizeCreativeReview, unavailableCreativeReview, type CreativeFoundation, type CreativeMediaType, type CreativeReview } from "@/lib/creative-agent-contract";
 import { fetchInternalApi } from "@/lib/server/internal-origin";
 import { resolveLogicalModel } from "@/lib/server/logical-model-router";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import { fetchOptionalResponses } from "@/lib/server/responses-request";
 import { TEXT_MODEL_REQUEST_TIMEOUT_MS } from "@/lib/server/model-request-policy";
 import { strictJsonObjectText } from "@/lib/server/structured-model-output";
@@ -27,7 +28,7 @@ export async function reviewCreativeOutputs(input: { origin: string; cookie: str
 
     const settings = await getAuthSettings();
     const model = settings.defaultModels.textModel;
-    const resolved = resolveLogicalModel(settings, "text", model);
+    const resolved = resolveLogicalModel(settings, "text", model, "", await twinkleModelRoutingPreference(input.userId));
     if (!model || !resolved?.channel) return unavailableCreativeReview("后台没有可用的默认文本模型，生成结果已保留，但本轮未执行自动复盘。");
 
     const mode = imageInputs.length ? "visual" : "text";

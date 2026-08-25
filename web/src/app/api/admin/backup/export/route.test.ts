@@ -24,6 +24,7 @@ describe("POST /api/admin/backup/export", () => {
             prompts: { version: 1, prompts: [] },
             generationLogs: { version: 1, logs: [] },
             accountDeletionRequests: { version: 1, requests: [{ id: "request-one", email: "private@example.com" }] },
+            twinkleModelBindings: { version: 1, bindings: [{ userId: "user-one", accessTokenCiphertext: "encrypted-access", refreshTokenCiphertext: "encrypted-refresh" }] },
         });
     });
 
@@ -36,6 +37,7 @@ describe("POST /api/admin/backup/export", () => {
         expect(response.headers.get("content-disposition")).toContain("vozeb-pro-data-backup-");
         expect(JSON.stringify(backup)).not.toContain("passwordHash");
         expect(JSON.stringify(backup)).not.toContain("private@example.com");
+        expect(backup.files.twinkleModelBindings.bindings[0]).toEqual(expect.objectContaining({ accessTokenCiphertext: "encrypted-access" }));
         expect(mocks.safeRecordAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "admin.backup.export", target: expect.objectContaining({ type: "backup" }) }));
     });
 

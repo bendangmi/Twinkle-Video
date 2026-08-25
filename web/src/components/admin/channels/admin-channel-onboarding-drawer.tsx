@@ -18,6 +18,7 @@ type Props = {
     open: boolean;
     initialProtocol?: SystemChannelProtocol;
     settings: ChannelWorkspaceSettings;
+    twinkleModelBaseUrl: string;
     fetchingModelId: string;
     saving: boolean;
     onClose: () => void;
@@ -28,7 +29,7 @@ type Props = {
 
 const steps = [{ title: "选择协议" }, { title: "连接上游" }, { title: "添加模型" }, { title: "同步模型" }, { title: "确认启用" }];
 
-export function AdminChannelOnboardingDrawer({ open, initialProtocol, settings, fetchingModelId, saving, onClose, onChange, onFetchModels, onPersist }: Props) {
+export function AdminChannelOnboardingDrawer({ open, initialProtocol, settings, twinkleModelBaseUrl, fetchingModelId, saving, onClose, onChange, onFetchModels, onPersist }: Props) {
     const { message, modal } = App.useApp();
     const [step, setStep] = useState(0);
     const [selectedProtocol, setSelectedProtocol] = useState<SystemChannelProtocol>("openai");
@@ -111,7 +112,7 @@ export function AdminChannelOnboardingDrawer({ open, initialProtocol, settings, 
     const renderStep = () => {
         if (step === 0) return <ProtocolSelection protocols={protocolOptions} selected={selectedProtocol} onSelect={setSelectedProtocol} />;
         if (!channel) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="渠道草稿不存在" />;
-        if (step === 1) return <ConnectionStep channel={channel} onChange={updateChannel} />;
+        if (step === 1) return <ConnectionStep channel={channel} twinkleModelBaseUrl={twinkleModelBaseUrl} onChange={updateChannel} />;
         if (step === 2) return <ModelStep channel={channel} fetching={fetchingModelId === channel.id} onChange={updateChannel} onFetch={() => void onFetchModels(channel)} />;
         if (step === 3) return <BindingStep channel={channel} logicalModels={settings.logicalModels} setAsDefault={setAsDefault} onSetAsDefault={setSetAsDefault} onSynchronize={synchronizeModels} />;
         return <ReviewStep channel={channel} settings={settings} />;
@@ -255,10 +256,11 @@ function ProtocolSelection({ protocols, selected, onSelect }: { protocols: Retur
     );
 }
 
-function ConnectionStep({ channel, onChange }: { channel: SystemModelChannel; onChange: (patch: Partial<SystemModelChannel>) => void }) {
+function ConnectionStep({ channel, twinkleModelBaseUrl, onChange }: { channel: SystemModelChannel; twinkleModelBaseUrl: string; onChange: (patch: Partial<SystemModelChannel>) => void }) {
     const custom = channel.advancedConfig?.protocol === "custom";
     const authMode = resolveChannelAuthMode(channel.advancedConfig);
     const requiresApiKey = channelRequiresApiKey(channel);
+    const twinkleCredential = channel.advancedConfig?.credentialSource === "twinkle-model";
     const updateAuth = (patch: Partial<NonNullable<SystemModelChannel["advancedConfig"]>>) => onChange({ advancedConfig: { ...channel.advancedConfig!, ...patch } });
     return (
         <div className="space-y-4">
@@ -267,9 +269,37 @@ function ConnectionStep({ channel, onChange }: { channel: SystemModelChannel; on
                     <Input value={channel.name} placeholder="例如：生产主渠道" onChange={(event) => onChange({ name: event.target.value })} />
                 </LabeledControl>
                 <LabeledControl label="Base URL">
-                    <Input value={channel.baseUrl} placeholder="https://api.example.com" onChange={(event) => onChange({ baseUrl: event.target.value })} />
+                    <Input value={twinkleCredential ? twinkleModelBaseUrl : channel.baseUrl} disabled={twinkleCredential} placeholder="https://api.example.com" onChange={(event) => onChange({ baseUrl: event.target.value })} />
                     <div className="mt-1 text-xs text-stone-500 dark:text-stone-400">公网地址直接填写；内网或本机地址需由部署者开启服务端白名单。</div>
                 </LabeledControl>
+                <LabeledControl label="密钥来源">
+                    <Select
+                        className="w-full"
+                        value={twinkleCredential ? "twinkle-model" : "system"}
+                        options={[
+                            { label: "管理员静态密钥（Twinkle Video）", value: "system" },
+                            { label: "用户 Twinkle Model 个人密钥", value: "twinkle-model" },
+                        ]}
+                        onChange={(credentialSource) =>
+                            onChange({
+                                ...(credentialSource === "twinkle-model" ? { baseUrl: twinkleModelBaseUrl } : {}),
+                                advancedConfig: { ...channel.advancedConfig!, credentialSource: credentialSource as "system" | "twinkle-model", defaultApiKeyTemplateId: undefined },
+                            })
+                        }
+                    />
+                </LabeledControl>
+                {twinkleCredential ? (
+                    <div className="sm:col-span-2">
+                        <LabeledControl label="Twinkle Model 默认密钥名称">
+                            <Input
+                                value={channel.advancedConfig?.defaultApiKeyName}
+                                placeholder="管理员在 Twinkle Model 中配置的系统默认密钥名称"
+                                onChange={(event) => updateAuth({ defaultApiKeyName: event.target.value, defaultApiKeyTemplateId: undefined })}
+                            />
+                            <div className="mt-1 text-xs text-stone-500 dark:text-stone-400">首次同步时使用当前管理员绑定账号精确匹配名称并保存 template_id；同名多个会直接报错。</div>
+                        </LabeledControl>
+                    </div>
+                ) : null}
                 {custom ? (
                     <LabeledControl label="鉴权方式">
                         <Select className="w-full" value={authMode} options={authModeOptions} onChange={(value: SystemChannelAuthMode) => updateAuth({ authMode: value, ...(value !== "custom-header" ? { authHeader: "", authPrefix: "" } : {}) })} />
@@ -285,7 +315,7 @@ function ConnectionStep({ channel, onChange }: { channel: SystemModelChannel; on
                         </LabeledControl>
                     </>
                 ) : null}
-                {requiresApiKey ? (
+                {requiresApiKey && !twinkleCredential ? (
                     <div className="sm:col-span-2">
                         <LabeledControl label="API Key">
                             <Input.Password value={channel.apiKey} autoComplete="off" placeholder="仅保存在服务端" onChange={(event) => onChange({ apiKey: event.target.value, clearApiKey: false })} />

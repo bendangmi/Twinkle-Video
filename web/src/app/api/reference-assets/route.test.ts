@@ -57,6 +57,28 @@ describe("reference asset upload boundary", () => {
         });
     });
 
+    it("returns the configured custom access URL for object-backed uploads", async () => {
+        mocks.writePersistent.mockResolvedValue({
+            token: "permanent/asset.png",
+            url: "https://cdn.example.com/vozeb-pro/media/reference/permanent/asset.png",
+            bytes: 4,
+            mimeType: "image/png",
+            storage: "object",
+        });
+        const response = await POST(
+            new Request("http://localhost/api/reference-assets", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "image", persistent: true, dataUrl: "data:image/png;base64,AAAA" }),
+            }),
+        );
+
+        await expect(response.json()).resolves.toMatchObject({
+            url: "https://cdn.example.com/vozeb-pro/media/reference/permanent/asset.png",
+            upstreamUrl: "https://cdn.example.com/vozeb-pro/media/reference/permanent/asset.png",
+        });
+    });
+
     it("accepts binary multipart uploads without base64 request expansion", async () => {
         mocks.writePersistent.mockResolvedValue({ token: "permanent/asset.png", bytes: 4, mimeType: "image/png", storage: "local" });
         const form = new FormData();

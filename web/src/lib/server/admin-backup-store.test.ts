@@ -28,6 +28,9 @@ const mocks = vi.hoisted(() => ({
     readAccountDeletionRequestBackup: vi.fn(),
     writeAccountDeletionRequestBackup: vi.fn(),
     upsertAccountDeletionRequestBackup: vi.fn(),
+    readTwinkleModelBindingBackup: vi.fn(),
+    writeTwinkleModelBindingBackup: vi.fn(),
+    upsertTwinkleModelBindingBackup: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/store-repository", () => ({
@@ -58,6 +61,11 @@ vi.mock("@/lib/server/database/account-deletion-request-repository", () => ({
     writeAccountDeletionRequestBackup: mocks.writeAccountDeletionRequestBackup,
     upsertAccountDeletionRequestBackup: mocks.upsertAccountDeletionRequestBackup,
 }));
+vi.mock("@/lib/server/database/twinkle-model-binding-repository", () => ({
+    readTwinkleModelBindingBackup: mocks.readTwinkleModelBindingBackup,
+    writeTwinkleModelBindingBackup: mocks.writeTwinkleModelBindingBackup,
+    upsertTwinkleModelBindingBackup: mocks.upsertTwinkleModelBindingBackup,
+}));
 
 import { readAdminBackupData, restoreAdminBackupData } from "./admin-backup-store";
 
@@ -75,6 +83,7 @@ describe("admin backup store", () => {
         expect(mocks.readPostgresPromptDb).toHaveBeenCalledWith(mocks.client);
         expect(mocks.readPostgresGenerationLogDb).toHaveBeenCalledWith(mocks.client);
         expect(mocks.readAccountDeletionRequestBackup).toHaveBeenCalledWith(mocks.client);
+        expect(mocks.readTwinkleModelBindingBackup).toHaveBeenCalledWith(mocks.client);
     });
 
     it("locks and upserts a merged PostgreSQL snapshot without dropping backup-missing users", async () => {
@@ -119,6 +128,7 @@ describe("admin backup store", () => {
         expect(mocks.writePromptBackup).toHaveBeenCalledTimes(2);
         expect(mocks.writeGenerationLogDb).toHaveBeenCalledTimes(1);
         expect(mocks.writeAccountDeletionRequestBackup).toHaveBeenCalledTimes(1);
+        expect(mocks.writeTwinkleModelBindingBackup).toHaveBeenCalledTimes(1);
         expect(mocks.writeAuthDb.mock.calls[1]?.[0]).toEqual(current.auth);
         expect(mocks.writeGenerationLogDb).toHaveBeenCalledWith(current.generationLogs);
     });
@@ -138,6 +148,7 @@ function setReadSnapshot(data: AdminBackupData) {
     mocks.readGenerationLogDb.mockResolvedValue(data.generationLogs);
     mocks.readPostgresGenerationLogDb.mockResolvedValue(data.generationLogs);
     mocks.readAccountDeletionRequestBackup.mockResolvedValue(data.accountDeletionRequests);
+    mocks.readTwinkleModelBindingBackup.mockResolvedValue(data.twinkleModelBindings);
 }
 
 function emptyBackup(): AdminBackupData {
@@ -146,6 +157,7 @@ function emptyBackup(): AdminBackupData {
         prompts: { version: 1, prompts: [], seedSources: [] },
         generationLogs: { version: 1, logs: [] },
         accountDeletionRequests: { version: 1, requests: [] },
+        twinkleModelBindings: { version: 1, bindings: [] },
     };
 }
 

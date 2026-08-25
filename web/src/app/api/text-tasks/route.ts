@@ -9,6 +9,7 @@ import { scheduleGenerationTask } from "@/lib/server/generation-task-scheduler";
 import { withGenerationConcurrencyLimit } from "@/lib/server/generation-task-store";
 import { resolveInternalOrigin } from "@/lib/server/internal-origin";
 import { resolveLogicalModelCandidates } from "@/lib/server/logical-model-router";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import { checkGenerationRateLimit, rateLimitHeaders } from "@/lib/server/security";
 import { createTextTask, type TextTask, type TextTaskConfig } from "@/lib/server/text-task-store";
 import type { AiTextMessage } from "@/types/ai";
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
             if (isAuthInputError(error)) return NextResponse.json({ error: error.message }, { status: error.status });
             throw error;
         }
-        const configs = sanitizeConfigs(body.config, settings);
+        const configs = sanitizeConfigs(body.config, settings, await twinkleModelRoutingPreference(currentUser.id));
         const messages = sanitizeMessages(body.messages);
         if (!configs.length || !messages.length) return NextResponse.json({ error: "任务参数不完整" }, { status: 400 });
 
@@ -54,9 +55,9 @@ function publicTask(task: TextTask) {
     return { id: task.id, status: task.status, model: generationModelId(task.config), result: task.result, error: task.error };
 }
 
-function sanitizeConfigs(config: TextTaskConfig | undefined, settings: Awaited<ReturnType<typeof getAuthSettings>>): TextTaskConfig[] {
+function sanitizeConfigs(config: TextTaskConfig | undefined, settings: Awaited<ReturnType<typeof getAuthSettings>>, providerPreference: "twinkle-model" | "twinkle-video"): TextTaskConfig[] {
     const requestedModel = config?.model || settings.defaultModels.textModel;
-    return resolveLogicalModelCandidates(settings, "text", requestedModel).map((resolved) => ({ ...toSystemGenerationChannel(resolved), channelId: resolved.channelId, systemPrompt: "" }));
+    return resolveLogicalModelCandidates(settings, "text", requestedModel, "", providerPreference).map((resolved) => ({ ...toSystemGenerationChannel(resolved), channelId: resolved.channelId, systemPrompt: "" }));
 }
 
 function sanitizeMessages(messages?: AiTextMessage[]) {

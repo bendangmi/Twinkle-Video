@@ -29,12 +29,14 @@ describe("admin account-config backup merge", () => {
             description: "保留流水",
             createdAt: now,
         });
+        current.twinkleModelBindings.bindings = [twinkleBinding("user-b", "cipher-current")];
         const imported = backup({
             users: [user("user-a", "admin", 99)],
             prompts: [{ id: "prompt-a", title: "导入提示词" }],
             logs: [{ id: "log-a", userId: "user-a", title: "导入记录" }],
             deletionRequests: [{ id: "delete-a", userId: "user-a", status: "accepted", note: "导入申请" }],
         });
+        imported.twinkleModelBindings.bindings = [twinkleBinding("user-a", "cipher-imported")];
 
         const merged = mergeAccountConfigBackup(current, imported);
 
@@ -44,6 +46,7 @@ describe("admin account-config backup merge", () => {
         expect(merged.prompts.prompts.map((prompt) => prompt.id)).toEqual(["prompt-b", "prompt-a"]);
         expect(merged.generationLogs.logs.map((log) => log.id)).toEqual(["log-b", "log-a"]);
         expect(merged.accountDeletionRequests.requests.map((request) => request.id)).toEqual(["delete-b", "delete-a"]);
+        expect(merged.twinkleModelBindings.bindings).toEqual([expect.objectContaining({ userId: "user-b" }), expect.objectContaining({ userId: "user-a" })]);
     });
 });
 
@@ -96,6 +99,22 @@ function backup(input: {
                 updatedAt: now,
             })),
         },
+        twinkleModelBindings: { version: 1, bindings: [] },
+    };
+}
+
+function twinkleBinding(userId: string, accessTokenCiphertext: string) {
+    return {
+        userId,
+        providerBaseUrl: "https://big-model.smart-agi.com",
+        accountEmail: `${userId}@example.com`,
+        accessTokenCiphertext,
+        refreshTokenCiphertext: `${accessTokenCiphertext}-refresh`,
+        status: "active" as const,
+        providerPreference: "twinkle-model" as const,
+        apiKeys: [],
+        createdAt: now,
+        updatedAt: now,
     };
 }
 

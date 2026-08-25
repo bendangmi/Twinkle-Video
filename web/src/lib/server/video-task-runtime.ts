@@ -35,7 +35,8 @@ export async function queryVideoTaskUpstream(task: VideoTask, origin: string, co
     const status = readVideoProviderStatus(data, task.config.advancedConfig?.statusField);
     const resultUrl = readVideoProviderUrl(data, task.config.advancedConfig?.resultField);
     if (resultUrl || VIDEO_PROVIDER_SUCCESS.has(status)) {
-        return resultUrl ? { state: "result_ready", status: status || "completed", resultUrl } : { state: "failed", status: status || "completed", error: "视频任务已完成但没有返回视频地址" };
+        const documentedContentUrl = task.config.advancedConfig?.protocol === "twinkle-model" ? `/v1/videos/${encodeURIComponent(task.upstream.id)}/content` : "";
+        return resultUrl || documentedContentUrl ? { state: "result_ready", status: status || "completed", resultUrl: resultUrl || documentedContentUrl } : { state: "failed", status: status || "completed", error: "视频任务已完成但没有返回视频地址" };
     }
     if (isProviderBusinessError(data) || VIDEO_PROVIDER_FAILED.has(status)) return { state: "failed", status: status || "failed", error: readProviderError(data) || "视频生成失败" };
     return { state: "pending", status: status || "processing" };

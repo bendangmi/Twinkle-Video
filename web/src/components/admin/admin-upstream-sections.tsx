@@ -34,6 +34,7 @@ export function AdminChannelsSection({ controller }: { controller: AdminDashboar
             <div className="p-3 sm:p-5">
                 <AdminChannelWorkspace
                     settings={{ systemChannels: settings.systemChannels, logicalModels: settings.logicalModels, defaultModels: settings.defaultModels }}
+                    twinkleModelBaseUrl={settings.twinkleModel.baseUrl}
                     fetchingModelId={fetchingModelId}
                     saving={settingsLoading}
                     onChange={(next) => setSettings((current) => ({ ...current, ...next }))}

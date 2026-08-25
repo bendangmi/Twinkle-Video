@@ -6,14 +6,14 @@ import { openPaymentCheckoutWindow, safePaymentUrl } from "./payment-checkout-wi
 describe("payment checkout window", () => {
     afterEach(() => vi.unstubAllEnvs());
 
-    it("opens redirect payments through a synchronous blank popup", () => {
+    it("opens redirect payments through the owned same-origin payment route", () => {
         const popup = popupWindow();
         const open = vi.fn(() => popup);
 
         expect(openPaymentCheckoutWindow(checkout({ kind: "redirect", url: "https://pay.example/checkout" }), open)).toEqual({ status: "opened" });
         expect(open).toHaveBeenCalledWith("about:blank", "_blank");
         expect(popup.opener).toBeNull();
-        expect(popup.location.replace).toHaveBeenCalledWith("https://pay.example/checkout");
+        expect(popup.location.replace).toHaveBeenCalledWith("/api/billing/orders/order/payment-form");
     });
 
     it("opens structured form checkouts through the same-origin payment page", () => {

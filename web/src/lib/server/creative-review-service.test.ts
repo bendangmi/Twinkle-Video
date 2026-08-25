@@ -5,6 +5,7 @@ const { getAuthSettings, refundUserPoints, fetchInternalApi, resolveLogicalModel
 vi.mock("@/lib/auth/store", () => ({ getAuthSettings, refundUserPoints }));
 vi.mock("@/lib/server/internal-origin", () => ({ fetchInternalApi }));
 vi.mock("@/lib/server/logical-model-router", () => ({ resolveLogicalModel }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => ({ twinkleModelRoutingPreference: vi.fn(async () => "twinkle-video") }));
 vi.mock("@/lib/server/structured-model-output", () => ({ strictJsonObjectText: (value: unknown) => (typeof value === "string" ? value : "") }));
 
 import { reviewCreativeOutputs } from "./creative-review-service";

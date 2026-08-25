@@ -1,6 +1,7 @@
 import type { AuthDatabase, AuthSettings, LogicalModel, SystemModelChannel } from "@/lib/auth/store-types";
 import type { PromptDatabase } from "@/lib/prompts/store";
 import type { AccountDeletionRequestDatabase, StoredAccountDeletionRequest } from "@/lib/server/database/account-deletion-request-repository";
+import type { TwinkleModelBindingDatabase } from "@/lib/server/database/twinkle-model-binding-repository";
 import type { GenerationLogDatabase } from "@/lib/server/generation-log-types";
 
 export type AdminBackupData = {
@@ -8,6 +9,7 @@ export type AdminBackupData = {
     prompts: PromptDatabase;
     generationLogs: GenerationLogDatabase;
     accountDeletionRequests: AccountDeletionRequestDatabase;
+    twinkleModelBindings: TwinkleModelBindingDatabase;
 };
 
 export function mergeAccountConfigBackup(current: AdminBackupData, imported: AdminBackupData): AdminBackupData {
@@ -25,6 +27,10 @@ export function mergeAccountConfigBackup(current: AdminBackupData, imported: Adm
         accountDeletionRequests: {
             version: 1,
             requests: mergeAccountDeletionRequests(current.accountDeletionRequests.requests, imported.accountDeletionRequests.requests),
+        },
+        twinkleModelBindings: {
+            version: 1,
+            bindings: mergeRecords(current.twinkleModelBindings.bindings, imported.twinkleModelBindings.bindings, (binding) => binding.userId),
         },
     };
 }

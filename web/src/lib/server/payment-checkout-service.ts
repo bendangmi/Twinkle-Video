@@ -1,4 +1,5 @@
 import { BillingInputError } from "@/lib/server/billing-errors";
+import { getFreshAuthSettings } from "@/lib/auth/store";
 import { expirePendingBillingOrders } from "@/lib/server/billing-order-expiration-service";
 import { isAutomaticallyExpiredOrder } from "@/lib/server/billing-service-helpers";
 import { createPostgresRepositories, isPostgresDatabaseEnabled, withPostgresTransaction } from "@/lib/server/database";
@@ -11,6 +12,7 @@ export async function createPaymentCheckoutForOrder(orderId: string, options: Cr
     await expirePendingBillingOrders({ orderId });
 
     const paymentConfig = await getPaymentRuntimeConfig();
+    const siteSettings = await getFreshAuthSettings();
     return withPostgresTransaction(async (client) => {
         const repos = createPostgresRepositories(client);
         const order = await repos.billing.getOrderById(normalizeId(orderId), true);
@@ -21,7 +23,7 @@ export async function createPaymentCheckoutForOrder(orderId: string, options: Cr
         const existing = checkoutFromMetadata(order, provider);
         if (existing) return existing;
 
-        const checkout = await createProviderCheckout(provider, order, options, paymentConfig);
+        const checkout = await createProviderCheckout(provider, order, { ...options, origin: siteSettings.site.siteUrl || options.origin }, paymentConfig);
         const metadata = mergeMetadata(order.metadata, { checkout: checkoutMetadata(checkout) });
         await repos.billing.updateOrder(order.id, {
             provider,

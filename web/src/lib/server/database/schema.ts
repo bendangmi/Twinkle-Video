@@ -68,6 +68,7 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS app_settings (
     id text PRIMARY KEY DEFAULT 'default',
     site jsonb NOT NULL DEFAULT '{}'::jsonb,
+    twinkle_model jsonb NOT NULL DEFAULT '{}'::jsonb,
     registration_enabled boolean NOT NULL DEFAULT true,
     email_registration_enabled boolean NOT NULL DEFAULT false,
     free_daily_points_enabled boolean NOT NULL DEFAULT true,
@@ -100,6 +101,7 @@ ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS free_daily_points_enabled bool
 ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS free_daily_points numeric(18, 2) NOT NULL DEFAULT 0;
 ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS generation_cost_control jsonb NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS data_lifecycle jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS twinkle_model jsonb NOT NULL DEFAULT '{}'::jsonb;
 
 CREATE TABLE IF NOT EXISTS system_model_channels (
     id text PRIMARY KEY,
@@ -233,6 +235,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx ON users (lower(usern
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users (lower(email)) WHERE email IS NOT NULL AND email <> '';
 CREATE UNIQUE INDEX IF NOT EXISTS users_account_id_idx ON users (account_id);
 CREATE INDEX IF NOT EXISTS users_plan_id_idx ON users (plan_id);
+
+CREATE TABLE IF NOT EXISTS twinkle_model_bindings (
+    user_id text PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    provider_base_url text NOT NULL,
+    account_email text NOT NULL,
+    access_token_ciphertext text NOT NULL,
+    refresh_token_ciphertext text NOT NULL,
+    access_token_expires_at timestamptz,
+    status text NOT NULL DEFAULT 'active',
+    provider_preference text NOT NULL DEFAULT 'twinkle-model',
+    api_keys jsonb NOT NULL DEFAULT '[]'::jsonb,
+    last_verified_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT twinkle_model_bindings_status CHECK (status IN ('active', 'needs_rebind')),
+    CONSTRAINT twinkle_model_bindings_preference CHECK (provider_preference IN ('twinkle-model', 'twinkle-video')),
+    CONSTRAINT twinkle_model_bindings_api_keys_array CHECK (jsonb_typeof(api_keys) = 'array')
+);
 
 CREATE TABLE IF NOT EXISTS sessions (
     id text PRIMARY KEY,

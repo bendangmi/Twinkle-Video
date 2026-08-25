@@ -110,6 +110,7 @@ export function superviseGenerationRuntime({ app, workerScript, environment }) {
         process.once("SIGINT", stopForSignal);
         process.once("SIGTERM", stopForSignal);
         const web = registerChild({ name: "web", command: app.command, args: app.args, cwd: app.cwd });
+        if (!workerScript) return;
         void waitForHttpReady({ origin: environment.VOZEB_PRO_WORKER_API_ORIGIN, signal: readinessAbort.signal })
             .then(() => {
                 if (stopping || workerStarted || web.process.exitCode !== null || web.process.signalCode !== null) return;

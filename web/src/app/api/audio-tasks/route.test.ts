@@ -31,6 +31,7 @@ vi.mock("@/lib/server/security", () => ({
     checkGenerationRateLimit: vi.fn(async () => ({ allowed: true, remaining: 19, resetAt: Date.now() + 60_000 })),
     rateLimitHeaders: vi.fn(() => ({})),
 }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => ({ twinkleModelRoutingPreference: vi.fn(async () => "twinkle-video") }));
 vi.mock("@/lib/server/audio-task-store", () => ({
     createAudioTask: mocks.createAudioTask,
     getAudioTask: vi.fn(),

@@ -121,6 +121,14 @@ describe("object storage media service", () => {
         expect(mocks.deleteObjects).toHaveBeenCalledWith(config, [objectKey]);
     });
 
+    it("returns the custom access URL immediately after an object upload", async () => {
+        mocks.config.mockResolvedValue({ ...config, customDomain: "https://cdn.example.com/assets/" });
+
+        await expect(persistExternalMediaIfEnabled({ registration, bytes: Buffer.from("data") })).resolves.toMatchObject({
+            url: "https://cdn.example.com/assets/vozeb-pro/media/reference/permanent/2026/07/24/images/file.png",
+        });
+    });
+
     it("reports object upload failures consistently for every media writer", async () => {
         mocks.putBytes.mockRejectedValueOnce(new Error("AccessDenied"));
 
@@ -146,6 +154,13 @@ describe("object storage media service", () => {
         await expect(createExternalMediaReadUrl(new Request("http://localhost/media"), objectRegistration)).resolves.toBe("http://sub.bdmcom.cn/vozeb-pro/media/generation/permanent/2026/08/23/images/result.png");
         await expect(createExternalStorageImagePreviewUrl(objectRegistration.externalObjectKey, 320)).resolves.toBe("http://sub.bdmcom.cn/vozeb-pro/media/generation/permanent/2026/08/23/images/result.png.vozeb-preview/webp-320.webp");
         expect(mocks.signRead).not.toHaveBeenCalled();
+    });
+
+    it("encodes unsafe object key characters without losing the custom domain path", async () => {
+        mocks.config.mockResolvedValue({ ...config, customDomain: "https://cdn.example.com/assets" });
+        const objectRegistration = { ...registration, storageProvider: "object" as const, externalStorageId: "default", externalObjectKey: "vozeb-pro/media/reference/a file#1.png" };
+
+        await expect(createExternalMediaReadUrl(new Request("http://localhost/media"), objectRegistration)).resolves.toBe("https://cdn.example.com/assets/vozeb-pro/media/reference/a%20file%231.png");
     });
 
     it("uses a bounded WebP object variant for image previews", async () => {

@@ -6,6 +6,7 @@ import { generationModelId, toSystemGenerationChannel } from "@/lib/server/gener
 import { finishGenerationAttempt, startGenerationAttempt, type GenerationAttempt } from "@/lib/server/generation-attempt";
 import { fetchInternalApi, resolveInternalOrigin } from "@/lib/server/internal-origin";
 import { resolveLogicalModelCandidates } from "@/lib/server/logical-model-router";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import { assertReferenceCapabilities, assertReferenceUrls, assertVideoReferenceRoles, buildVideoProviderRequest, isProviderBusinessError, readProviderError, readProviderString, resolvedProviderCreatePaths } from "@/lib/server/provider-task-config";
 import { buildGlobalAiOpcVideoRequest, resolveGlobalAiOpcPreset } from "@/lib/globalaiopc-catalog";
 import { createVideoTask, transitionVideoTask, updateVideoTask, type VideoTask } from "@/lib/server/video-task-store";
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
         settings.generationConcurrency.video,
         async () => {
             const requestedModel = typeof body.config?.model === "string" && body.config.model.trim() ? body.config.model : settings.defaultModels.videoModel;
-            const channels = resolveLogicalModelCandidates(settings, "video", requestedModel).map(toSystemGenerationChannel);
+            const channels = resolveLogicalModelCandidates(settings, "video", requestedModel, "", await twinkleModelRoutingPreference(user.id)).map(toSystemGenerationChannel);
             const prompt = String(body.prompt || "").trim();
             if (!channels.length || !prompt) return NextResponse.json({ error: "视频任务参数不完整或渠道不支持" }, { status: 400 });
             const publicOrigin = requestPublicOrigin(request);
@@ -374,8 +375,8 @@ export async function createUpstream(
                       images,
                       videos,
                       audios,
-                      startImageUrl: firstFrameUrl || undefined,
-                      endImageUrl: lastFrameUrl || undefined,
+                      firstFrameUrl: firstFrameUrl || undefined,
+                      lastFrameUrl: lastFrameUrl || undefined,
                   })
                 : globalPreset
                   ? buildGlobalAiOpcVideoRequest(globalPreset, {

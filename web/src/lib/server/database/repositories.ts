@@ -181,6 +181,7 @@ class SettingsRepository {
             assignments.push(`${column} = $${values.length}`);
         };
         if (input.site !== undefined) add("site", jsonParam(input.site));
+        if (input.twinkleModel !== undefined) add("twinkle_model", jsonParam(input.twinkleModel));
         if (input.registrationEnabled !== undefined) add("registration_enabled", input.registrationEnabled);
         if (input.emailRegistrationEnabled !== undefined) add("email_registration_enabled", input.emailRegistrationEnabled);
         if (input.freeDailyPointsEnabled !== undefined) add("free_daily_points_enabled", input.freeDailyPointsEnabled);
@@ -282,6 +283,7 @@ function mapSettings(row: Record<string, unknown>): AppSettingsRecord {
     return {
         id: "default",
         site: jsonValue(row.site),
+        twinkleModel: jsonValue(row.twinkle_model),
         registrationEnabled: row.registration_enabled !== false,
         emailRegistrationEnabled: row.email_registration_enabled === true,
         freeDailyPointsEnabled: row.free_daily_points_enabled !== false,

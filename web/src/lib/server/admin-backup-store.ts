@@ -6,6 +6,7 @@ import { readPromptBackup, readPostgresPromptDb, upsertPostgresPromptDbWithExecu
 import { ensurePostgresSchema, getDatabaseProvider, withPostgresTransaction, type QueryExecutor } from "@/lib/server/database";
 import { readGenerationLogDb, readPostgresGenerationLogDb, upsertPostgresGenerationLogDbWithExecutor, writeGenerationLogDb } from "@/lib/server/generation-log-repository";
 import { readAccountDeletionRequestBackup, upsertAccountDeletionRequestBackup, writeAccountDeletionRequestBackup } from "@/lib/server/database/account-deletion-request-repository";
+import { readTwinkleModelBindingBackup, upsertTwinkleModelBindingBackup, writeTwinkleModelBindingBackup } from "@/lib/server/database/twinkle-model-binding-repository";
 
 export type { AdminBackupData } from "@/lib/server/admin-backup-merge";
 
@@ -43,13 +44,19 @@ export async function restoreAdminBackupData(data: AdminBackupData, options: { m
 }
 
 async function readPostgresBackupData(client: QueryExecutor): Promise<AdminBackupData> {
-    const [auth, prompts, generationLogs, accountDeletionRequests] = await Promise.all([readPostgresAuthDb(client), readPostgresPromptDb(client), readPostgresGenerationLogDb(client), readAccountDeletionRequestBackup(client)]);
-    return { auth, prompts, generationLogs, accountDeletionRequests };
+    const [auth, prompts, generationLogs, accountDeletionRequests, twinkleModelBindings] = await Promise.all([
+        readPostgresAuthDb(client),
+        readPostgresPromptDb(client),
+        readPostgresGenerationLogDb(client),
+        readAccountDeletionRequestBackup(client),
+        readTwinkleModelBindingBackup(client),
+    ]);
+    return { auth, prompts, generationLogs, accountDeletionRequests, twinkleModelBindings };
 }
 
 async function readFileBackupData(): Promise<AdminBackupData> {
-    const [auth, prompts, generationLogs, accountDeletionRequests] = await Promise.all([readAuthDb(), readPromptBackup(), readGenerationLogDb(), readAccountDeletionRequestBackup()]);
-    return { auth, prompts, generationLogs, accountDeletionRequests };
+    const [auth, prompts, generationLogs, accountDeletionRequests, twinkleModelBindings] = await Promise.all([readAuthDb(), readPromptBackup(), readGenerationLogDb(), readAccountDeletionRequestBackup(), readTwinkleModelBindingBackup()]);
+    return { auth, prompts, generationLogs, accountDeletionRequests, twinkleModelBindings };
 }
 
 async function restorePostgresBackup(client: QueryExecutor, data: AdminBackupData) {
@@ -57,6 +64,7 @@ async function restorePostgresBackup(client: QueryExecutor, data: AdminBackupDat
     await upsertPostgresPromptDbWithExecutor(data.prompts, client);
     await upsertPostgresGenerationLogDbWithExecutor(data.generationLogs, client);
     await upsertAccountDeletionRequestBackup(data.accountDeletionRequests, client);
+    await upsertTwinkleModelBindingBackup(data.twinkleModelBindings, client);
 }
 
 async function restoreFileBackup(imported: AdminBackupData) {
@@ -76,11 +84,18 @@ async function writeFileBackupData(data: AdminBackupData) {
     await writePromptBackup(data.prompts);
     await writeGenerationLogDb(data.generationLogs);
     await writeAccountDeletionRequestBackup(data.accountDeletionRequests);
+    await writeTwinkleModelBindingBackup(data.twinkleModelBindings);
 }
 
 async function rollbackFileBackup(data: AdminBackupData) {
     const errors: unknown[] = [];
-    for (const write of [() => writeAuthDb(data.auth), () => writePromptBackup(data.prompts), () => writeGenerationLogDb(data.generationLogs), () => writeAccountDeletionRequestBackup(data.accountDeletionRequests)]) {
+    for (const write of [
+        () => writeAuthDb(data.auth),
+        () => writePromptBackup(data.prompts),
+        () => writeGenerationLogDb(data.generationLogs),
+        () => writeAccountDeletionRequestBackup(data.accountDeletionRequests),
+        () => writeTwinkleModelBindingBackup(data.twinkleModelBindings),
+    ]) {
         try {
             await write();
         } catch (error) {
@@ -96,7 +111,7 @@ async function lockPostgresBackupTables(client: QueryExecutor) {
             app_settings, entitlement_plans, system_model_channels, users, sessions, email_codes,
             quota_usage, point_records, daily_plan_point_wallets, cdk_codes, cdk_redemptions,
             announcements, prompts, prompt_seed_sources, generation_logs, generation_log_assets,
-            account_deletion_requests
+            account_deletion_requests, twinkle_model_bindings
         IN SHARE ROW EXCLUSIVE MODE
     `);
 }

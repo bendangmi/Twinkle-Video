@@ -18,6 +18,7 @@ const RESTORE_FILE_MAP = {
     prompts: "prompts.json",
     generationLogs: "generation-logs.json",
     accountDeletionRequests: "account-deletion-requests.json",
+    twinkleModelBindings: "twinkle-model-bindings.json",
 } as const;
 const MAX_IMPORT_BYTES = 30 * 1024 * 1024;
 const MAX_IMPORT_REQUEST_BYTES = MAX_IMPORT_BYTES + 64 * 1024;
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
                 prompts: (valueByKey.get("prompts") ?? currentData.prompts) as AdminBackupData["prompts"],
                 generationLogs: (valueByKey.get("generationLogs") ?? currentData.generationLogs) as AdminBackupData["generationLogs"],
                 accountDeletionRequests: (valueByKey.get("accountDeletionRequests") ?? currentData.accountDeletionRequests) as AdminBackupData["accountDeletionRequests"],
+                twinkleModelBindings: (valueByKey.get("twinkleModelBindings") ?? currentData.twinkleModelBindings) as AdminBackupData["twinkleModelBindings"],
             },
             { mode: "account-config" },
         );
@@ -123,6 +125,7 @@ type BackupFiles = {
     prompts?: unknown;
     generationLogs?: unknown;
     accountDeletionRequests?: unknown;
+    twinkleModelBindings?: unknown;
 };
 
 function extractBackupFiles(value: unknown): BackupFiles {
@@ -133,6 +136,7 @@ function extractBackupFiles(value: unknown): BackupFiles {
         prompts: files.prompts,
         generationLogs: files.generationLogs ?? files["generation-logs"],
         accountDeletionRequests: files.accountDeletionRequests ?? files["account-deletion-requests"],
+        twinkleModelBindings: files.twinkleModelBindings ?? files["twinkle-model-bindings"],
     };
 }
 
@@ -146,6 +150,7 @@ function validateBackupFiles(files: BackupFiles) {
     if (files.prompts !== undefined && files.prompts !== null) validateArrayDatabase(files.prompts, "prompts", "公共提示词备份格式不正确");
     if (files.generationLogs !== undefined && files.generationLogs !== null) validateArrayDatabase(files.generationLogs, "logs", "生成日志备份格式不正确");
     if (files.accountDeletionRequests !== undefined && files.accountDeletionRequests !== null) validateArrayDatabase(files.accountDeletionRequests, "requests", "注销申请备份格式不正确");
+    if (files.twinkleModelBindings !== undefined && files.twinkleModelBindings !== null) validateArrayDatabase(files.twinkleModelBindings, "bindings", "Twinkle Model 绑定备份格式不正确");
 }
 
 function validateAuthBackup(value: unknown) {
@@ -171,6 +176,7 @@ async function createSafetyBackup(data: AdminBackupData, targetPath: string) {
             writeJsonDataFile(`${targetPath}/prompts.json`, data.prompts),
             writeJsonDataFile(`${targetPath}/generation-logs.json`, data.generationLogs),
             writeJsonDataFile(`${targetPath}/account-deletion-requests.json`, data.accountDeletionRequests),
+            writeJsonDataFile(`${targetPath}/twinkle-model-bindings.json`, data.twinkleModelBindings),
         ]);
         return;
     }

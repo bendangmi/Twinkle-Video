@@ -29,7 +29,7 @@ export async function createImageTaskUpstreamStep(task: ImageTask, origin: strin
     const running = current.status === "pending" ? await transitionImageTask(current, ["pending"], { status: "running" }) : current;
     if (!running) return { state: "failed", error: "图片任务状态已变化", status: "conflict" };
     const prepared = persistedImageTaskResults(running);
-    if (prepared.length) return readyImageStep(running, prepared[0].serverUrl || prepared[0].dataUrl);
+    if (prepared.length) return readyImageStep(running, prepared[0].dataUrl || prepared[0].serverUrl || "");
     if (running.upstream?.id) return queryImageTaskUpstreamStep(running, origin, cookie, workerUserId);
 
     const authContext = cookie || maintenanceWorkerContext(workerUserId || task.userId);
@@ -67,7 +67,7 @@ export async function createImageTaskUpstreamStep(task: ImageTask, origin: strin
 
 export async function queryImageTaskUpstreamStep(task: ImageTask, origin: string, cookie = "", workerUserId = ""): Promise<ImageUpstreamStep> {
     const prepared = persistedImageTaskResults(task);
-    if (prepared.length) return readyImageStep(task, prepared[0].serverUrl || prepared[0].dataUrl);
+    if (prepared.length) return readyImageStep(task, prepared[0].dataUrl || prepared[0].serverUrl || "");
     const upstream = task.upstream;
     if (!upstream?.id) return { state: "failed", error: "图片任务缺少上游任务 ID", status: "missing_upstream_id" };
     const authContext = cookie || maintenanceWorkerContext(workerUserId || task.userId);
@@ -222,7 +222,7 @@ async function handleImageProviderResult(task: ImageTask, result: ImageTaskRunRe
         await deletePreparedImageTaskResults(results);
         return { state: "failed", error: error instanceof Error ? error.message : "上游返回的图片文件无效或保存失败", status: "failed" };
     }
-    return readyImageStep(task, first.serverUrl || first.dataUrl);
+    return readyImageStep(task, first.dataUrl || first.serverUrl || "");
 }
 
 async function readyImageStep(task: ImageTask, resultUrl: string): Promise<ImageUpstreamStep> {
@@ -289,7 +289,7 @@ async function completeImageResult(task: ImageTask, safeResults: StoredImageTask
     });
     const loggedAssets = logged?.assets?.length ? logged.assets : logged?.asset ? [logged.asset] : [];
     const finalResults = loggedAssets.length
-        ? loggedAssets.map((asset) => ({ dataUrl: asset.serverUrl || asset.url, remoteUrl: asset.remoteUrl, serverUrl: asset.serverUrl, width: asset.width, height: asset.height, bytes: asset.bytes, mimeType: asset.mimeType }))
+        ? loggedAssets.map((asset) => ({ dataUrl: asset.url || asset.serverUrl || "", remoteUrl: asset.remoteUrl, serverUrl: asset.serverUrl, width: asset.width, height: asset.height, bytes: asset.bytes, mimeType: asset.mimeType }))
         : safeResults;
     const finalResult = finalResults[0];
     const attempts = finishGenerationAttempt(completed.attempts || [], completed.attemptNo || completed.attempts?.at(-1)?.attemptNo || 1, {
@@ -299,7 +299,7 @@ async function completeImageResult(task: ImageTask, safeResults: StoredImageTask
     });
     const finalized = (await updateImageTask(task.id, { result: { ...finalResult, results: finalResults }, config: { ...completed.config, apiKey: "system" }, candidateConfigs: [], attempts, attemptNo: attempts.at(-1)?.attemptNo })) || completed;
     const assets = (finalized.result?.results?.length ? finalized.result.results : finalized.result ? [finalized.result] : []).flatMap((item) => {
-        const url = item.serverUrl || item.remoteUrl || stableMediaUrl(item.dataUrl);
+        const url = item.dataUrl || item.serverUrl || item.remoteUrl || stableMediaUrl(item.dataUrl);
         return url ? [{ type: "image" as const, url, mimeType: item.mimeType, width: item.width, height: item.height, bytes: item.bytes }] : [];
     });
     if (assets.length)

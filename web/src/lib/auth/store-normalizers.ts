@@ -240,6 +240,7 @@ export function normalizeSettings(settings: AuthSettings): AuthSettings {
     const site = normalizeSiteSettings(settings.site);
     return {
         site,
+        twinkleModel: { baseUrl: normalizeTwinkleModelBaseUrl(settings.twinkleModel?.baseUrl) },
         registrationEnabled: Boolean(settings.registrationEnabled),
         emailRegistrationEnabled: Boolean(settings.emailRegistrationEnabled),
         freeDailyPointsEnabled: settings.freeDailyPointsEnabled !== false,
@@ -258,6 +259,20 @@ export function normalizeSettings(settings: AuthSettings): AuthSettings {
         defaultModels: normalizeDefaultModelsConfig(settings.defaultModels, logicalModels, systemChannels),
         agentSkills: normalizeAgentSkills(settings.agentSkills),
     };
+}
+
+function normalizeTwinkleModelBaseUrl(value: unknown) {
+    const fallback = DEFAULT_SETTINGS.twinkleModel.baseUrl;
+    const text = typeof value === "string" ? value.trim() : "";
+    try {
+        const url = new URL(text || fallback);
+        if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return fallback;
+        url.search = "";
+        url.hash = "";
+        return url.toString().replace(/\/+$/, "").slice(0, 2000);
+    } catch {
+        return fallback;
+    }
 }
 
 export function normalizeLogicalModels(models: LogicalModel[] | undefined, channels: SystemModelChannel[]): LogicalModel[] {
@@ -453,6 +468,7 @@ export function normalizeSiteSettings(settings: Partial<SiteSettings> | undefine
     const title = normalizeText(settings?.title, DEFAULT_SITE_SETTINGS.title, 40);
     const seoTitle = normalizeBrandDefault(settings?.seoTitle, DEFAULT_SITE_SETTINGS.seoTitle, title, title, 72);
     return {
+        siteUrl: normalizeSiteUrl(settings?.siteUrl),
         title,
         logoUrl: normalizeLogoUrl(settings?.logoUrl),
         iconUrl: normalizeSiteIconUrl(settings?.iconUrl),
@@ -467,6 +483,20 @@ export function normalizeSiteSettings(settings: Partial<SiteSettings> | undefine
         friendLinks: normalizeSiteFriendLinks(settings?.friendLinks, title),
         socials: normalizeSiteSocials(settings?.socials),
     };
+}
+
+function normalizeSiteUrl(value: unknown) {
+    const text = typeof value === "string" ? value.trim() : "";
+    if (!text) return "";
+    try {
+        const url = new URL(text);
+        if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return "";
+        url.search = "";
+        url.hash = "";
+        return url.toString().replace(/\/+$/, "").slice(0, 2000);
+    } catch {
+        return "";
+    }
 }
 
 function normalizeBrandDefault(value: unknown, defaultValue: string, siteTitle: string, fallback: string, maxLength: number) {

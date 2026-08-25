@@ -176,6 +176,9 @@ describe("payment checkout providers", () => {
 
         expect(checkout).toMatchObject({ provider: "easypay", kind: "qr", qrContent: "https://qr.easypay.test/order-one", providerOrderId: "epay-trade-1" });
         expect(fetchMock).toHaveBeenCalledWith("https://easypay.test/mapi.php", expect.objectContaining({ method: "POST" }));
+        const body = fetchMock.mock.calls[0]?.[1]?.body as URLSearchParams;
+        expect(body.get("notify_url")).toBe("https://app.test/api/billing/webhooks/easypay");
+        expect(body.get("return_url")).toBe("https://app.test/billing/success?orderId=order-one");
     });
 
     it("builds an EasyPay hosted checkout URL without a server-side request", async () => {

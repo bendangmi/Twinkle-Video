@@ -12,6 +12,7 @@ import { scheduleGenerationTask } from "@/lib/server/generation-task-scheduler";
 import { getStoredGenerationTaskByRequest, linkStoredGenerationTask, withGenerationConcurrencyLimit, type GenerationTaskContext } from "@/lib/server/generation-task-store";
 import { resolveInternalOrigin } from "@/lib/server/internal-origin";
 import { resolveLogicalModelCandidates } from "@/lib/server/logical-model-router";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import { checkGenerationRateLimit, rateLimitHeaders } from "@/lib/server/security";
 
 export const runtime = "nodejs";
@@ -32,7 +33,10 @@ export async function POST(request: Request) {
             if (isAuthInputError(error)) return NextResponse.json({ error: error.message }, { status: error.status });
             throw error;
         }
-        const channels = resolveLogicalModelCandidates(settings, "audio", body.config?.model || settings.defaultModels.audioModel).map((resolved) => ({ ...toSystemGenerationChannel(resolved), channelId: resolved.channelId }));
+        const channels = resolveLogicalModelCandidates(settings, "audio", body.config?.model || settings.defaultModels.audioModel, "", await twinkleModelRoutingPreference(user.id)).map((resolved) => ({
+            ...toSystemGenerationChannel(resolved),
+            channelId: resolved.channelId,
+        }));
         const prompt = String(body.prompt || "").trim();
         const supportedChannels = channels.filter((channel) => channel.apiFormat !== "gemini");
         if (!supportedChannels.length || !prompt) return NextResponse.json({ error: "音频任务参数不完整或渠道不支持" }, { status: 400 });

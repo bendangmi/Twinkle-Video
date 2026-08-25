@@ -16,6 +16,7 @@ vi.mock("@/lib/auth/store", () => ({
 }));
 vi.mock("@/lib/server/internal-origin", () => ({ fetchInternalApi: mocks.fetchInternalApi }));
 vi.mock("@/lib/server/logical-model-router", () => ({ resolveLogicalModelCandidates: mocks.resolveLogicalModelCandidates }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => ({ twinkleModelRoutingPreference: vi.fn(async () => "twinkle-video") }));
 
 import { decomposeCanvasImage } from "./canvas-image-decomposition-service";
 

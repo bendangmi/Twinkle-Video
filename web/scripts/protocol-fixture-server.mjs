@@ -97,6 +97,21 @@ async function handleFixtureRequest({ request, response, url, body, tasks, reque
             </article></body></html>`),
         );
     }
+    if (request.method === "GET" && path === "/videos/models") {
+        return sendJson(response, 200, {
+            object: "list",
+            data: [
+                {
+                    id: "mock-video",
+                    object: "video.model",
+                    type: "video",
+                    capabilities: { text_to_video: true, image_to_video: true, video_reference: true, audio_reference: true },
+                    constraints: { resolutions: ["720p"], aspect_ratios: ["16:9", "9:16"], durations: [4, 5], reference_limits: { images: 9, videos: 3, audios: 3 } },
+                    pricing: { mode: "per_request", currency: "USD", unit_price: 1, rate_multiplier: 1, effective_unit_price: 1 },
+                },
+            ],
+        });
+    }
     if (request.method === "GET" && ["/models", "/api/v3/models"].includes(path)) {
         const catalog = url.searchParams.has("protocol") ? [...models, { id: "opaque-catalog-model" }] : models;
         return sendJson(response, 200, { object: "list", data: catalog });

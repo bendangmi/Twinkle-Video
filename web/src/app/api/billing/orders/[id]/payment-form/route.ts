@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { isBillingInputError } from "@/lib/server/billing-service";
 import { getStoredPaymentCheckoutForOrder } from "@/lib/server/payment-checkout-service";
 import { createPaymentFormPage } from "@/lib/server/payment-form-page";
+import { safePaymentHttpUrl } from "@/lib/payment-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     try {
         const { id } = await context.params;
         const checkout = await getStoredPaymentCheckoutForOrder(id, currentUser.id);
+        if (checkout.kind === "redirect" && checkout.url) {
+            const url = safePaymentHttpUrl(checkout.url);
+            if (!url) return apiError(409, "当前订单的支付地址无效");
+            return Response.redirect(url, 303);
+        }
         if (checkout.kind !== "form" || !checkout.form) return apiError(409, "当前订单不需要表单支付");
         const page = createPaymentFormPage(checkout.form);
         return new Response(page.html, {

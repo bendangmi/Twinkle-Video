@@ -81,7 +81,9 @@ export const EMAIL_CODE_MAX_AGE_MS = 1000 * 60 * 10;
 export const EMAIL_CODE_RESEND_COOLDOWN_MS = 1000 * 60;
 export const DEFAULT_USER_POINTS = 0;
 export const DEFAULT_MODEL_POINT_COST_KEY = "__default__";
+export const DEFAULT_TWINKLE_MODEL_BASE_URL = "https://big-model.smart-agi.com";
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+    siteUrl: "",
     title: "VOZEB PRO",
     logoUrl: "/logo.svg",
     iconUrl: "/icon.svg",
@@ -148,6 +150,7 @@ export const DEFAULT_ENTITLEMENT_SETTINGS: EntitlementSettings = {
 };
 export const DEFAULT_SETTINGS: AuthSettings = {
     site: DEFAULT_SITE_SETTINGS,
+    twinkleModel: { baseUrl: DEFAULT_TWINKLE_MODEL_BASE_URL },
     registrationEnabled: true,
     emailRegistrationEnabled: false,
     freeDailyPointsEnabled: true,

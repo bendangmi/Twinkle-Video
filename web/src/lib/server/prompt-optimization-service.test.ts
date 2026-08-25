@@ -7,6 +7,7 @@ import { optimizeCreativePrompt } from "./prompt-optimization-service";
 
 vi.mock("@/lib/auth/store", () => ({ getAuthSettings: vi.fn(), refundUserPoints: vi.fn() }));
 vi.mock("@/lib/server/logical-model-router", () => ({ resolveLogicalModelCandidates: vi.fn() }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => ({ twinkleModelRoutingPreference: vi.fn(async () => "twinkle-video") }));
 vi.mock("@/lib/server/text-planning-runtime", () => ({
     rankTextPlanningCandidates: <T>(items: T[]) => items,
     requestStructuredText: vi.fn(),

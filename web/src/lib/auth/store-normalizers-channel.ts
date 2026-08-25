@@ -3,7 +3,23 @@ import { isGlobalAiOpcPreset } from "@/lib/globalaiopc-catalog";
 
 import type { LogicalModelCapability, SystemChannelAdvancedConfig, SystemChannelProtocol } from "./store-types";
 
-const CHANNEL_PROTOCOLS: SystemChannelProtocol[] = ["auto", "openai", "yumeng", "gemini", "sub2api", "newapi", "vozeb-recommended", "globalaiopc", "seedance", "stable-diffusion", "volcengine-video", "seedance-special", "custom", "compatible"];
+const CHANNEL_PROTOCOLS: SystemChannelProtocol[] = [
+    "auto",
+    "openai",
+    "yumeng",
+    "gemini",
+    "sub2api",
+    "newapi",
+    "vozeb-recommended",
+    "globalaiopc",
+    "seedance",
+    "stable-diffusion",
+    "volcengine-video",
+    "seedance-special",
+    "twinkle-model",
+    "custom",
+    "compatible",
+];
 
 export function normalizeSystemChannelAdvancedConfig(config: Partial<SystemChannelAdvancedConfig> | undefined): SystemChannelAdvancedConfig | undefined {
     if (!config || typeof config !== "object") return undefined;
@@ -16,6 +32,9 @@ export function normalizeSystemChannelAdvancedConfig(config: Partial<SystemChann
     const modelCatalogPaths = Array.from(new Set((Array.isArray(config.modelCatalogPaths) ? config.modelCatalogPaths : []).map(normalizeApiPath).filter(Boolean))).slice(0, 12);
     return {
         protocol,
+        ...(config.credentialSource === "twinkle-model" ? { credentialSource: "twinkle-model" as const } : {}),
+        ...(textOrEmpty(config.defaultApiKeyName, 120) ? { defaultApiKeyName: textOrEmpty(config.defaultApiKeyName, 120) } : {}),
+        ...(textOrEmpty(config.defaultApiKeyTemplateId, 120) ? { defaultApiKeyTemplateId: textOrEmpty(config.defaultApiKeyTemplateId, 120) } : {}),
         ...(config.authMode === "none" || config.authMode === "bearer" || config.authMode === "x-api-key" || config.authMode === "custom-header" ? { authMode: config.authMode } : {}),
         ...(textOrEmpty(config.authHeader, 120) ? { authHeader: textOrEmpty(config.authHeader, 120) } : {}),
         ...(textOrEmpty(config.authPrefix, 120) ? { authPrefix: textOrEmpty(config.authPrefix, 120) } : {}),

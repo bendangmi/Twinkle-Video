@@ -28,7 +28,21 @@ export function createDefaultChannelAdvancedConfig(): SystemChannelAdvancedConfi
     return emptyAdvancedConfig();
 }
 
-export function SystemChannelEditor({ channel, fetching, onChange, onDelete, onFetchModels }: { channel: SystemModelChannel; fetching: boolean; onChange: (patch: Partial<SystemModelChannel>) => void; onDelete: () => void; onFetchModels: () => void }) {
+export function SystemChannelEditor({
+    channel,
+    twinkleModelBaseUrl,
+    fetching,
+    onChange,
+    onDelete,
+    onFetchModels,
+}: {
+    channel: SystemModelChannel;
+    twinkleModelBaseUrl: string;
+    fetching: boolean;
+    onChange: (patch: Partial<SystemModelChannel>) => void;
+    onDelete: () => void;
+    onFetchModels: () => void;
+}) {
     const { message } = App.useApp();
     const [exampleText, setExampleText] = useState("");
     const [revealedApiKey, setRevealedApiKey] = useState("");
@@ -116,6 +130,7 @@ export function SystemChannelEditor({ channel, fetching, onChange, onDelete, onF
     };
     const displayedApiKey = channel.apiKey || revealedApiKey;
     const requiresApiKey = channelRequiresApiKey(channel);
+    const twinkleCredential = advanced.credentialSource === "twinkle-model";
     return (
         <>
             <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm shadow-stone-200/40 sm:p-4 dark:border-stone-800 dark:bg-stone-950 dark:shadow-black/20">
@@ -156,9 +171,9 @@ export function SystemChannelEditor({ channel, fetching, onChange, onDelete, onF
                         <Input value={channel.name} placeholder="青岩智影、123NHH、自建接口" onChange={(event) => onChange({ name: event.target.value })} />
                     </LabeledControl>
                     <LabeledControl label="Base URL">
-                        <Input value={channel.baseUrl} placeholder="https://api.example.com/v1" onChange={(event) => onChange({ baseUrl: event.target.value })} />
+                        <Input value={twinkleCredential ? twinkleModelBaseUrl : channel.baseUrl} disabled={twinkleCredential} placeholder="https://api.example.com/v1" onChange={(event) => onChange({ baseUrl: event.target.value })} />
                     </LabeledControl>
-                    {requiresApiKey ? (
+                    {requiresApiKey && !twinkleCredential ? (
                         <LabeledControl label="API Key">
                             <div className="flex min-w-0 items-center gap-2">
                                 <Input
@@ -199,6 +214,30 @@ export function SystemChannelEditor({ channel, fetching, onChange, onDelete, onF
                             <Input value="无需 API Key" disabled />
                         </LabeledControl>
                     )}
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <LabeledControl label="密钥来源">
+                        <Select
+                            className="w-full"
+                            value={twinkleCredential ? "twinkle-model" : "system"}
+                            options={[
+                                { label: "管理员静态密钥（Twinkle Video）", value: "system" },
+                                { label: "用户 Twinkle Model 个人密钥", value: "twinkle-model" },
+                            ]}
+                            onChange={(credentialSource) =>
+                                onChange({
+                                    ...(credentialSource === "twinkle-model" ? { baseUrl: twinkleModelBaseUrl } : {}),
+                                    advancedConfig: { ...advanced, credentialSource: credentialSource as "system" | "twinkle-model", defaultApiKeyTemplateId: undefined },
+                                })
+                            }
+                        />
+                    </LabeledControl>
+                    {twinkleCredential ? (
+                        <LabeledControl label="Twinkle Model 默认密钥名称">
+                            <Input value={advanced.defaultApiKeyName} placeholder="精确匹配系统默认密钥名称" onChange={(event) => updateAdvanced({ defaultApiKeyName: event.target.value, defaultApiKeyTemplateId: undefined })} />
+                            <div className="mt-1 text-xs text-stone-500 dark:text-stone-400">同步模型时按名称确认并保存 template_id；后续名称变化不影响用户个人密钥解析。</div>
+                        </LabeledControl>
+                    ) : null}
                 </div>
                 <details className="mt-3 rounded-lg border border-stone-200 bg-stone-50/70 dark:border-stone-800 dark:bg-stone-900/40">
                     <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-stone-800 dark:text-stone-100">高级设置</summary>

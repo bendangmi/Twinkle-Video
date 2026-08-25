@@ -700,7 +700,7 @@ export default function CreatePage() {
                                 followLatest={!awayFromLatest}
                             />
                         ) : (
-                            <div className="mx-auto flex min-h-full w-full min-w-0 max-w-[1240px] flex-col items-center px-2.5 pb-3 pt-5 sm:px-8 sm:pb-8 sm:pt-14 lg:pt-[10vh]">
+                            <div className="mx-auto flex min-h-full w-full min-w-0 max-w-[1240px] flex-col items-center px-2.5 pb-3 pt-14 sm:px-8 sm:pb-8 lg:pt-[10vh]">
                                 <div className="text-center">
                                     <h1 className="text-[23px] font-semibold leading-tight sm:text-[31px]">{siteTitle} 创作 Agent</h1>
                                     <p className="mt-2 text-sm text-[#8b949f] dark:text-[#7f8996]">从一个想法开始</p>

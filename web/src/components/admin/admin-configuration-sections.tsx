@@ -21,7 +21,7 @@ export function AdminSiteSection({ controller }: { controller: AdminDashboardCon
                 title="网站设置"
                 description="统一管理前台品牌、Logo、浏览器标题和搜索引擎展示信息。"
                 actions={
-                    <Button type="primary" loading={settingsLoading} icon={<Save className="size-4" />} onClick={() => saveSettings({ site: getLatestSiteSettings() }, "网站信息已保存")}>
+                    <Button type="primary" loading={settingsLoading} icon={<Save className="size-4" />} onClick={() => saveSettings({ site: getLatestSiteSettings(), twinkleModel: settings.twinkleModel }, "网站信息已保存")}>
                         保存网站设置
                     </Button>
                 }
@@ -31,6 +31,17 @@ export function AdminSiteSection({ controller }: { controller: AdminDashboardCon
                     <div className="space-y-5 rounded-lg border border-stone-200 bg-stone-50/70 p-4 dark:border-stone-800 dark:bg-stone-900/40">
                         <SectionTitle icon={<Globe2 className="size-4" />} title="基础信息" />
                         <div className="grid gap-4 md:grid-cols-2">
+                            <LabeledControl label="站点地址">
+                                <Input value={settings.site.siteUrl} maxLength={2000} placeholder="https://www.example.com" onChange={(event) => updateSiteSetting("siteUrl", event.target.value)} />
+                            </LabeledControl>
+                            <LabeledControl label="Twinkle Model 地址">
+                                <Input
+                                    value={settings.twinkleModel.baseUrl}
+                                    maxLength={2000}
+                                    placeholder="https://big-model.smart-agi.com"
+                                    onChange={(event) => controller.setSettings((current) => ({ ...current, twinkleModel: { baseUrl: event.target.value } }))}
+                                />
+                            </LabeledControl>
                             <LabeledControl label="网站标题">
                                 <Input value={settings.site.title} maxLength={40} placeholder="例如：无限创作" onChange={(event) => updateSiteSetting("title", event.target.value)} />
                             </LabeledControl>

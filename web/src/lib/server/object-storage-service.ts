@@ -26,7 +26,9 @@ type ExternalMediaWriteInput = {
     filePath?: string;
 };
 
-export async function persistExternalMediaIfEnabled(input: ExternalMediaWriteInput) {
+type ExternalMediaRegistration = LocalMediaRegistration & { url?: string };
+
+export async function persistExternalMediaIfEnabled(input: ExternalMediaWriteInput): Promise<ExternalMediaRegistration | null> {
     const config = await getObjectStorageRuntimeConfig();
     if (!config.enabled) return null;
     assertObjectStorageConfigured(config);
@@ -38,13 +40,15 @@ export async function persistExternalMediaIfEnabled(input: ExternalMediaWriteInp
     }
     const syncedAt = new Date().toISOString();
     try {
-        return await registerLocalMediaAsset({
+        const registration = await registerLocalMediaAsset({
             ...input.registration,
             storageProvider: "object",
             externalStorageId: config.id,
             externalObjectKey: objectKey,
             externalSyncedAt: syncedAt,
         });
+        const url = config.customDomain ? customDomainObjectUrl(config.customDomain, objectKey) : undefined;
+        return url ? { ...registration, url } : registration;
     } catch (error) {
         await deleteObjects(config, [objectKey]).catch(() => undefined);
         throw error;
@@ -73,6 +77,13 @@ export async function createExternalStorageImagePreviewUrl(objectKey: string, wi
     const key = objectKey.trim().replace(/\\/g, "/");
     if (!key.startsWith(`${config.prefix}/`) || isPreviewVariantKey(key) || classifyManagedMediaType({ name: key }) !== "image") return null;
     return createObjectImagePreviewReadUrl(config, key, normalizeImagePreviewWidth(width), key);
+}
+
+export async function createExternalMediaPublicUrl(registration: LocalMediaRegistration) {
+    if (registration.storageProvider !== "object" || !registration.externalObjectKey) return null;
+    const config = await getObjectStorageRuntimeConfig();
+    assertRegistrationConfig(config, registration);
+    return config.customDomain ? customDomainObjectUrl(config.customDomain, registration.externalObjectKey) : null;
 }
 
 export async function checkConfiguredObjectStorage() {
@@ -152,8 +163,18 @@ async function createObjectImagePreviewReadUrl(config: ObjectStorageRuntimeConfi
 }
 
 function createObjectReadUrl(config: ObjectStorageRuntimeConfig, objectKey: string, input: Parameters<typeof signObjectRead>[1]) {
-    if (config.customDomain) return `${config.customDomain}/${objectKey.replace(/^\/+/, "")}`;
+    if (config.customDomain) return customDomainObjectUrl(config.customDomain, objectKey);
     return signObjectRead(config, input);
+}
+
+function customDomainObjectUrl(customDomain: string, objectKey: string) {
+    const url = new URL(customDomain);
+    const prefix = url.pathname.replace(/\/+$/, "");
+    const key = objectKey.replace(/^\/+/, "");
+    url.pathname = `${prefix}/${key}`;
+    url.search = "";
+    url.hash = "";
+    return url.toString();
 }
 
 function adminObjectImagePreviewUrl(key: string) {

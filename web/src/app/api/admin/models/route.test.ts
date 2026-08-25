@@ -1,13 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ isSafeOutboundUrl: vi.fn(async () => true) }));
+const mocks = vi.hoisted(() => ({
+    isSafeOutboundUrl: vi.fn(async () => true),
+    resolveTwinkleModelChannelCredential: vi.fn(),
+}));
 const savedChannel = { id: "saved", name: "已保存", baseUrl: "https://api.example.com/v1", apiKey: "test-secret-value", apiFormat: "openai", models: [], enabled: true };
 
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn(async () => ({ id: "admin", role: "admin", status: "active", adminPermissions: ["upstream.manage"] })) }));
-vi.mock("@/lib/auth/store", () => ({ getAuthSettings: vi.fn(async () => ({ systemChannels: [savedChannel] })) }));
+vi.mock("@/lib/auth/store", () => ({ getAuthSettings: vi.fn(async () => ({ systemChannels: [savedChannel], twinkleModel: { baseUrl: "https://big-model.smart-agi.com" } })) }));
 vi.mock("@/lib/server/security", () => ({ isSafeOutboundUrl: mocks.isSafeOutboundUrl }));
 vi.mock("@/lib/server/safe-outbound-fetch", () => ({ fetchSafeOutbound: (url: string | URL, init?: RequestInit) => fetch(url, init) }));
 vi.mock("@/lib/server/proxy-dispatcher", () => ({ configureServerProxyDispatcher: vi.fn() }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => ({
+    resolveTwinkleModelChannelCredential: mocks.resolveTwinkleModelChannelCredential,
+    TwinkleModelAccountError: class TwinkleModelAccountError extends Error {},
+}));
 
 import { POST } from "./route";
 
@@ -17,6 +24,8 @@ describe("admin models route", () => {
         mocks.isSafeOutboundUrl.mockClear();
         mocks.isSafeOutboundUrl.mockResolvedValue(true);
         savedChannel.apiKey = "test-secret-value";
+        mocks.resolveTwinkleModelChannelCredential.mockReset();
+        mocks.resolveTwinkleModelChannelCredential.mockResolvedValue({ apiKey: "personal-key", templateId: "template-37", templateName: "VOZEB 默认" });
         (globalThis as typeof globalThis & { __vozebProModelFetchCooldowns?: Map<string, number> }).__vozebProModelFetchCooldowns?.clear();
     });
 
@@ -26,6 +35,21 @@ describe("admin models route", () => {
         const response = await POST(request({ channelId: "saved" }));
         expect(await response.json()).toMatchObject({ models: ["gpt-test"], modelCapabilities: { "gpt-test": "text" }, discoveredCount: 1, totalCount: 1 });
         expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/v1/models", expect.objectContaining({ headers: { authorization: "Bearer test-secret-value" } }));
+    });
+
+    it("uses the bound admin key and returns the stable template ID for a Twinkle Model channel", async () => {
+        const fetchMock = vi.fn(async () => Response.json({ data: [{ id: "twinkle-text" }] }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const response = await POST(request({ protocol: "compatible", credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认" }));
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({
+            models: ["twinkle-text"],
+            recommendedConfig: { credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认", defaultApiKeyTemplateId: "template-37" },
+        });
+        expect(mocks.resolveTwinkleModelChannelCredential).toHaveBeenCalledWith("admin", { templateId: undefined, defaultKeyName: "VOZEB 默认" });
+        expect(fetchMock).toHaveBeenCalledWith("https://big-model.smart-agi.com/v1/models", expect.objectContaining({ headers: { authorization: "Bearer personal-key" } }));
     });
 
     it("loads a keyless Stable Diffusion model catalog without authentication", async () => {

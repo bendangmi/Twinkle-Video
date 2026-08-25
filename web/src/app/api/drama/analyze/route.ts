@@ -8,6 +8,7 @@ import { mergeDramaContentAnalyses } from "@/lib/server/drama-analysis-merge";
 import { splitDramaScriptAtBoundary } from "@/lib/server/drama-analysis-segmentation";
 import { resolveInternalOrigin } from "@/lib/server/internal-origin";
 import { resolveLogicalModelCandidates } from "@/lib/server/logical-model-router";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import { checkRateLimit } from "@/lib/server/security";
 import { hasSystemAiCharge, readSystemAiBilling, systemAiBillingHeaders, systemAiIdempotencyKey, type SystemAiBilling } from "@/lib/server/system-ai-billing";
 import { isStructuredTextFailure, rankTextPlanningCandidates, requestStructuredText, type TextPlanningCandidate } from "@/lib/server/text-planning-runtime";
@@ -39,12 +40,13 @@ export async function POST(request: Request) {
 
     const settings = await getAuthSettings();
     const model = settings.defaultModels.textModel;
-    const candidates = resolveLogicalModelCandidates(settings, "text", model);
+    const providerPreference = await twinkleModelRoutingPreference(user.id);
+    const candidates = resolveLogicalModelCandidates(settings, "text", model, "", providerPreference);
     if (!model || !candidates.length) return NextResponse.json({ code: 400, data: null, msg: "后台尚未配置可用的默认文本模型" }, { status: 400 });
     const requestedVideoModel = dramaAnalysisText(body.videoModel);
     const defaultVideoModel = settings.defaultModels.videoModel;
-    const requestedVideoCandidates = phase === "content" && (requestedVideoModel || defaultVideoModel) ? resolveLogicalModelCandidates(settings, "video", requestedVideoModel || defaultVideoModel) : [];
-    const videoCandidates = requestedVideoCandidates.length || !defaultVideoModel || requestedVideoModel === defaultVideoModel ? requestedVideoCandidates : resolveLogicalModelCandidates(settings, "video", defaultVideoModel);
+    const requestedVideoCandidates = phase === "content" && (requestedVideoModel || defaultVideoModel) ? resolveLogicalModelCandidates(settings, "video", requestedVideoModel || defaultVideoModel, "", providerPreference) : [];
+    const videoCandidates = requestedVideoCandidates.length || !defaultVideoModel || requestedVideoModel === defaultVideoModel ? requestedVideoCandidates : resolveLogicalModelCandidates(settings, "video", defaultVideoModel, "", providerPreference);
     const durationPolicy = resolveDramaVideoDurationPolicy(videoCandidates, settings.generationDefaults.videoSeconds, settings.generationPointMultipliers?.videoSeconds);
     const durationInstruction = phase === "content" ? dramaShotDurationInstruction(durationPolicy) : "";
 

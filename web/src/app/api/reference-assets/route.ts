@@ -34,7 +34,7 @@ export async function POST(request: Request) {
             .map((part) => encodeURIComponent(part))
             .join("/")}`;
         return NextResponse.json({
-            url: browserUrl,
+            url: asset.url || browserUrl,
             upstreamUrl: asset.url || createSignedReferenceAssetUrl(asset.token, origin, currentUser.id) || undefined,
             token: asset.token,
             key: asset.token,

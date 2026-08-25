@@ -460,8 +460,8 @@ export async function buildCompatibleVideoPayloadVariants(config: AiConfig, mode
                 images,
                 videos: referenceVideos,
                 audios: referenceAudios,
-                startImageUrl: await twinkleFrameImageUrl(references, "first_frame"),
-                endImageUrl: await twinkleFrameImageUrl(references, "last_frame"),
+                firstFrameUrl: await twinkleFrameImageUrl(references, "first_frame"),
+                lastFrameUrl: await twinkleFrameImageUrl(references, "last_frame"),
             }),
         ];
     }

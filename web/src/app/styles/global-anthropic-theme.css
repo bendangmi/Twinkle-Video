@@ -109,8 +109,8 @@ html[data-ui-theme="anthropic"] .workspace-shell [class~="bg-card"] {
 
 html[data-ui-theme="anthropic"] .workspace-shell aside,
 html[data-ui-theme="anthropic"] .workspace-shell aside > a,
-html[data-ui-theme="anthropic"] .workspace-shell [class*="border-[#eaecf0]"],
-html[data-ui-theme="anthropic"] .workspace-shell [class*="border-[#e5e8ec]"] {
+html[data-ui-theme="anthropic"] .workspace-shell [class~="border-[#eaecf0]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class~="border-[#e5e8ec]"] {
     border-color: var(--anthropic-line) !important;
 }
 
@@ -129,15 +129,15 @@ html[data-ui-theme="anthropic"] .workspace-shell aside a[aria-current="page"] .t
     color: var(--anthropic-accent) !important;
 }
 
-html[data-ui-theme="anthropic"] .workspace-shell .workspace-header [class*="text-[#20242a]"],
-html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#111827]"],
-html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#20242a]"] {
+html[data-ui-theme="anthropic"] .workspace-shell .workspace-header [class~="text-[#20242a]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class~="text-[#111827]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class~="text-[#20242a]"] {
     color: var(--anthropic-ink) !important;
 }
 
-html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#697381]"],
-html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#98a2b3]"],
-html[data-ui-theme="anthropic"] .workspace-shell [class*="text-[#7f8995]"] {
+html[data-ui-theme="anthropic"] .workspace-shell [class~="text-[#697381]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class~="text-[#98a2b3]"],
+html[data-ui-theme="anthropic"] .workspace-shell [class~="text-[#7f8995]"] {
     color: var(--anthropic-muted) !important;
 }
 

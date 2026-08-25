@@ -97,6 +97,33 @@ describe("resolveLogicalModel", () => {
         expect(resolveLogicalModel(settings, "image", "sd2.0")).toBeNull();
     });
 
+    it("orders personal Twinkle channels first and keeps static fallback", () => {
+        const staticChannel = channel("static", ["upstream"]);
+        const personalChannel = {
+            ...channel("personal", ["upstream"]),
+            apiKey: "",
+            advancedConfig: { protocol: "openai" as const, credentialSource: "twinkle-model" as const, defaultApiKeyName: "默认", defaultApiKeyTemplateId: "template" },
+        };
+        const settings = {
+            systemChannels: [staticChannel, personalChannel],
+            logicalModels: [
+                {
+                    id: "writer",
+                    name: "Writer",
+                    capability: "text" as const,
+                    enabled: true,
+                    bindings: [
+                        { id: "static", channelId: "static", upstreamModel: "upstream", enabled: true, priority: 1 },
+                        { id: "personal", channelId: "personal", upstreamModel: "upstream", enabled: true, priority: 2 },
+                    ],
+                },
+            ],
+        };
+
+        expect(resolveLogicalModelCandidates(settings, "text", "writer", "", "twinkle-model").map((item) => item.channelId)).toEqual(["personal", "static"]);
+        expect(resolveLogicalModelCandidates(settings, "text", "writer", "", "twinkle-video").map((item) => item.channelId)).toEqual(["static"]);
+    });
+
     it("uses the logical model id as the billing key for its bound upstream model", () => {
         const logicalModels = [{ id: "writer", name: "Writer", capability: "text" as const, enabled: true, bindings: [{ id: "one", channelId: "primary", upstreamModel: "vendor/writer-v2", enabled: true, priority: 1 }] }];
 

@@ -54,6 +54,8 @@ export function AuthForm({
     const [emailCode, setEmailCode] = useState("");
     const [displayName, setDisplayName] = useState("");
     const [password, setPassword] = useState("");
+    const [twinkleEmail, setTwinkleEmail] = useState("");
+    const [twinklePassword, setTwinklePassword] = useState("");
     const [totpCode, setTotpCode] = useState("");
     const [mfaRequired, setMfaRequired] = useState(false);
     const [referralCode, setReferralCode] = useState(initialReferralCode);
@@ -83,9 +85,11 @@ export function AuthForm({
                     referralSource,
                     policyAccepted: isRegister && !firstUser ? policyAccepted : undefined,
                     installToken: firstUser ? installToken.trim() : undefined,
+                    twinkleEmail: isRegister && !firstUser ? twinkleEmail.trim() || undefined : undefined,
+                    twinklePassword: isRegister && !firstUser ? twinklePassword || undefined : undefined,
                 }),
             });
-            const payload = (await response.json()) as { user?: LocalUser; error?: string; mfaRequired?: boolean; securityNotice?: { networkChanged: boolean; deviceChanged: boolean } };
+            const payload = (await response.json()) as { user?: LocalUser; error?: string; bindingWarning?: string; mfaRequired?: boolean; securityNotice?: { networkChanged: boolean; deviceChanged: boolean } };
             if (!isRegister && payload.mfaRequired) {
                 setMfaRequired(true);
                 message.info("请输入身份验证器动态码");
@@ -96,6 +100,8 @@ export function AuthForm({
             if (!isRegister && payload.securityNotice) {
                 const changed = [payload.securityNotice.deviceChanged ? "设备" : "", payload.securityNotice.networkChanged ? "网络" : ""].filter(Boolean).join("和");
                 message.warning(`检测到登录${changed}发生变化，请在账户与安全中核对登录记录`);
+            } else if (payload.bindingWarning) {
+                message.warning(`注册成功；${payload.bindingWarning}`);
             } else {
                 message.success(isRegister ? "注册成功" : "登录成功");
             }
@@ -231,6 +237,33 @@ export function AuthForm({
                             disabled={submitting || disabled}
                         />
                     </label>
+                ) : null}
+
+                {isRegister && !firstUser ? (
+                    <div className="space-y-3 rounded-lg border border-stone-200 p-4 dark:border-stone-800">
+                        <div>
+                            <div className="text-sm font-medium text-stone-700 dark:text-stone-200">绑定 Twinkle Model（选填）</div>
+                            <div className="mt-1 text-xs leading-5 text-stone-500 dark:text-stone-400">绑定失败不影响注册，之后可在个人中心重试。</div>
+                        </div>
+                        <Input
+                            size="large"
+                            prefix={<Mail className="size-4 text-stone-500" />}
+                            value={twinkleEmail}
+                            onChange={(event) => setTwinkleEmail(event.target.value)}
+                            placeholder="Twinkle Model 邮箱"
+                            autoComplete="off"
+                            disabled={submitting || disabled}
+                        />
+                        <Input.Password
+                            size="large"
+                            prefix={<LockKeyhole className="size-4 text-stone-500" />}
+                            value={twinklePassword}
+                            onChange={(event) => setTwinklePassword(event.target.value)}
+                            placeholder="Twinkle Model 密码"
+                            autoComplete="new-password"
+                            disabled={submitting || disabled}
+                        />
+                    </div>
                 ) : null}
 
                 <label className="block space-y-3">

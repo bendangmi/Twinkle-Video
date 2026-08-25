@@ -30,6 +30,7 @@ export async function POST(request: Request) {
                     version: 1,
                     requests: data.accountDeletionRequests.requests.map(({ email: _email, ...item }) => item),
                 },
+                twinkleModelBindings: data.twinkleModelBindings,
             },
         };
         await safeRecordAuditLog({

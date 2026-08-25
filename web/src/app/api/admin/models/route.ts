@@ -29,6 +29,7 @@ import { fetchSafeOutbound } from "@/lib/server/safe-outbound-fetch";
 import { isSafeOutboundUrl } from "@/lib/server/security";
 import { channelProtocolDefinition, protocolAuthHeaders, protocolModelConfig, resolveChannelAuthMode } from "@/lib/channel-protocol-registry";
 import type { SystemChannelAdvancedConfig, SystemChannelProtocol } from "@/lib/auth/store";
+import { resolveTwinkleModelChannelCredential, TwinkleModelAccountError } from "@/lib/server/twinkle-model-account-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +53,9 @@ type ModelsPayload = {
     modelCapabilities?: unknown;
     modelConfigs?: unknown;
     operationConfigs?: unknown;
+    credentialSource?: unknown;
+    defaultApiKeyName?: unknown;
+    defaultApiKeyTemplateId?: unknown;
 };
 
 type ModelsResponse = Record<string, unknown> & {
@@ -71,8 +75,9 @@ export async function POST(request: Request) {
     if (!hasAdminPermission(currentUser, "upstream.manage")) return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
 
     const [body, settings] = await Promise.all([readJsonBody<ModelsPayload>(request), getAuthSettings()]);
-    const { baseUrl, apiKey, apiFormat, savedChannel } = resolveAdminChannelCredentials(settings, body);
-    if (!baseUrl) return NextResponse.json({ error: "请先填写 Base URL 和 API Key" }, { status: 400 });
+    const credentials = resolveAdminChannelCredentials(settings, body);
+    let { baseUrl, apiKey } = credentials;
+    const { apiFormat, savedChannel } = credentials;
 
     const advancedConfig = {
         ...(savedChannel?.advancedConfig || {}),
@@ -83,7 +88,26 @@ export async function POST(request: Request) {
         ...(body.globalAiOpcPreset !== undefined ? { globalAiOpcPreset: body.globalAiOpcPreset } : {}),
         ...(body.globalAiOpcPresets !== undefined ? { globalAiOpcPresets: body.globalAiOpcPresets } : {}),
         ...(body.createPath !== undefined ? { createPath: body.createPath } : {}),
+        ...(body.credentialSource !== undefined ? { credentialSource: body.credentialSource } : {}),
+        ...(body.defaultApiKeyName !== undefined ? { defaultApiKeyName: body.defaultApiKeyName } : {}),
+        ...(body.defaultApiKeyTemplateId !== undefined ? { defaultApiKeyTemplateId: body.defaultApiKeyTemplateId } : {}),
     } as SystemChannelAdvancedConfig;
+    let credentialRecommendedConfig: Partial<SystemChannelAdvancedConfig> | undefined;
+    if (advancedConfig.credentialSource === "twinkle-model") {
+        try {
+            const resolved = await resolveTwinkleModelChannelCredential(currentUser.id, {
+                templateId: typeof advancedConfig.defaultApiKeyTemplateId === "string" ? advancedConfig.defaultApiKeyTemplateId : undefined,
+                defaultKeyName: typeof advancedConfig.defaultApiKeyName === "string" ? advancedConfig.defaultApiKeyName : undefined,
+            });
+            baseUrl = settings.twinkleModel.baseUrl;
+            apiKey = resolved.apiKey;
+            credentialRecommendedConfig = { credentialSource: "twinkle-model", defaultApiKeyName: resolved.templateName, defaultApiKeyTemplateId: resolved.templateId };
+        } catch (error) {
+            if (error instanceof TwinkleModelAccountError) return NextResponse.json({ error: error.message }, { status: error.status });
+            throw error;
+        }
+    }
+    if (!baseUrl) return NextResponse.json({ error: "请先填写 Base URL 和 API Key" }, { status: 400 });
     const configuredModels = body.configuredModels !== undefined ? body.configuredModels : savedChannel?.models;
     const configuredCapabilities = body.modelCapabilities !== undefined ? body.modelCapabilities : savedChannel?.advancedConfig?.modelCapabilities;
     const configuredConfigs = normalizeModelConfigs(body.modelConfigs !== undefined ? body.modelConfigs : savedChannel?.advancedConfig?.modelConfigs);
@@ -115,6 +139,7 @@ export async function POST(request: Request) {
             totalCount: merged.length,
             catalogSupported: false,
             provider: protocol,
+            ...(credentialRecommendedConfig ? { recommendedConfig: credentialRecommendedConfig } : {}),
         });
     }
 
@@ -135,6 +160,7 @@ export async function POST(request: Request) {
             discoveredCount: discovered.length,
             totalCount: merged.length,
             globalAiOpcPresets: selection.presetIds,
+            ...(credentialRecommendedConfig ? { recommendedConfig: credentialRecommendedConfig } : {}),
         });
     }
     if (advancedConfig.protocol === "globalaiopc" || isGlobalAiOpcBaseUrl(baseUrl)) return NextResponse.json({ error: "未识别到 GlobalAiOpc 接口范围，请检查 Base URL 或重新选择接口范围" }, { status: 400 });
@@ -212,7 +238,8 @@ export async function POST(request: Request) {
             totalCount: merged.length,
             catalogSupported: catalogSucceeded,
             ...(!catalogSucceeded ? { warning: "上游未公开模型目录，已保留现有手工模型。" } : {}),
-            ...(agnes ? { provider: "agnes", recommendedConfig: AGNES_RECOMMENDED_CONFIG } : {}),
+            ...(agnes ? { provider: "agnes" } : {}),
+            ...(agnes || credentialRecommendedConfig ? { recommendedConfig: { ...(agnes ? AGNES_RECOMMENDED_CONFIG : {}), ...(credentialRecommendedConfig || {}) } } : {}),
         });
     } catch (error) {
         modelFetchCooldowns.delete(cooldownKey);

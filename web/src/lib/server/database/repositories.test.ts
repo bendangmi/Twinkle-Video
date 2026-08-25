@@ -947,6 +947,7 @@ describe("split Postgres repositories", () => {
         const [statement, params] = queryArgs(query, 0);
         expect(String(statement)).toContain("LIMIT 4");
         expect(String(statement)).toContain("LIMIT $2::integer");
+        expect(String(statement)).toMatch(/ranked_assets AS \(\s+SELECT\s+id,\s+generation_log_id,/s);
         expect(String(statement)).not.toMatch(/SELECT\s+\*|\bprompt\b|\berror\b/i);
         expect(params).toEqual(["user-one", 8]);
     });

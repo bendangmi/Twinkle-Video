@@ -8,8 +8,8 @@ export type TwinkleModelVideoRequestInput = {
     images?: string[];
     videos?: string[];
     audios?: string[];
-    startImageUrl?: string;
-    endImageUrl?: string;
+    firstFrameUrl?: string;
+    lastFrameUrl?: string;
 };
 
 export function buildTwinkleModelVideoRequest(input: TwinkleModelVideoRequestInput) {
@@ -20,10 +20,10 @@ export function buildTwinkleModelVideoRequest(input: TwinkleModelVideoRequestInp
         ...(input.resolution ? { resolution: input.resolution } : {}),
         ...(input.aspectRatio ? { aspect_ratio: input.aspectRatio } : {}),
         generate_audio: input.generateAudio,
-        ...(input.images?.length ? { images: input.images } : {}),
-        ...(input.videos?.length ? { video_references: input.videos.map((url) => ({ url })) } : {}),
-        ...(input.audios?.length ? { audio_references: input.audios.map((url) => ({ url })) } : {}),
-        ...(input.startImageUrl ? { start_image_url: input.startImageUrl } : {}),
-        ...(input.endImageUrl ? { end_image_url: input.endImageUrl } : {}),
+        ...(input.images?.length ? { image_urls: input.images } : {}),
+        ...(input.videos?.length ? { video_urls: input.videos } : {}),
+        ...(input.audios?.length ? { audio_urls: input.audios } : {}),
+        ...(input.firstFrameUrl ? { first_frame_url: input.firstFrameUrl } : {}),
+        ...(input.lastFrameUrl ? { last_frame_url: input.lastFrameUrl } : {}),
     };
 }

@@ -34,6 +34,7 @@ describe("POST /api/admin/backup", () => {
             prompts: { version: 1, prompts: [], seedSources: [] },
             generationLogs: { version: 1, logs: [] },
             accountDeletionRequests: { version: 1, requests: [] },
+            twinkleModelBindings: { version: 1, bindings: [] },
         });
     });
 

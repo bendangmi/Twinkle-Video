@@ -48,6 +48,7 @@ vi.mock("@/lib/server/security", () => ({
 }));
 vi.mock("@/lib/server/generation-task-recovery-service", () => ({ runGenerationTaskRecoveryBatch: vi.fn() }));
 vi.mock("@/lib/server/generation-task-scheduler", () => ({ scheduleGenerationTask: mocks.scheduleGenerationTask }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => ({ twinkleModelRoutingPreference: vi.fn(async () => "twinkle-video") }));
 vi.mock("@/lib/server/video-task-log", () => ({ writeVideoGenerationLog: mocks.writeVideoGenerationLog }));
 vi.mock("@/lib/server/video-reference-image", () => ({ normalizeVideoProviderImageReferences: mocks.normalizeImageReferences }));
 vi.mock("@/lib/server/video-task-store", () => ({

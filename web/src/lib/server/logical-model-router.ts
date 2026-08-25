@@ -11,12 +11,25 @@ export type ResolvedLogicalModel = {
     channel: SystemModelChannel;
     capabilityProfile?: ReturnType<typeof resolveLogicalModelCapabilityProfile>;
 };
+export type ModelProviderPreference = "twinkle-model" | "twinkle-video";
 
-export function resolveLogicalModel(settings: Pick<AuthSettings, "logicalModels" | "systemChannels">, capability: LogicalModelCapability, requestedModelId: string, preferredChannelId = ""): ResolvedLogicalModel | null {
-    return resolveLogicalModelCandidates(settings, capability, requestedModelId, preferredChannelId)[0] || null;
+export function resolveLogicalModel(
+    settings: Pick<AuthSettings, "logicalModels" | "systemChannels">,
+    capability: LogicalModelCapability,
+    requestedModelId: string,
+    preferredChannelId = "",
+    providerPreference: ModelProviderPreference = "twinkle-video",
+): ResolvedLogicalModel | null {
+    return resolveLogicalModelCandidates(settings, capability, requestedModelId, preferredChannelId, providerPreference)[0] || null;
 }
 
-export function resolveLogicalModelCandidates(settings: Pick<AuthSettings, "logicalModels" | "systemChannels">, capability: LogicalModelCapability, requestedModelId: string, preferredChannelId = ""): ResolvedLogicalModel[] {
+export function resolveLogicalModelCandidates(
+    settings: Pick<AuthSettings, "logicalModels" | "systemChannels">,
+    capability: LogicalModelCapability,
+    requestedModelId: string,
+    preferredChannelId = "",
+    providerPreference: ModelProviderPreference = "twinkle-video",
+): ResolvedLogicalModel[] {
     const requested = rawModelName(requestedModelId);
     if (!requested) return [];
     const logical = settings.logicalModels.find((model) => model.enabled && model.capability === capability && model.id.toLowerCase() === requested.toLowerCase());
@@ -31,14 +44,19 @@ export function resolveLogicalModelCandidates(settings: Pick<AuthSettings, "logi
         // Text planning tracks health per channel + upstream model in
         // text-planning-runtime. A channel-level cooldown must not hide a healthy
         // backup text model that shares the same gateway.
-        return capability === "text" ? resolved : filterHealthyRuntimeCandidates(resolved, capability);
+        return orderCandidatesByProvider(capability === "text" ? resolved : filterHealthyRuntimeCandidates(resolved, capability), providerPreference);
     }
     if (settings.logicalModels.length) return [];
     const ordered = preferredChannelId ? [...settings.systemChannels.filter((channel) => channel.id === preferredChannelId), ...settings.systemChannels.filter((channel) => channel.id !== preferredChannelId)] : settings.systemChannels;
     const resolved = ordered
         .filter((item) => item.enabled && channelConnectionReady(item) && channelSupportsModel(item.models, requested) && channelModelCapability(item, requested) === capability)
         .map((channel) => ({ logicalModelId: requested, upstreamModel: requested, channelId: channel.id, channel, capabilityProfile: resolveLogicalModelCapabilityProfile({}, capability, channel, requested) }));
-    return capability === "text" ? resolved : filterHealthyRuntimeCandidates(resolved, capability);
+    return orderCandidatesByProvider(capability === "text" ? resolved : filterHealthyRuntimeCandidates(resolved, capability), providerPreference);
+}
+
+export function orderCandidatesByProvider(candidates: ResolvedLogicalModel[], providerPreference: ModelProviderPreference) {
+    if (providerPreference === "twinkle-video") return candidates.filter((candidate) => candidate.channel.advancedConfig?.credentialSource !== "twinkle-model");
+    return [...candidates].sort((left, right) => Number(right.channel.advancedConfig?.credentialSource === "twinkle-model") - Number(left.channel.advancedConfig?.credentialSource === "twinkle-model"));
 }
 
 export function resolveLogicalBillingModel(logicalModels: AuthSettings["logicalModels"], capability: LogicalModelCapability, channelId: string, upstreamModel: string, preferredLogicalModelId = "") {

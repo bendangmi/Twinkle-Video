@@ -65,7 +65,7 @@ function normalizeAsset(value: unknown, identity: Pick<Asset, "id" | "createdAt"
     const data = object(input.data);
     if (kind === "text") return { ...base, kind, data: { content: cleanText(data.content, 100_000) } };
     const storageKey = optionalText(data.storageKey, 500);
-    const serverUrl = stableUrl(data.serverUrl) || stableUrl(kind === "image" ? data.dataUrl : data.url);
+    const serverUrl = stableUrl(kind === "image" ? data.dataUrl : data.url) || stableUrl(data.serverUrl);
     if (!storageKey || !serverUrl) throw new LibraryAssetServiceError("媒体素材必须先保存到服务器", 400);
     const media = {
         storageKey,

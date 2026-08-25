@@ -57,6 +57,7 @@ export async function updatePostgresAuthSettings(patch: Partial<AuthSettings>) {
 function postgresSettingsPatch(patch: Partial<AuthSettings>, settings: AuthSettings) {
     const result: Partial<Omit<AppSettingsRecord, "id" | "createdAt" | "updatedAt">> = {};
     if (patch.site !== undefined) result.site = asJson(settings.site);
+    if (patch.twinkleModel !== undefined) result.twinkleModel = asJson(settings.twinkleModel);
     if (patch.registrationEnabled !== undefined) result.registrationEnabled = settings.registrationEnabled;
     if (patch.emailRegistrationEnabled !== undefined) result.emailRegistrationEnabled = settings.emailRegistrationEnabled;
     if (patch.freeDailyPointsEnabled !== undefined) result.freeDailyPointsEnabled = settings.freeDailyPointsEnabled;

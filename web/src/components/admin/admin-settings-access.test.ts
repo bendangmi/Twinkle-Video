@@ -12,6 +12,7 @@ describe("administrator settings access", () => {
         expect(buildAdminSettingsPatch(DEFAULT_SETTINGS, access)).toEqual({
             registrationEnabled: DEFAULT_SETTINGS.registrationEnabled,
             emailRegistrationEnabled: DEFAULT_SETTINGS.emailRegistrationEnabled,
+            twinkleModel: DEFAULT_SETTINGS.twinkleModel,
             mail: DEFAULT_SETTINGS.mail,
             dataLifecycle: DEFAULT_SETTINGS.dataLifecycle,
         });

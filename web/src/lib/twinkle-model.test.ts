@@ -15,8 +15,8 @@ describe("Twinkle Model video protocol", () => {
                 images: ["https://media.example/image.png"],
                 videos: ["https://media.example/reference.mp4"],
                 audios: ["https://media.example/reference.mp3"],
-                startImageUrl: "https://media.example/start.png",
-                endImageUrl: "https://media.example/end.png",
+                firstFrameUrl: "https://media.example/start.png",
+                lastFrameUrl: "https://media.example/end.png",
             }),
         ).toEqual({
             model: "Minimax-H3",
@@ -25,11 +25,11 @@ describe("Twinkle Model video protocol", () => {
             resolution: "720p",
             aspect_ratio: "16:9",
             generate_audio: true,
-            images: ["https://media.example/image.png"],
-            video_references: [{ url: "https://media.example/reference.mp4" }],
-            audio_references: [{ url: "https://media.example/reference.mp3" }],
-            start_image_url: "https://media.example/start.png",
-            end_image_url: "https://media.example/end.png",
+            image_urls: ["https://media.example/image.png"],
+            video_urls: ["https://media.example/reference.mp4"],
+            audio_urls: ["https://media.example/reference.mp3"],
+            first_frame_url: "https://media.example/start.png",
+            last_frame_url: "https://media.example/end.png",
         });
     });
 

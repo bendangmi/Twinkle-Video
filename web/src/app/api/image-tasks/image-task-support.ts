@@ -67,9 +67,9 @@ export function publicTask(task: ImageTask) {
     };
 }
 
-export function sanitizeConfigs(config: ImageTaskConfig | undefined, settings: Awaited<ReturnType<typeof getAuthSettings>>): ImageTaskConfig[] {
+export function sanitizeConfigs(config: ImageTaskConfig | undefined, settings: Awaited<ReturnType<typeof getAuthSettings>>, providerPreference: "twinkle-model" | "twinkle-video" = "twinkle-video"): ImageTaskConfig[] {
     const requestedModel = config?.model || settings.defaultModels.imageModel;
-    return resolveLogicalModelCandidates(settings, "image", requestedModel).map((resolved) => {
+    return resolveLogicalModelCandidates(settings, "image", requestedModel, "", providerPreference).map((resolved) => {
         const channel = toSystemGenerationChannel(resolved);
         return {
             ...channel,

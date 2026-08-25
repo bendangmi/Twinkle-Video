@@ -23,6 +23,7 @@ import { registerGenerationTaskAssetsForUser } from "@/lib/server/creative-runti
 import { createSignedReferenceAssetUrl, signReferenceAssetInputUrl } from "@/lib/server/reference-asset-access";
 import { assertCapabilityConstraints } from "@/lib/server/capability-constraints";
 import { checkGenerationRateLimit, rateLimitHeaders } from "@/lib/server/security";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -162,7 +163,7 @@ export async function POST(request: Request) {
     };
     const settings = await getAuthSettings();
     const createTask = async () => {
-        const configs = sanitizeConfigs(resolvedBody.config, settings);
+        const configs = sanitizeConfigs(resolvedBody.config, settings, await twinkleModelRoutingPreference(currentUser.id));
         const prompt = (resolvedBody.prompt || "").trim();
         const kind = resolvedBody.kind === "edit" ? "edit" : "generation";
         if (!configs.length || !prompt) return NextResponse.json({ error: "任务参数不完整" }, { status: 400 });

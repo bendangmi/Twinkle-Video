@@ -24,6 +24,7 @@ import { authorizeGenerationMediaProxyRequest } from "@/lib/server/generation-me
 import { SYSTEM_PROXY_JSON_BODY_MAX_BYTES } from "@/lib/server/system-proxy-request-limits";
 import { userOwnsGenerationUpstreamTask } from "@/lib/server/generation-task-authorization";
 import { authorizeSystemAiProxyRequest } from "@/lib/server/system-ai-proxy-policy";
+import { resolveTwinkleModelChannelCredential, TwinkleModelAccountError } from "@/lib/server/twinkle-model-account-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,11 +74,27 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
     const settings = await getAuthSettings();
     const channel = settings.systemChannels.find((item) => item.id === channelId && item.enabled);
     if (!channel || !channelConnectionReady(channel)) return NextResponse.json({ error: "默认接口未配置或已停用" }, { status: 404 });
+    let apiKey = channel.apiKey;
+    const dynamicCredential = channel.advancedConfig?.credentialSource === "twinkle-model";
+    if (dynamicCredential) {
+        try {
+            apiKey = (
+                await resolveTwinkleModelChannelCredential(userId, {
+                    templateId: channel.advancedConfig?.defaultApiKeyTemplateId,
+                    defaultKeyName: channel.advancedConfig?.defaultApiKeyName,
+                })
+            ).apiKey;
+        } catch (error) {
+            if (error instanceof TwinkleModelAccountError) return NextResponse.json({ error: error.message }, { status: error.status });
+            throw error;
+        }
+    }
+    const effectiveBaseUrl = dynamicCredential ? settings.twinkleModel.baseUrl : channel.baseUrl;
 
     if (isMediaProxyPath(path)) {
         const rate = await checkMediaProxyRateLimit(userId, request);
         if (!rate.allowed) return NextResponse.json({ error: "媒体访问过于频繁，请稍后重试" }, { status: 429, headers: rateLimitHeaders(rate) });
-        return proxySystemMediaRequest(request, channel, userId);
+        return proxySystemMediaRequest(request, { ...channel, baseUrl: effectiveBaseUrl, apiKey }, userId);
     }
 
     const contentType = request.headers.get("content-type");
@@ -111,6 +128,7 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
             settings.logicalModels,
             settings.generationPointMultipliers,
         );
+    const billedPointsRequest = dynamicCredential ? undefined : pointsRequest;
     if (pointsRequest?.model && !channelHasModel(channel.models, pointsRequest.model)) return NextResponse.json({ error: "该模型未在后台渠道中启用" }, { status: 403 });
     const access = authorizeSystemAiProxyRequest({
         method: request.method,
@@ -138,7 +156,7 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
         if (!owned) return NextResponse.json({ error: "任务不存在或无权访问" }, { status: 404 });
     }
 
-    const target = targetUrl(globalPreset?.baseUrl || channel.baseUrl, globalPreset?.apiFormat || apiFormat, globalAdaptation?.path || path, new URL(request.url).search, globalChannel, modelConfig?.protocol || channel.advancedConfig?.protocol);
+    const target = targetUrl(globalPreset?.baseUrl || effectiveBaseUrl, globalPreset?.apiFormat || apiFormat, globalAdaptation?.path || path, new URL(request.url).search, globalChannel, modelConfig?.protocol || channel.advancedConfig?.protocol);
     if (!(await isSafeOutboundUrl(target, { allowCredentials: false }))) return NextResponse.json({ error: "接口地址不允许访问内网或保留地址" }, { status: 400 });
     const headers = new Headers();
     if (contentType && !isMultipart) headers.set("content-type", contentType);
@@ -148,19 +166,19 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
     if (idempotencyKey) headers.set("idempotency-key", idempotencyKey);
     if (clientRequestId) headers.set("x-client-request-id", clientRequestId);
     const authConfig = modelConfig?.protocol ? { ...channel.advancedConfig, protocol: modelConfig.protocol } : channel.advancedConfig;
-    Object.entries(protocolAuthHeaders(channel.apiKey, authConfig, globalChannel ? "openai" : apiFormat)).forEach(([key, value]) => headers.set(key, value));
+    Object.entries(protocolAuthHeaders(apiKey, authConfig, globalChannel ? "openai" : apiFormat)).forEach(([key, value]) => headers.set(key, value));
     const callType = `${access.capability}:${access.operation}:/${(globalAdaptation?.path || path).join("/")}`;
     const businessRequestId = readVerifiedSystemAiBusinessRequestId(request.headers, access.logicalModelId, upstreamModel) || `direct:${randomUUID()}`;
-    const pointsIdempotencyKey = pointsRequest ? systemAiPointsIdempotencyKey({ userId, businessRequestId, logicalModel: access.logicalModelId, channelId: channel.id, upstreamModel, callType }) : undefined;
-    const requestFingerprint = pointsRequest
+    const pointsIdempotencyKey = billedPointsRequest ? systemAiPointsIdempotencyKey({ userId, businessRequestId, logicalModel: access.logicalModelId, channelId: channel.id, upstreamModel, callType }) : undefined;
+    const requestFingerprint = billedPointsRequest
         ? systemAiRequestFingerprint({
               method: request.method,
               callType,
               logicalModel: access.logicalModelId,
               channelId: channel.id,
               upstreamModel,
-              usageKind: pointsRequest.usageKind,
-              amount: pointsRequest.amount,
+              usageKind: billedPointsRequest.usageKind,
+              amount: billedPointsRequest.amount,
               bodyDigest: requestBody.bodyDigest,
           })
         : undefined;
@@ -173,9 +191,9 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
         const refundedUser = await refundUserPoints(userId, pointsResult.model, pointsResult.cost, pointsResult.usageKind, pointsResult.units, undefined, pointsResult.recordId);
         refundedPointsRemaining = typeof refundedUser?.pointsBalance === "number" ? refundedUser.pointsBalance : null;
     };
-    if (pointsRequest) {
+    if (billedPointsRequest) {
         try {
-            pointsResult = await consumeUserPoints(userId, access.logicalModelId, pointsRequest.amount, pointsRequest.usageKind, pointsIdempotencyKey, requestFingerprint);
+            pointsResult = await consumeUserPoints(userId, access.logicalModelId, billedPointsRequest.amount, billedPointsRequest.usageKind, pointsIdempotencyKey, requestFingerprint);
         } catch (error) {
             if (isQuotaExceededError(error)) return NextResponse.json({ error: error.message }, { status: error.status });
             if (isAuthInputError(error)) return NextResponse.json({ error: error.message }, { status: error.status });
@@ -194,6 +212,25 @@ async function proxySystemRequest(request: Request, context: RouteContext) {
             redirect: "manual",
             signal: request.signal,
         });
+        if (dynamicCredential && upstream.status === 401) {
+            await upstream.body?.cancel().catch(() => undefined);
+            apiKey = (
+                await resolveTwinkleModelChannelCredential(userId, {
+                    templateId: channel.advancedConfig?.defaultApiKeyTemplateId,
+                    defaultKeyName: channel.advancedConfig?.defaultApiKeyName,
+                    forceRefresh: true,
+                })
+            ).apiKey;
+            Object.entries(protocolAuthHeaders(apiKey, authConfig, globalChannel ? "openai" : apiFormat)).forEach(([key, value]) => headers.set(key, value));
+            upstream = await fetchSafeOutbound(target, {
+                method: request.method,
+                headers,
+                body: globalAdaptation?.body || requestBody.body,
+                cache: "no-store",
+                redirect: "manual",
+                signal: request.signal,
+            });
+        }
     } catch (error) {
         await refundConsumedPoints();
         console.error("System API proxy request failed", error instanceof Error ? error.message : error);

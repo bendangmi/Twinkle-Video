@@ -133,9 +133,10 @@ function LatestProjectCard({ project, loading, error, onRetry }: { project?: Ret
     return (
         <Link
             href={`/canvas/${project.id}`}
+            data-testid="create-latest-project"
             className={cn(
                 panelClass,
-                "group grid h-32 grid-cols-[minmax(100px,34%)_minmax(0,1fr)] overflow-hidden transition hover:border-[#cbd2d9] hover:shadow-[0_8px_20px_rgba(32,36,42,0.08)] dark:hover:border-[#3b424c] dark:hover:shadow-black/25 sm:h-44 sm:grid-cols-[minmax(150px,34%)_minmax(0,1fr)]",
+                "group grid min-h-32 grid-cols-[minmax(96px,31%)_minmax(0,1fr)] overflow-hidden transition hover:border-[#cbd2d9] hover:shadow-[0_8px_20px_rgba(32,36,42,0.08)] dark:hover:border-[#3b424c] dark:hover:shadow-black/25 sm:h-44 sm:grid-cols-[minmax(150px,34%)_minmax(0,1fr)]",
             )}
         >
             <div className="relative h-full min-h-0 overflow-hidden bg-[#eef1f4] dark:bg-[#252a31]">
@@ -152,7 +153,10 @@ function LatestProjectCard({ project, loading, error, onRetry }: { project?: Ret
                         {project.nodeCount} 个节点 · {project.connectionCount} 条连线
                     </p>
                 </div>
-                <span className="inline-flex w-fit items-center gap-1.5 rounded-md bg-[#20242a] px-2.5 py-1.5 text-xs font-semibold text-white transition group-hover:bg-[#343b44] dark:bg-[#f3f5f7] dark:text-[#20242a] dark:group-hover:bg-white">
+                <span
+                    data-testid="create-continue-editing"
+                    className="inline-flex w-fit items-center gap-1.5 rounded-md border border-[#d9defe] bg-[#eef1ff] px-2.5 py-1.5 text-xs font-semibold text-[#565ccb] transition group-hover:border-[#c7cefd] group-hover:bg-[#e4e8ff] group-hover:text-[#464db8] dark:border-[#41466f] dark:bg-[#2b2d4a] dark:text-[#c9ccff] dark:group-hover:border-[#565d91] dark:group-hover:bg-[#34375a] dark:group-hover:text-white"
+                >
                     继续编辑 <ArrowUpRight className="size-3.5" />
                 </span>
             </div>
@@ -223,7 +227,7 @@ function RecentAssetCard({ asset, importing, deleting, onUse, onDelete }: { asse
 
 function RunningTasksCard({ tasks, loading, error, onRetry }: { tasks: CreateOverviewTask[]; loading: boolean; error?: string; onRetry: () => void }) {
     return (
-        <div className={cn(panelClass, "flex h-32 min-h-0 flex-col p-3 sm:h-44 sm:p-4")}>
+        <div data-testid="create-running-tasks" className={cn(panelClass, "flex h-32 min-h-0 flex-col p-3 sm:h-44 sm:p-4")}>
             <div className="flex items-center justify-between gap-3">
                 <h3 className="text-sm font-semibold text-[#20242a] dark:text-[#f3f5f7]">运行任务</h3>
                 {tasks.length ? <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#edf2ff] px-2 py-1 text-[11px] font-semibold text-[#5471c8] dark:bg-[#29344f] dark:text-[#b8c7ff]">{tasks.length}</span> : null}

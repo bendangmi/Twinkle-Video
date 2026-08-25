@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ lookup: vi.fn() }));
 vi.mock("node:dns/promises", () => ({ lookup: mocks.lookup }));
 
-import { isSafeOutboundUrl, resolveSafeOutboundTarget } from "./outbound-url-security";
+import { isProxyRoutedIpAddress, isSafeOutboundUrl, resolveSafeOutboundTarget } from "./outbound-url-security";
 
 describe("outbound url security", () => {
     beforeEach(() => {
@@ -45,6 +45,12 @@ describe("outbound url security", () => {
             await expect(isSafeOutboundUrl(`http://${address}/result`)).resolves.toBe(false);
         }
         await expect(isSafeOutboundUrl("http://[::ffff:127.0.0.1]/result")).resolves.toBe(false);
+    });
+
+    it("marks only benchmark-network addresses for proxy routing", () => {
+        expect(isProxyRoutedIpAddress("198.18.0.113")).toBe(true);
+        expect(isProxyRoutedIpAddress("198.20.0.113")).toBe(false);
+        expect(isProxyRoutedIpAddress("8.8.8.8")).toBe(false);
     });
 
     it("allows exact private hosts only when explicitly enabled and never allows metadata addresses", async () => {

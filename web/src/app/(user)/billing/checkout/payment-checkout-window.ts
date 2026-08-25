@@ -11,10 +11,14 @@ export function openPaymentCheckoutWindow(checkout: PaymentCheckout, openWindow:
     const fallbackValue = checkout.qrContent || checkout.url || checkout.orderNo;
     if (checkout.kind === "manual") return { status: "manual", fallbackValue };
 
+    if (checkout.kind === "redirect") {
+        if (!safePaymentUrl(checkout.url)) return { status: "invalid", fallbackValue };
+        return openPaymentRedirect(`/api/billing/orders/${encodeURIComponent(checkout.orderId)}/payment-form`, fallbackValue, openWindow);
+    }
+    if (checkout.kind === "form" && checkout.form) return openPaymentRedirect(`/api/billing/orders/${encodeURIComponent(checkout.orderId)}/payment-form`, fallbackValue, openWindow);
+
     const redirectUrl = safePaymentUrl(checkout.url || checkout.qrContent);
     if (redirectUrl) return openPaymentRedirect(redirectUrl, fallbackValue, openWindow);
-
-    if (checkout.kind === "form" && checkout.form) return openPaymentRedirect(`/api/billing/orders/${encodeURIComponent(checkout.orderId)}/payment-form`, fallbackValue, openWindow);
 
     return { status: "invalid", fallbackValue };
 }

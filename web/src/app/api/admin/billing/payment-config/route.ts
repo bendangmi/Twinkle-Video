@@ -19,8 +19,7 @@ export async function GET(request: Request) {
     if (!currentUser) return NextResponse.json({ error: "请先登录" }, { status: 401 });
     if (!hasAdminPermission(currentUser, "billing.read")) return NextResponse.json({ error: "当前管理员没有查看支付配置的职责权限" }, { status: 403 });
 
-    const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-    return NextResponse.json({ paymentConfig: await getPaymentConfigSummary(origin) });
+    return NextResponse.json({ paymentConfig: await getPaymentConfigSummary() });
 }
 
 export async function PATCH(request: Request) {
@@ -44,8 +43,7 @@ export async function PATCH(request: Request) {
             target: { type: "payment_provider", id: providerId },
             metadata: { enabled: body.enabled === true },
         });
-        const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-        return NextResponse.json({ paymentConfig: await getPaymentConfigSummary(origin) });
+        return NextResponse.json({ paymentConfig: await getPaymentConfigSummary() });
     } catch (error) {
         await safeRecordAuditLog({
             action: "admin.billing.payment-config.update",

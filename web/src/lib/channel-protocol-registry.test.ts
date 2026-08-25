@@ -36,7 +36,7 @@ describe("channel protocol registry", () => {
         expect(channelProtocolDefinition("newapi").modelCatalogPaths).toEqual(["/v1/models"]);
         expect(channelProtocolDefinition("seedance").modelCatalogPaths).toEqual(["/models"]);
         expect(channelProtocolDefinition("volcengine-video").modelCatalogPaths).toEqual(["/api/v3/models"]);
-        expect(channelProtocolDefinition("twinkle-model").modelCatalogPaths).toEqual([]);
+        expect(channelProtocolDefinition("twinkle-model").modelCatalogPaths).toEqual(["/v1/videos/models"]);
         expect(channelProtocolDefinition("stable-diffusion").modelCatalogPaths).toEqual(["/sdapi/v1/sd-models"]);
         expect(channelProtocolDefinition("gemini").modelCatalogPaths).toEqual(["/v1beta/models"]);
         expect(channelProtocolDefinition("yumeng")).toMatchObject({
@@ -64,7 +64,7 @@ describe("channel protocol registry", () => {
             createPath: "/v1/videos",
             imageToVideoPath: "/v1/videos",
             queryPath: "/v1/videos/:task_id",
-            resultField: "url",
+            requestTemplate: expect.stringContaining("image_urls"),
             supportsReferenceImage: true,
             supportsReferenceVideo: true,
             supportsReferenceAudio: true,
@@ -106,7 +106,7 @@ describe("channel protocol registry", () => {
             for (const capability of definition.capabilities) {
                 const operation = definition.operations[capability];
                 expect(operation?.createPath, `${definition.id}:${capability}`).toMatch(/^\//);
-                expect(operation?.resultField, `${definition.id}:${capability}`).toBeTruthy();
+                if (definition.id !== "twinkle-model") expect(operation?.resultField, `${definition.id}:${capability}`).toBeTruthy();
                 if (capability === "video") expect(operation?.queryPath, `${definition.id}:${capability}`).toMatch(/^\//);
             }
         }

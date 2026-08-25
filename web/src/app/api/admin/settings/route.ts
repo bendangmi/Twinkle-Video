@@ -35,6 +35,7 @@ export async function PATCH(request: Request) {
         const currentSettings = await getFreshAuthSettings();
         const patch: Partial<AuthSettings> = {};
         if (body.site) patch.site = body.site;
+        if (body.twinkleModel) patch.twinkleModel = body.twinkleModel;
         if (typeof body.registrationEnabled === "boolean") patch.registrationEnabled = body.registrationEnabled;
         if (typeof body.emailRegistrationEnabled === "boolean") patch.emailRegistrationEnabled = body.emailRegistrationEnabled;
         if (typeof body.freeDailyPointsEnabled === "boolean") patch.freeDailyPointsEnabled = body.freeDailyPointsEnabled;
@@ -93,6 +94,7 @@ export async function PATCH(request: Request) {
 
 const SETTINGS_PERMISSION_BY_FIELD = {
     site: "system.manage",
+    twinkleModel: "system.manage",
     registrationEnabled: "system.manage",
     emailRegistrationEnabled: "system.manage",
     mail: "system.manage",

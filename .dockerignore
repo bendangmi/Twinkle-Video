@@ -11,7 +11,7 @@ docs/.next
 docs/.source
 docs/node_modules
 docs/out
-web/.next
+web/.next*
 web/.next-dev
 web/.data
 web/.e2e-artifacts

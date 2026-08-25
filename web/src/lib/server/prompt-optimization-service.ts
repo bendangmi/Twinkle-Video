@@ -3,6 +3,7 @@ import { CREATE_AGENT_PROMPT_MAX_LENGTH } from "@/lib/create-agent-prompt";
 import type { CreativeGenerationMode } from "@/lib/creative-runtime-contract";
 import { toSafeGenerationErrorMessage } from "@/lib/server/generation-errors";
 import { resolveLogicalModelCandidates } from "@/lib/server/logical-model-router";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import { hasSystemAiCharge, readSystemAiBilling, systemAiBillingHeaders, systemAiIdempotencyKey } from "@/lib/server/system-ai-billing";
 import { rankTextPlanningCandidates, requestStructuredText } from "@/lib/server/text-planning-runtime";
 import { resolveSiteTitle } from "@/lib/site-brand";
@@ -22,7 +23,7 @@ export class PromptOptimizationError extends Error {
 export async function optimizeCreativePrompt(input: { origin: string; cookie: string; userId: string; requestId: string; prompt: string; mode: PromptOptimizationMode }) {
     const settings = await getAuthSettings();
     const model = settings.defaultModels.textModel;
-    const candidates = resolveLogicalModelCandidates(settings, "text", model);
+    const candidates = resolveLogicalModelCandidates(settings, "text", model, "", await twinkleModelRoutingPreference(input.userId));
     if (!model || !candidates.length) throw new PromptOptimizationError("后台尚未配置可用的默认文本模型", 503);
 
     let latestError: unknown;

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     release: vi.fn(),
     mediaAccess: vi.fn(),
     taskAccess: vi.fn(),
+    resolveTwinkleCredential: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn(async () => ({ id: "user-one", role: "user", pointsBalance: 5 })) }));
@@ -26,6 +27,17 @@ vi.mock("@/lib/server/media-concurrency", () => ({ acquireMediaConcurrency: mock
 vi.mock("@/lib/server/safe-outbound-fetch", () => ({ fetchSafeOutbound: (url: string | URL, init?: RequestInit) => fetch(url, init) }));
 vi.mock("@/lib/server/generation-media-access", () => ({ authorizeGenerationMediaProxyRequest: mocks.mediaAccess }));
 vi.mock("@/lib/server/generation-task-authorization", () => ({ userOwnsGenerationUpstreamTask: mocks.taskAccess }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => {
+    class TwinkleModelAccountError extends Error {
+        constructor(
+            message: string,
+            readonly status = 400,
+        ) {
+            super(message);
+        }
+    }
+    return { resolveTwinkleModelChannelCredential: mocks.resolveTwinkleCredential, TwinkleModelAccountError };
+});
 vi.mock("@/lib/server/security", () => ({
     checkMediaProxyRateLimit: mocks.checkMediaProxyRateLimit,
     isSafeOutboundUrl: mocks.safeUrl,
@@ -211,6 +223,44 @@ describe("OpenAI Responses proxy", () => {
         expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.openai.com/v1/responses");
         const upstreamBody = fetchMock.mock.calls[0]?.[1]?.body;
         expect(JSON.parse(new TextDecoder().decode(upstreamBody as ArrayBuffer))).toMatchObject({ model: "gpt-5", input: [{ role: "user", content: "hello" }] });
+    });
+});
+
+describe("Twinkle Model personal credential proxy", () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+        mocks.consumeUserPoints.mockReset().mockResolvedValue(undefined);
+        mocks.refundUserPoints.mockReset();
+        mocks.safeUrl.mockResolvedValue(true);
+        mocks.resolveTwinkleCredential.mockReset().mockResolvedValue({ apiKey: "personal-key", templateId: "template-one", templateName: "VOZEB 默认" });
+        mocks.getAuthSettings.mockResolvedValue({
+            twinkleModel: { baseUrl: "https://big-model.smart-agi.com" },
+            generationPointMultipliers: {},
+            logicalModels: [logicalModel("writer", "text", "vendor-text")],
+            systemChannels: [
+                {
+                    id: "channel-one",
+                    enabled: true,
+                    baseUrl: "https://stale.example.com",
+                    apiKey: "",
+                    apiFormat: "openai",
+                    models: ["vendor-text"],
+                    advancedConfig: { protocol: "compatible", credentialSource: "twinkle-model", defaultApiKeyName: "VOZEB 默认", defaultApiKeyTemplateId: "template-one" },
+                },
+            ],
+        });
+    });
+
+    it("uses the user key and global address without consuming local points", async () => {
+        const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { headers: { "content-type": "application/json" } }));
+
+        const response = await POST(chatRequest({ model: "vendor-text", messages: [{ role: "user", content: "hello" }] }), textContext());
+
+        expect(response.status).toBe(200);
+        expect(fetchMock.mock.calls[0][0]).toBe("https://big-model.smart-agi.com/v1/chat/completions");
+        expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("authorization")).toBe("Bearer personal-key");
+        expect(mocks.consumeUserPoints).not.toHaveBeenCalled();
+        expect(mocks.resolveTwinkleCredential).toHaveBeenCalledWith("user-one", expect.objectContaining({ templateId: "template-one" }));
     });
 });
 

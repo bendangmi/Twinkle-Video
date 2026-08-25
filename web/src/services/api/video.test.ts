@@ -397,11 +397,11 @@ describe("video API service", () => {
             resolution: "720p",
             aspect_ratio: "16:9",
             generate_audio: false,
-            images: ["https://cdn.example.com/reference.png"],
-            video_references: [{ url: "https://cdn.example.com/reference.mp4" }],
-            audio_references: [{ url: "https://cdn.example.com/reference.mp3" }],
-            start_image_url: "https://cdn.example.com/first.png",
-            end_image_url: "https://cdn.example.com/last.png",
+            image_urls: ["https://cdn.example.com/reference.png"],
+            video_urls: ["https://cdn.example.com/reference.mp4"],
+            audio_urls: ["https://cdn.example.com/reference.mp3"],
+            first_frame_url: "https://cdn.example.com/first.png",
+            last_frame_url: "https://cdn.example.com/last.png",
         });
     });
 });

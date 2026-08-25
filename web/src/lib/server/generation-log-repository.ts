@@ -70,8 +70,8 @@ export async function normalizeAssets(assets: Array<Partial<GenerationLogAsset> 
             if (!stored) throw new Error("生成媒体保存到服务器失败");
         }
 
-        if (stored) serverUrl = stored.serverUrl || stored.url;
-        const accessUrl = serverUrl || remoteUrl || sourceUrl;
+        if (stored) serverUrl = stored.serverUrl || (isServerAssetUrl(stored.url) ? stored.url : "");
+        const accessUrl = stored?.url || serverUrl || remoteUrl || sourceUrl;
         if (!accessUrl || accessUrl.startsWith("blob:") || accessUrl.startsWith("data:")) continue;
 
         normalized.push({
@@ -145,7 +145,7 @@ export async function writeAssetBytes(bytes: Buffer, mimeType: string, type: Gen
     };
     const external = await persistExternalMediaIfEnabled({ registration, bytes });
     const serverUrl = `/api/generation-log-assets/${relativePath.split("/").map(encodeURIComponent).join("/")}`;
-    if (external) return { type, url: serverUrl, serverUrl, mimeType, bytes: bytes.length, width: normalized.width, height: normalized.height };
+    if (external) return { type, url: external.url || serverUrl, serverUrl, mimeType, bytes: bytes.length, width: normalized.width, height: normalized.height };
     const filePath = resolve(ASSET_ROOT, relativePath);
     await mkdir(dirname(filePath), { recursive: true });
     await writeFile(filePath, bytes);

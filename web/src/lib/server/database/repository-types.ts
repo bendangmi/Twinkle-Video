@@ -116,6 +116,7 @@ export type EntitlementPlanRecord = {
 export type AppSettingsRecord = {
     id: "default";
     site: JsonValue;
+    twinkleModel: JsonValue;
     registrationEnabled: boolean;
     emailRegistrationEnabled: boolean;
     freeDailyPointsEnabled: boolean;

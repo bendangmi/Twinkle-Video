@@ -20,6 +20,7 @@ import { scheduleGenerationTask } from "@/lib/server/generation-task-scheduler";
 import { linkStoredGenerationTask } from "@/lib/server/generation-task-store";
 import { maintenanceWorkerContextHeaders } from "@/lib/server/maintenance-auth";
 import { videoFrameAssetIds, type VideoReferenceRole } from "@/lib/video-reference-contract";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import type { AgentFunctionCallResult } from "./agent-function-call";
 import { agentSurfaceImageSize, canvasReferenceContext, canvasReferenceSupportsTask, canvasSnapshotNodes, isMediaReferenceType, resolveAgentTaskRatio, resolveCanvasTaskTargetNodeId, selectedCanvasReferenceNodes } from "./agent-run-task-input";
 import { hasSystemAiCharge, readSystemAiBilling, systemAiBillingHeaders } from "./system-ai-billing";
@@ -712,7 +713,7 @@ export async function dispatchTask(task: AgentRunTask, origin: string, cookie: s
     const directTextContent = run.surface === "canvas" ? directCanvasTextContent(task) : null;
     if (directTextContent) return { result: { content: directTextContent }, sourceTaskIds: [`direct-${run.id}-${task.id}`] };
     const model = resolvePlannedModel(settings, task.type, task.model);
-    const resolved = resolveLogicalModel(settings, task.type, model || "");
+    const resolved = resolveLogicalModel(settings, task.type, model || "", "", await twinkleModelRoutingPreference(run.userId));
     const channel = resolved?.channel;
     if (!model || !channel || !resolved) throw new Error(`后台尚未配置可用的默认${task.type === "image" ? "图片" : task.type === "video" ? "视频" : task.type === "audio" ? "音频" : "文本"}模型`);
     const config = {

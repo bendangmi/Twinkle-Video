@@ -168,4 +168,59 @@ describe("video creation protocols over a live fixture", () => {
         expect(result).toMatchObject({ state: "result_ready", status: "completed", resultUrl: expect.stringContaining("/media/fixture.mp4") });
         expect(fixture.requests.map((request) => request.path)).toEqual(["/v1/videos/generations", "/v1/videos/generations/" + upstream.id]);
     });
+
+    it("uses the Twinkle Model standard video contract and polls the documented task endpoint", async () => {
+        const fixture = createProtocolFixtureServer();
+        await new Promise<void>((resolve) => fixture.server.listen(0, "127.0.0.1", resolve));
+        const address = fixture.server.address();
+        if (!address || typeof address === "string") throw new Error("Protocol fixture did not bind a TCP port");
+        const baseUrl = "http://127.0.0.1:" + address.port;
+        close = () => new Promise<void>((resolve, reject) => fixture.server.close((error?: Error) => (error ? reject(error) : resolve())));
+
+        const config = {
+            apiSource: "system" as const,
+            baseUrl,
+            apiKey: "system" as const,
+            apiFormat: "openai" as const,
+            model: "Minimax-H3-933-720p",
+            logicalModel: "video",
+            channelId: "twinkle-video",
+            advancedConfig: {
+                ...emptyAdvancedConfig(),
+                protocol: "twinkle-model" as const,
+                createPath: "/v1/videos",
+                queryPath: "/v1/videos/:task_id",
+                resultField: "url",
+                statusField: "status",
+                supportsReferenceImage: true,
+                supportsReferenceVideo: true,
+                supportsReferenceAudio: true,
+            },
+        };
+
+        const upstream = await createUpstream(
+            "user-live",
+            "",
+            "",
+            config,
+            "animate a blue logo",
+            { videoSeconds: 4, size: "16:9", vquality: "720" },
+            [],
+            { imageQuality: {}, videoQuality: { "720": 1 }, videoSeconds: { "4": 1 } },
+            "twinkle-video-request-live",
+        );
+        const result = await queryVideoTaskUpstream({ config, upstream, userId: "user-live" } as unknown as VideoTask, "", "");
+
+        expect(fixture.requests[0]).toMatchObject({ method: "POST", path: "/v1/videos" });
+        expect(JSON.parse(fixture.requests[0]?.body.toString("utf8") || "{}")).toEqual({
+            model: config.model,
+            prompt: "animate a blue logo",
+            duration: 4,
+            resolution: "720p",
+            aspect_ratio: "16:9",
+            generate_audio: true,
+        });
+        expect(result).toMatchObject({ state: "result_ready", status: "completed", resultUrl: expect.stringContaining("/media/fixture.mp4") });
+        expect(fixture.requests.map((request) => request.path)).toEqual(["/v1/videos", "/v1/videos/" + upstream.id]);
+    });
 });

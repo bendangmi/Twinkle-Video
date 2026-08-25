@@ -41,6 +41,9 @@ export type SystemChannelStreamingConfig = {
 
 export type SystemChannelAdvancedConfig = {
     protocol: SystemChannelProtocol;
+    credentialSource?: "system" | "twinkle-model";
+    defaultApiKeyName?: string;
+    defaultApiKeyTemplateId?: string;
     authMode?: SystemChannelAuthMode;
     authHeader?: string;
     authPrefix?: string;
@@ -297,6 +300,7 @@ export type AnnouncementPage = {
 };
 
 export type SiteSettings = {
+    siteUrl: string;
     title: string;
     logoUrl: string;
     iconUrl: string;
@@ -462,6 +466,7 @@ export type StoredEmailCode = {
 
 export type AuthSettings = {
     site: SiteSettings;
+    twinkleModel: TwinkleModelSettings;
     registrationEnabled: boolean;
     emailRegistrationEnabled: boolean;
     freeDailyPointsEnabled: boolean;
@@ -479,6 +484,10 @@ export type AuthSettings = {
     logicalModels: LogicalModel[];
     defaultModels: SystemDefaultModels;
     agentSkills: AgentSkill[];
+};
+
+export type TwinkleModelSettings = {
+    baseUrl: string;
 };
 
 export type AuthDatabase = {

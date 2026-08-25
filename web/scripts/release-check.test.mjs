@@ -47,7 +47,8 @@ describe("release type-check and build contract", () => {
         expect(docsNextConfig).toContain("outputFileTracingRoot: docsRoot");
         expect(docsNextConfig).toContain("turbopack: { root: docsRoot }");
         expect(standaloneStart).toContain('process.env.NEXT_DIST_DIR?.trim() || ".next"');
-        expect(developmentStart).toContain('NEXT_DIST_DIR: runtime.environment.NEXT_DIST_DIR?.trim() || ".next-dev"');
+        expect(developmentStart).toContain("localDevelopmentEnvironment");
+        expect(developmentStart).toContain('mode === "frontend" ? undefined : path.join(webRoot, "scripts", "generation-worker.mjs")');
         expect(developmentStart).toContain('"--turbopack"');
         expect(developmentStart).not.toContain('"--webpack"');
         expect(standaloneStart).toContain("prepareStandaloneAssets");

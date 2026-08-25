@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
     createUser: vi.fn(),
     getInstallStatus: vi.fn(),
     readJsonBody: vi.fn(),
+    bindTwinkleModelAccount: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/store", () => ({
@@ -27,6 +28,7 @@ vi.mock("@/lib/server/security", () => ({
     getClientIp: vi.fn(() => "203.0.113.8"),
 }));
 vi.mock("@/lib/server/referral-service", () => ({ REFERRAL_COOKIE_NAME: "vozeb_referral" }));
+vi.mock("@/lib/server/twinkle-model-account-service", () => ({ bindTwinkleModelAccount: mocks.bindTwinkleModelAccount }));
 
 import { POST } from "./route";
 
@@ -45,6 +47,7 @@ describe("POST /api/auth/register referral attribution", () => {
         mocks.createUser.mockResolvedValue({ id: "user-one", role: "user" });
         mocks.createFirstAdmin.mockResolvedValue({ id: "admin-one", role: "admin" });
         mocks.createSession.mockResolvedValue("session-token");
+        mocks.bindTwinkleModelAccount.mockResolvedValue({ bound: true });
     });
 
     it("treats an explicitly cleared referral code as an attribution opt-out", async () => {
@@ -81,5 +84,17 @@ describe("POST /api/auth/register referral attribution", () => {
         await POST(registerRequest());
 
         expect(mocks.createUser).toHaveBeenCalledWith(expect.objectContaining({ policyAccepted: false }));
+    });
+
+    it("keeps registration successful when optional Twinkle binding fails", async () => {
+        mocks.readJsonBody.mockResolvedValue({ username: "new-user", password: "password123", policyAccepted: true, twinkleEmail: "user@example.com", twinklePassword: "twinkle-pass" });
+        mocks.bindTwinkleModelAccount.mockRejectedValue(new Error("Twinkle Model 登录失败"));
+
+        const response = await POST(registerRequest());
+        const payload = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(payload.bindingWarning).toBe("Twinkle Model 登录失败");
+        expect(mocks.createSession).toHaveBeenCalledWith("user-one");
     });
 });

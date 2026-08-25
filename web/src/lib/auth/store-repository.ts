@@ -310,6 +310,7 @@ export function mapPostgresSettings(settingsRow: Record<string, unknown> | undef
     const fallback = DEFAULT_SETTINGS;
     return normalizeSettings({
         site: normalizeSiteSettings(dbJson(settingsRow?.site, fallback.site)),
+        twinkleModel: dbJson(settingsRow?.twinkle_model, fallback.twinkleModel),
         registrationEnabled: dbBool(settingsRow?.registration_enabled, fallback.registrationEnabled),
         emailRegistrationEnabled: dbBool(settingsRow?.email_registration_enabled, fallback.emailRegistrationEnabled),
         freeDailyPointsEnabled: dbBool(settingsRow?.free_daily_points_enabled, fallback.freeDailyPointsEnabled),
@@ -510,13 +511,14 @@ export async function upsertPostgresSettings(db: QueryExecutor, settings: AuthSe
     await db.query(
         `
         INSERT INTO app_settings (
-            id, site, registration_enabled, email_registration_enabled, free_daily_points_enabled, mail, allow_user_api_config,
+            id, site, twinkle_model, registration_enabled, email_registration_enabled, free_daily_points_enabled, mail, allow_user_api_config,
             model_point_costs, generation_point_multipliers, generation_cost_control, data_lifecycle, entitlements_enabled, default_plan_id, generation_concurrency, generation_defaults,
             logical_models, default_models, agent_skills, free_daily_points
         )
-        VALUES ('default', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        VALUES ('default', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
         ON CONFLICT (id) DO UPDATE SET
             site = EXCLUDED.site,
+            twinkle_model = EXCLUDED.twinkle_model,
             registration_enabled = EXCLUDED.registration_enabled,
             email_registration_enabled = EXCLUDED.email_registration_enabled,
             free_daily_points_enabled = EXCLUDED.free_daily_points_enabled,
@@ -537,6 +539,7 @@ export async function upsertPostgresSettings(db: QueryExecutor, settings: AuthSe
         `,
         [
             dbJsonParam(settings.site),
+            dbJsonParam(settings.twinkleModel),
             settings.registrationEnabled,
             settings.emailRegistrationEnabled,
             settings.freeDailyPointsEnabled,

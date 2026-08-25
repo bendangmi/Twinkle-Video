@@ -296,6 +296,7 @@ export class GenerationLogsRepository {
             ranked_assets AS (
                 SELECT
                     id,
+                    generation_log_id,
                     kind,
                     title,
                     url,

@@ -47,7 +47,7 @@ async function writeMediaDataUrl(dataUrl: string, expectedType: "image" | "video
     const token = createDatedMediaPath(persistent ? "permanent" : "temporary", expectedType, extensionFromMime(parsed.mimeType));
     const registration = referenceRegistration(token, persistent, expectedType, parsed.mimeType, parsed.bytes.length, context);
     const external = await persistExternalMediaIfEnabled({ registration, bytes: parsed.bytes });
-    if (external) return { token, bytes: parsed.bytes.length, mimeType: parsed.mimeType, storage: "object" };
+    if (external) return { token, bytes: parsed.bytes.length, mimeType: parsed.mimeType, storage: "object", url: external.url };
     const filePath = resolve(REFERENCE_MEDIA_ROOT, token);
     await mkdir(dirname(filePath), { recursive: true });
     await writeFile(filePath, parsed.bytes);
@@ -68,7 +68,7 @@ export async function writeReferenceMediaFile(sourcePath: string, expectedType: 
     const token = createDatedMediaPath(persistent ? "permanent" : "temporary", expectedType, extensionFromMime(mimeType));
     const registration = referenceRegistration(token, persistent, expectedType, mimeType, sourceStat.size, context);
     const external = await persistExternalMediaIfEnabled({ registration, filePath: sourcePath });
-    if (external) return { token, bytes: sourceStat.size, mimeType, storage: "object" };
+    if (external) return { token, bytes: sourceStat.size, mimeType, storage: "object", url: external.url };
     const filePath = resolve(REFERENCE_MEDIA_ROOT, token);
     await mkdir(dirname(filePath), { recursive: true });
     await copyFile(sourcePath, filePath);

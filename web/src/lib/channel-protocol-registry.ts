@@ -248,11 +248,11 @@ export const registeredChannelProtocolDefinitions: ChannelProtocolDefinition[] =
     {
         id: "twinkle-model",
         label: "Twinkle Model",
-        description: "Twinkle Model 标准视频网关协议，使用 Bearer Token、/v1/videos 创建与任务查询接口。",
+        description: "Twinkle Model 统一视频任务协议，使用 Bearer Token、模型目录、创建、查询与内容下载接口。",
         apiFormat: "openai",
         authMode: "bearer",
         defaultBaseUrl: "https://big-model.smart-agi.com",
-        modelCatalogPaths: [],
+        modelCatalogPaths: ["/v1/videos/models"],
         capabilities: ["video"],
         operations: {
             video: {
@@ -261,11 +261,10 @@ export const registeredChannelProtocolDefinitions: ChannelProtocolDefinition[] =
                 imageToVideoPath: "/v1/videos",
                 queryPath: "/v1/videos/:task_id",
                 requestTemplate:
-                    '{"model":"{{model}}","prompt":"{{prompt}}","duration":"{{duration}}","resolution":"{{resolution}}","aspect_ratio":"{{aspect_ratio}}","generate_audio":"{{generate_audio}}","images":"{{images}}","video_references":"{{videos}}","audio_references":"{{audios}}","start_image_url":"{{start_image_url}}","end_image_url":"{{end_image_url}}"}',
-                resultField: "url",
+                    '{"model":"{{model}}","prompt":"{{prompt}}","duration":"{{duration}}","resolution":"{{resolution}}","aspect_ratio":"{{aspect_ratio}}","generate_audio":"{{generate_audio}}","image_urls":"{{image_urls}}","video_urls":"{{video_urls}}","audio_urls":"{{audio_urls}}","first_frame_url":"{{first_frame_url}}","last_frame_url":"{{last_frame_url}}"}',
                 statusField: "status",
                 durationRange: "按当前 API Key 可用模型的公开限制",
-                referenceRule: "图片使用 images 字符串数组，视频使用 video_references，音频使用 audio_references；首尾帧使用 start_image_url 和 end_image_url。素材需使用上游可访问的公网 URL。",
+                referenceRule: "图片、视频和音频分别使用 image_urls、video_urls、audio_urls 字符串数组；首尾帧使用 first_frame_url 和 last_frame_url。任务完成后通过 /v1/videos/{id}/content 下载，素材需使用上游可访问的 URL 或文件标识。",
                 supportsReferenceImage: true,
                 supportsReferenceVideo: true,
                 supportsReferenceAudio: true,
@@ -441,6 +440,7 @@ export function channelRequiresApiKey(channel: Pick<SystemModelChannel, "advance
 }
 
 export function channelCredentialsReady(channel: Pick<SystemModelChannel, "apiKey" | "hasApiKey" | "advancedConfig">) {
+    if (channel.advancedConfig?.credentialSource === "twinkle-model") return Boolean(channel.advancedConfig.defaultApiKeyTemplateId?.trim());
     return !channelRequiresApiKey(channel) || Boolean(channel.apiKey.trim() || channel.hasApiKey);
 }
 
@@ -452,6 +452,8 @@ export function channelProtocolValidationErrors(channel: SystemModelChannel) {
     const advanced = channel.advancedConfig;
     if (!advanced) return [];
     const errors: string[] = [];
+    if (advanced.credentialSource === "twinkle-model" && !advanced.defaultApiKeyName?.trim()) errors.push(`${channel.name || "渠道"} 必须填写 Twinkle Model 默认密钥名称`);
+    if (advanced.credentialSource === "twinkle-model" && !advanced.defaultApiKeyTemplateId?.trim()) errors.push(`${channel.name || "渠道"} 必须先同步模型并确认默认密钥 template_id`);
     const definition = channelProtocolDefinition(advanced.protocol);
     if (definition.strict && advanced.authMode && advanced.authMode !== definition.authMode) errors.push(`${channel.name || "渠道"} 的鉴权方式必须使用 ${definition.label} 协议预设`);
     if (advanced.authMode === "custom-header" && !isSafeAuthHeaderName(advanced.authHeader)) errors.push(`${channel.name || "渠道"} 的自定义鉴权请求头名称无效`);

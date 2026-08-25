@@ -61,7 +61,7 @@ export function AppWorkspaceShell({ children }: { children: ReactNode }) {
                         >
                             {sidebarExpanded ? <PanelLeftClose className="size-[17px]" /> : <PanelLeftOpen className="size-[17px]" />}
                         </button>
-                        <div className="min-w-0">
+                        <div className="hidden min-w-0 sm:block">
                             <div className="truncate text-sm font-semibold text-[#20242a] dark:text-[#f3f5f7]">{pageTitle}</div>
                         </div>
                     </div>

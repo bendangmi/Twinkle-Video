@@ -29,6 +29,21 @@ describe("payment form route", () => {
         expect(await response.text()).toContain('action="https://pay.example/submit"');
     });
 
+    it("redirects hosted checkouts from the owned same-origin route", async () => {
+        mocks.getCheckout.mockResolvedValue({
+            provider: "easypay",
+            orderId: "order-one",
+            orderNo: "VZ001",
+            kind: "redirect",
+            url: "https://pay.example/submit.php?out_trade_no=VZ001",
+        });
+
+        const response = await GET(new Request("http://localhost/api/billing/orders/order-one/payment-form") as never, { params: Promise.resolve({ id: "order-one" }) });
+
+        expect(response.status).toBe(303);
+        expect(response.headers.get("location")).toBe("https://pay.example/submit.php?out_trade_no=VZ001");
+    });
+
     it("does not disclose stored payment data before authentication", async () => {
         mocks.getCurrentUser.mockResolvedValue(null);
 

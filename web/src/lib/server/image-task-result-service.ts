@@ -70,7 +70,7 @@ async function persistPreparedResults(task: ImageTask, results: ImageTaskMediaRe
     const stored = settled
         .flatMap((item) => (item.status === "fulfilled" ? item.value : []))
         .map((asset) => ({
-            dataUrl: asset.serverUrl || asset.url,
+            dataUrl: asset.url || asset.serverUrl || "",
             remoteUrl: asset.remoteUrl,
             serverUrl: asset.serverUrl,
             width: asset.width,

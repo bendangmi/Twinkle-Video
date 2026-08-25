@@ -255,6 +255,79 @@ test("recent generation records can be manually deleted", async ({ page }) => {
     expect(overviewCalls).toBeGreaterThanOrEqual(2);
 });
 
+test("create homepage keeps project actions readable and mobile sections contained", async ({ page }, testInfo) => {
+    await page.route("**/api/create/overview", (route) =>
+        route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                code: 0,
+                data: {
+                    overview: {
+                        latestProject: {
+                            id: "responsive-home-project",
+                            title: "响应式画布项目",
+                            updatedAt: "2026-08-24T11:01:00.000Z",
+                            nodeCount: 3,
+                            connectionCount: 2,
+                            previews: [],
+                        },
+                        runningTasks: [{ id: "responsive-task", kind: "image", source: "agent", title: "移动端运行任务", createdAt: "2026-08-24T11:02:00.000Z", status: "running" }],
+                        recentAssets: [],
+                    },
+                },
+                msg: "OK",
+            }),
+        }),
+    );
+
+    for (const theme of ["light", "dark"] as const) {
+        await page.goto("/create", { waitUntil: "domcontentloaded" });
+        await page.evaluate((nextTheme) => localStorage.setItem("vozeb-pro:theme_store", JSON.stringify({ state: { theme: nextTheme }, version: 0 })), theme);
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await expect(page.locator("html")).toHaveClass(theme === "dark" ? /dark/ : /^(?!.*\bdark\b)/);
+
+        const heading = page.getByRole("heading", { level: 1, name: /创作 Agent/ });
+        const tools = page.getByTestId("creative-page-tools");
+        const project = page.getByTestId("create-latest-project");
+        const tasks = page.getByTestId("create-running-tasks");
+        const continueEditing = page.getByTestId("create-continue-editing");
+        await expect(heading).toBeVisible();
+        await expect(project).toBeVisible();
+        await expect(tasks).toBeVisible();
+        await expect(continueEditing).toBeVisible();
+
+        const layout = await Promise.all([heading.boundingBox(), tools.boundingBox(), project.boundingBox(), tasks.boundingBox()]);
+        expect(layout.every(Boolean)).toBe(true);
+        expect(layout[0]!.y).toBeGreaterThanOrEqual(layout[1]!.y + layout[1]!.height);
+        if ((page.viewportSize()?.width || 0) < 1024) {
+            expect(Math.abs(layout[2]!.x - layout[3]!.x)).toBeLessThanOrEqual(1);
+            expect(Math.abs(layout[2]!.width - layout[3]!.width)).toBeLessThanOrEqual(1);
+            expect(layout[3]!.y).toBeGreaterThanOrEqual(layout[2]!.y + layout[2]!.height);
+        }
+
+        const contrast = await continueEditing.evaluate((element) => {
+            const channels = (value: string) =>
+                value
+                    .match(/[\d.]+/g)
+                    ?.slice(0, 3)
+                    .map(Number) || [];
+            const luminance = (value: string) => {
+                const [red, green, blue] = channels(value).map((channel) => {
+                    const normalized = channel / 255;
+                    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+                });
+                return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+            };
+            const style = getComputedStyle(element);
+            const foreground = luminance(style.color);
+            const background = luminance(style.backgroundColor);
+            return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+        });
+        expect(contrast).toBeGreaterThanOrEqual(4.5);
+        await expectNoHorizontalOverflow(page, `/create ${theme} homepage`);
+    }
+});
+
 test("admin user editor groups permission controls and keeps the footer visible", async ({ page }, testInfo) => {
     await page.goto("/admin?section=users", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "用户管理" })).toBeVisible();

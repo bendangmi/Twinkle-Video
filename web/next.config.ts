@@ -13,8 +13,19 @@ const configuredBuildCpus = Number.parseInt(process.env.NEXT_BUILD_CPUS || "", 1
 const distDir = process.env.NEXT_DIST_DIR?.trim() || ".next";
 const skipBuildTypeCheck = process.env.NEXT_SKIP_BUILD_TYPECHECK === "1";
 const nodeProxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
+const backendOrigin = resolveHttpOrigin(process.env.VOZEB_PRO_BACKEND_ORIGIN);
 const privatePageSource = "/:section(api|admin|assets|billing|canvas|community|create|drama|forgot-password|help|image|install|login|my-prompts|profile|prompts|register|video|works)/:path*";
 if (nodeProxy) setGlobalDispatcher(new ProxyAgent(nodeProxy));
+
+function resolveHttpOrigin(value: string | undefined) {
+    if (!value?.trim()) return "";
+    try {
+        const url = new URL(value.trim());
+        return url.protocol === "http:" || url.protocol === "https:" ? url.origin : "";
+    } catch {
+        throw new Error("VOZEB_PRO_BACKEND_ORIGIN must be a valid HTTP or HTTPS origin");
+    }
+}
 
 export default function nextConfig(phase: string): NextConfig {
     const isDev = phase === PHASE_DEVELOPMENT_SERVER;
@@ -37,7 +48,7 @@ export default function nextConfig(phase: string): NextConfig {
         },
         async rewrites() {
             return {
-                beforeFiles: [{ source: "/favicon.ico", destination: "/api/site-icon" }],
+                beforeFiles: [{ source: "/favicon.ico", destination: backendOrigin ? `${backendOrigin}/api/site-icon` : "/api/site-icon" }, ...(backendOrigin ? [{ source: "/api/:path*", destination: `${backendOrigin}/api/:path*` }] : [])],
                 afterFiles: [],
                 fallback: [],
             };

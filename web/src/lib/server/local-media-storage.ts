@@ -17,7 +17,7 @@ import {
     listLocalMediaRegistrationPage,
     type LocalMediaRegistration,
 } from "@/lib/server/local-media-registry";
-import { deleteExternalMediaObject } from "@/lib/server/object-storage-service";
+import { createExternalMediaPublicUrl, deleteExternalMediaObject } from "@/lib/server/object-storage-service";
 
 export const GENERATION_MEDIA_ROOT = resolveServerDataPath("generation-assets");
 export const REFERENCE_MEDIA_ROOT = resolveServerDataPath("reference-assets");
@@ -82,7 +82,7 @@ export async function getLocalMediaAssetSummary() {
 
 async function listRegisteredLocalMediaAssets(input: { page?: number; pageSize?: number; storageClass?: string; type?: string; source?: string; search?: string; ownerUserIds?: string[] }) {
     const page = await listLocalMediaRegistrationPage(input);
-    const items = page.items.map(localMediaAssetFromRegistration);
+    const items = await Promise.all(page.items.map(localMediaAssetFromRegistration));
     const references = await countLocalMediaReferences(items.map((item) => item.storageKey));
     return {
         ...page,
@@ -251,10 +251,11 @@ function registrationMetadata(registration: Awaited<ReturnType<typeof getLocalMe
     };
 }
 
-function localMediaAssetFromRegistration(registration: LocalMediaRegistration): LocalMediaAsset {
+async function localMediaAssetFromRegistration(registration: LocalMediaRegistration): Promise<LocalMediaAsset> {
     const name = basename(registration.storageKey);
     const directory = registration.storageKey.slice(0, Math.max(0, registration.storageKey.lastIndexOf("/"))) || "/";
     const prefix = registration.scope === "generation" ? "/api/generation-log-assets" : "/api/reference-assets";
+    const publicUrl = await createExternalMediaPublicUrl(registration).catch(() => null);
     return {
         id: encodeMediaId(registration.scope, registration.storageKey),
         storageKey: registration.storageKey,
@@ -266,7 +267,7 @@ function localMediaAssetFromRegistration(registration: LocalMediaRegistration): 
         bytes: registration.bytes,
         createdAt: registration.createdAt,
         expiresAt: registration.expiresAt,
-        url: `${prefix}/${registration.storageKey.split("/").map(encodeURIComponent).join("/")}`,
+        url: publicUrl || `${prefix}/${registration.storageKey.split("/").map(encodeURIComponent).join("/")}`,
         ownerUserId: registration.ownerUserId,
         originalName: registration.originalName,
         source: registration.source,

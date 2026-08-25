@@ -190,6 +190,23 @@ describe("video task upstream reconciliation", () => {
         expect(mocks.refund).not.toHaveBeenCalled();
     });
 
+    it("downloads a completed Twinkle Model video through its documented content endpoint", async () => {
+        const task = videoTask({
+            config: {
+                ...videoTask().config,
+                advancedConfig: { protocol: "twinkle-model", queryPath: "/v1/videos/:task_id", statusField: "status" } as NonNullable<VideoTask["config"]["advancedConfig"]>,
+            },
+        });
+        mocks.fetchInternalApi.mockResolvedValue(json({ id: task.upstream.id, status: "completed" }));
+
+        await expect(queryVideoTaskUpstream(task, "http://localhost", "session=test")).resolves.toEqual({
+            state: "result_ready",
+            status: "completed",
+            resultUrl: `/v1/videos/${task.upstream.id}/content`,
+        });
+        expect(mocks.fetchInternalApi).toHaveBeenCalledWith(`http://localhost${task.config.baseUrl}/v1/videos/${task.upstream.id}`, expect.any(Object));
+    });
+
     it("recovers a completed New API video from the standard content endpoint when status queries are unavailable", async () => {
         const task = videoTask();
         mocks.fetchInternalApi.mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {

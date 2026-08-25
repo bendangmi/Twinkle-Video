@@ -17,6 +17,7 @@ import { channelBindingCount, channelCapabilityLabels, channelProtocolLabel, cha
 
 type Props = {
     settings: ChannelWorkspaceSettings;
+    twinkleModelBaseUrl: string;
     fetchingModelId: string;
     saving: boolean;
     onChange: (settings: ChannelWorkspaceSettings) => void;
@@ -26,7 +27,7 @@ type Props = {
     onPersist: (settings: ChannelWorkspaceSettings, successText: string) => Promise<boolean>;
 };
 
-export function AdminChannelWorkspace({ settings, fetchingModelId, saving, onChange, onDeleteChannel, onFetchModels, onFetchAll, onPersist }: Props) {
+export function AdminChannelWorkspace({ settings, twinkleModelBaseUrl, fetchingModelId, saving, onChange, onDeleteChannel, onFetchModels, onFetchAll, onPersist }: Props) {
     const [activeTab, setActiveTab] = useState("channels");
     const [query, setQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<ChannelWorkspaceStatus | "all">("all");
@@ -162,6 +163,7 @@ export function AdminChannelWorkspace({ settings, fetchingModelId, saving, onCha
                 open={wizardOpen}
                 initialProtocol={wizardProtocol}
                 settings={settings}
+                twinkleModelBaseUrl={twinkleModelBaseUrl}
                 fetchingModelId={fetchingModelId}
                 saving={saving}
                 onClose={() => setWizardOpen(false)}
@@ -173,6 +175,7 @@ export function AdminChannelWorkspace({ settings, fetchingModelId, saving, onCha
                 open={Boolean(selectedChannel)}
                 channel={selectedChannel}
                 settings={settings}
+                twinkleModelBaseUrl={twinkleModelBaseUrl}
                 fetching={fetchingModelId === selectedChannel?.id}
                 onClose={() => setDetailId("")}
                 onChange={(patch) => selectedChannel && updateChannel(selectedChannel.id, patch)}

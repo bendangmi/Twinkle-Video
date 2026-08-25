@@ -1,6 +1,6 @@
 # VOZEB PRO 二开部署
 
-本目录用于保存部署说明和 Nginx 示例。应用镜像使用仓库根目录的 `Dockerfile` 构建，数据库不打进应用镜像，也不由本部署方案创建；线上使用已有 PostgreSQL，并通过 `docker-compose.external-db.yml` 启动应用和生成 Worker。
+本目录用于保存部署说明、外部 PostgreSQL Compose 文件和 Nginx 示例。应用镜像使用仓库根目录的 `Dockerfile` 构建，数据库不打进应用镜像，也不由本部署方案创建；线上使用已有 PostgreSQL，并通过本目录的 `docker-compose.yaml` 启动应用和生成 Worker。
 
 ## 快速部署流程
 
@@ -15,8 +15,8 @@
 在服务器创建部署目录，并将以下文件复制到同一目录：
 
 ```text
-twinkle-video-v0.0.7.tar
-docker-compose.external-db.yml
+twinkle-video-v0.0.8.tar
+docker-compose.yaml
 .env
 ```
 
@@ -33,7 +33,7 @@ chmod 600 .env
 
 ```dotenv
 NEXT_PUBLIC_SITE_URL=https://你的域名.example.com
-VOZEB_PRO_IMAGE=twinkle-video:v0.0.7
+VOZEB_PRO_IMAGE=twinkle-video:v0.0.8
 VOZEB_PRO_DATABASE_PROVIDER=postgres
 DATABASE_URL=postgresql://用户:URL编码后的密码@数据库地址:5432/数据库名
 VOZEB_PRO_DATABASE_SSL=1
@@ -50,9 +50,9 @@ VOZEB_PRO_WORKER_TOKEN=独立的至少32位Worker令牌
 
 ```bash
 cd /opt/twinkle-video
-docker load -i twinkle-video-v0.0.7.tar
-docker image inspect twinkle-video:v0.0.7 --format '{{.Id}}'
-docker compose -f docker-compose.external-db.yml config --services
+docker load -i twinkle-video-v0.0.8.tar
+docker image inspect twinkle-video:v0.0.8 --format '{{.Id}}'
+docker compose -f docker-compose.yaml config --services
 ```
 
 `config --services` 只能显示 `app` 和 `generation-worker`。如果显示 `postgres`，说明误用了根目录的 `docker-compose.yml`；本教程只使用外部 PostgreSQL。
@@ -60,8 +60,8 @@ docker compose -f docker-compose.external-db.yml config --services
 ### 4. 启动和首次初始化
 
 ```bash
-docker compose -f docker-compose.external-db.yml up -d
-docker compose -f docker-compose.external-db.yml ps
+docker compose -f docker-compose.yaml up -d
+docker compose -f docker-compose.yaml ps
 curl -fsS http://127.0.0.1:3000/api/health/live
 ```
 
@@ -70,7 +70,7 @@ curl -fsS http://127.0.0.1:3000/api/health/live
 查看日志：
 
 ```bash
-docker compose -f docker-compose.external-db.yml logs -f --tail=200 app generation-worker
+docker compose -f docker-compose.yaml logs -f --tail=200 app generation-worker
 ```
 
 ### 5. 配置 Nginx
@@ -90,10 +90,11 @@ curl -fsS https://你的域名.example.com/api/health/live
 在仓库根目录执行：
 
 ```powershell
-$tag = "twinkle-video:v0.0.7"
+$tag = "twinkle-video:v0.0.8"
 docker build --pull --build-arg APT_MIRROR=http://mirrors.aliyun.com -t $tag .
-docker save $tag -o deploy/twinkle-video-v0.0.7.tar
+docker save $tag -o deploy/twinkle-video-v0.0.8.tar
 docker image inspect $tag --format '{{.Id}}'
+Get-FileHash deploy/twinkle-video-v0.0.8.tar -Algorithm SHA256
 ```
 
 导出的 tar 包只包含应用镜像。`postgres` 不属于该镜像；不要使用根目录的 `docker-compose.yml` 作为外部数据库部署方案，因为它会声明 PostgreSQL 服务。
@@ -102,8 +103,8 @@ docker image inspect $tag --format '{{.Id}}'
 
 将以下文件复制到服务器同一目录：
 
-- `deploy/twinkle-video-v0.0.7.tar`
-- `docker-compose.external-db.yml`
+- `deploy/twinkle-video-v0.0.8.tar`
+- `deploy/docker-compose.yaml`
 - `.env`（从 `.env.example` 复制并填写真实值）
 - `deploy/nginx/vozeb-pro.conf.example`（改域名和证书路径后放入 Nginx 配置目录）
 
@@ -112,10 +113,10 @@ docker image inspect $tag --format '{{.Id}}'
 ## 详细操作：加载与启动
 
 ```bash
-docker load -i deploy/twinkle-video-v0.0.7.tar
-export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7
-docker compose -f docker-compose.external-db.yml up -d
-docker compose -f docker-compose.external-db.yml ps
+docker load -i deploy/twinkle-video-v0.0.8.tar
+export VOZEB_PRO_IMAGE=twinkle-video:v0.0.8
+docker compose -f docker-compose.yaml up -d
+docker compose -f docker-compose.yaml ps
 curl -fsS http://127.0.0.1:3000/api/health/live
 ```
 
@@ -126,10 +127,10 @@ curl -fsS http://127.0.0.1:3000/api/health/live
 更新时先导入新 tar，再执行：
 
 ```bash
-docker load -i deploy/twinkle-video-v0.0.7.tar
-export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7
-docker compose -f docker-compose.external-db.yml up -d
-docker compose -f docker-compose.external-db.yml logs --tail=100 app generation-worker
+docker load -i deploy/twinkle-video-v0.0.8.tar
+export VOZEB_PRO_IMAGE=twinkle-video:v0.0.8
+docker compose -f docker-compose.yaml up -d
+docker compose -f docker-compose.yaml logs --tail=100 app generation-worker
 ```
 
 回滚只需把 `VOZEB_PRO_IMAGE` 改回上一版本并重新执行 `up -d`。升级前备份 PostgreSQL 和 `/app/web/.data` 对应的 Docker volume；不要删除数据卷来处理应用升级问题。

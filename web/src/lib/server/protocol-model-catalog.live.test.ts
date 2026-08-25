@@ -30,7 +30,9 @@ describe("registered protocol model catalogs over a local TCP interface", () => 
         expect(response.ok).toBe(true);
         const catalog = parseModelCatalog(payload, "provider", definition.id);
         const configs = parseModelConfigs(payload, definition.id);
-        const expectedIds = (path === "/sdapi/v1/sd-models" ? ["mock-image", "opaque-catalog-model"] : ["mock-audio", "mock-image", "mock-text", "mock-video", "opaque-catalog-model"]).sort((left, right) => left.localeCompare(right));
+        const expectedIds = (path === "/sdapi/v1/sd-models" ? ["mock-image", "opaque-catalog-model"] : path === "/v1/videos/models" ? ["mock-video"] : ["mock-audio", "mock-image", "mock-text", "mock-video", "opaque-catalog-model"]).sort((left, right) =>
+            left.localeCompare(right),
+        );
         expect(catalog.map((entry) => entry.id)).toEqual(expectedIds);
         expect(Object.keys(configs).sort()).toEqual(expectedIds.map((id) => id.toLowerCase()).sort());
         expect(modelCapabilitiesRecord(catalog, configs)).toEqual(

@@ -6,6 +6,7 @@ import { CREATIVE_UPLOAD_MAX_BYTES } from "@/lib/creative-upload";
 import { toSafeGenerationErrorMessage } from "@/lib/server/generation-errors";
 import { fetchInternalApi } from "@/lib/server/internal-origin";
 import { resolveLogicalModelCandidates, type ResolvedLogicalModel } from "@/lib/server/logical-model-router";
+import { twinkleModelRoutingPreference } from "@/lib/server/twinkle-model-account-service";
 import { resolveModelRequestTimeoutMs } from "@/lib/server/model-request-policy";
 import { fetchSafeOutbound } from "@/lib/server/safe-outbound-fetch";
 import { strictJsonObjectText } from "@/lib/server/structured-model-output";
@@ -29,7 +30,7 @@ export class CanvasImageDecompositionError extends Error {
 export async function decomposeCanvasImage(input: { origin: string; cookie: string; userId: string; requestId: string; source: string }): Promise<CanvasImageDecomposition> {
     const [settings, source] = await Promise.all([getAuthSettings(), readSourceImage(input.source, input.origin, input.cookie)]);
     const model = settings.defaultModels.textModel;
-    const candidates = resolveLogicalModelCandidates(settings, "text", model);
+    const candidates = resolveLogicalModelCandidates(settings, "text", model, "", await twinkleModelRoutingPreference(input.userId));
     if (!model || !candidates.length) throw new CanvasImageDecompositionError("后台尚未配置可用的默认文本模型", 503);
 
     let latestError: unknown;

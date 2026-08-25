@@ -11,6 +11,9 @@ CREATE TRIGGER system_model_channels_set_updated_at BEFORE UPDATE ON system_mode
 DROP TRIGGER IF EXISTS users_set_updated_at ON users;
 CREATE TRIGGER users_set_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION vozeb_pro_set_updated_at();
 
+DROP TRIGGER IF EXISTS twinkle_model_bindings_set_updated_at ON twinkle_model_bindings;
+CREATE TRIGGER twinkle_model_bindings_set_updated_at BEFORE UPDATE ON twinkle_model_bindings FOR EACH ROW EXECUTE FUNCTION vozeb_pro_set_updated_at();
+
 DROP TRIGGER IF EXISTS daily_plan_point_wallets_set_updated_at ON daily_plan_point_wallets;
 CREATE TRIGGER daily_plan_point_wallets_set_updated_at BEFORE UPDATE ON daily_plan_point_wallets FOR EACH ROW EXECUTE FUNCTION vozeb_pro_set_updated_at();
 

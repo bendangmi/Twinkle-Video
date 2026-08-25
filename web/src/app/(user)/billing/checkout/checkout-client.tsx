@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CreditSymbol, formatCreditAmount } from "@/constant/credits";
 import { useCopyText } from "@/hooks/use-copy-text";
-import { createBillingOrder, createPaymentCheckout, listBillingCoupons, listBillingProducts, quoteBillingOrder, type BillingProduct, type BillingQuote, type PaymentCheckout, type UserCoupon } from "@/services/api/billing";
+import { createBillingOrder, createPaymentCheckout, listBillingCoupons, listBillingProducts, quoteBillingOrder, subscribeBillingOrder, type BillingProduct, type BillingQuote, type PaymentCheckout, type UserCoupon } from "@/services/api/billing";
 import { openPaymentCheckoutWindow } from "./payment-checkout-window";
 
 const providers = [
@@ -137,6 +137,22 @@ export function BillingCheckoutPage({ productId }: { productId: string }) {
         if (result.fallbackValue) copyText(result.fallbackValue, result.status === "blocked" ? "支付信息已复制，请粘贴到浏览器打开" : "支付信息已复制");
         message.warning(result.status === "blocked" ? "浏览器阻止了支付窗口，已复制支付信息。" : "支付地址无效或无法打开，请复制支付信息后手动打开。");
     };
+
+    useEffect(() => {
+        if (!checkout || checkout.kind !== "qr") return;
+        let active = true;
+        const unsubscribe = subscribeBillingOrder(
+            checkout.orderId,
+            (order) => {
+                if (active && order.status === "paid") window.location.assign(`/billing/success?orderId=${encodeURIComponent(order.id)}`);
+            },
+            () => undefined,
+        );
+        return () => {
+            active = false;
+            unsubscribe();
+        };
+    }, [checkout]);
 
     if (loading) {
         return (

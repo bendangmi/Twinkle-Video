@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 describe("create Agent home layout", () => {
     it("keeps Agent input, recent work and reusable public inspiration in one flow", async () => {
-        const [page, composer, messages, conversationList, generationControls, preferences, overview, inspiration, previewModal] = await Promise.all([
+        const [page, composer, messages, conversationList, generationControls, preferences, overview, inspiration, previewModal, workspaceShell, themeStyles] = await Promise.all([
             readFile(resolve(process.cwd(), "src/app/(user)/create/page.tsx"), "utf8"),
             readFile(resolve(process.cwd(), "src/app/(user)/create/components/creative-composer.tsx"), "utf8"),
             readFile(resolve(process.cwd(), "src/app/(user)/create/components/creative-messages.tsx"), "utf8"),
@@ -14,6 +14,8 @@ describe("create Agent home layout", () => {
             readFile(resolve(process.cwd(), "src/app/(user)/create/components/create-workbench-overview.tsx"), "utf8"),
             readFile(resolve(process.cwd(), "src/app/(user)/create/components/create-inspiration-gallery.tsx"), "utf8"),
             readFile(resolve(process.cwd(), "src/components/works/public-work-preview-modal.tsx"), "utf8"),
+            readFile(resolve(process.cwd(), "src/components/layout/app-workspace-shell.tsx"), "utf8"),
+            readFile(resolve(process.cwd(), "src/app/styles/global-anthropic-theme.css"), "utf8"),
         ]);
 
         expect(page).toContain("创作 Agent");
@@ -42,6 +44,8 @@ describe("create Agent home layout", () => {
         expect(pageTools).toContain("top-3");
         expect(pageTools).not.toContain("h-14");
         expect(pageTools).not.toContain("bg-");
+        expect(page).toContain("px-2.5 pb-3 pt-14 sm:px-8");
+        expect(workspaceShell).toContain('className="hidden min-w-0 sm:block"');
         expect(page).toContain("w-[min(280px,24vw)]");
         expect(page).not.toContain("w-[320px]");
         expect(conversationList).toContain('className="flex h-9 w-full');
@@ -128,8 +132,13 @@ describe("create Agent home layout", () => {
         expect(overview).not.toContain("grid-flow-col");
         expect(overview).not.toContain("overflow-x-auto");
         expect(overview).not.toContain("lg:grid-cols-5");
-        expect(overview).toContain('"group grid h-32');
+        expect(overview).toContain('"group grid min-h-32');
         expect(overview).toContain("sm:h-44");
+        expect(overview).toContain('data-testid="create-continue-editing"');
+        expect(overview).toContain("border-[#d9defe] bg-[#eef1ff]");
+        expect(overview).toContain("dark:border-[#41466f] dark:bg-[#2b2d4a] dark:text-[#c9ccff]");
+        expect(themeStyles).not.toContain('[class*="text-[#');
+        expect(themeStyles).toContain('[class~="text-[#20242a]"]');
         expect(overview).toContain('title="引用到 Agent"');
         expect(overview).not.toMatch(/>\s*引用\s*</);
         expect(overview).not.toContain("absolute bottom-2 right-2");

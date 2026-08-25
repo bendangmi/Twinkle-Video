@@ -6,6 +6,7 @@ import { serializeCurrentUser, setSessionCookie } from "@/lib/auth/session";
 import { checkAuthRateLimit, getClientIp } from "@/lib/server/security";
 import { getInstallStatus, invalidateInstallStatusCache } from "@/lib/server/install-status";
 import { REFERRAL_COOKIE_NAME } from "@/lib/server/referral-service";
+import { bindTwinkleModelAccount } from "@/lib/server/twinkle-model-account-service";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,19 @@ export async function POST(request: NextRequest) {
     try {
         const install = await getInstallStatus();
         if (!install.ready && !install.firstAdminRequired) return NextResponse.json({ error: "请先完成数据库初始化并配置加密密钥" }, { status: 503 });
-        const body = await readJsonBody<{ username?: string; email?: string; emailCode?: string; displayName?: string; password?: string; referralCode?: string; referralSource?: string; policyAccepted?: boolean; installToken?: string }>(request);
+        const body = await readJsonBody<{
+            username?: string;
+            email?: string;
+            emailCode?: string;
+            displayName?: string;
+            password?: string;
+            referralCode?: string;
+            referralSource?: string;
+            policyAccepted?: boolean;
+            installToken?: string;
+            twinkleEmail?: string;
+            twinklePassword?: string;
+        }>(request);
         const referralCodeProvided = Object.prototype.hasOwnProperty.call(body, "referralCode");
         const cookieReferralCode = request.cookies.get(REFERRAL_COOKIE_NAME)?.value;
         const referralCode = install.firstAdminRequired ? undefined : referralCodeProvided ? body.referralCode?.trim() || undefined : cookieReferralCode;
@@ -39,7 +52,15 @@ export async function POST(request: NextRequest) {
               });
         if (install.firstAdminRequired) invalidateInstallStatusCache();
         const sessionValue = await createSession(user.id);
-        const response = NextResponse.json({ user: serializeCurrentUser(user) });
+        let bindingWarning = "";
+        if (!install.firstAdminRequired && (body.twinkleEmail?.trim() || body.twinklePassword)) {
+            try {
+                await bindTwinkleModelAccount({ userId: user.id, email: body.twinkleEmail || "", password: body.twinklePassword || "" });
+            } catch (error) {
+                bindingWarning = error instanceof Error ? error.message : "Twinkle Model 绑定失败，请稍后在个人中心重试";
+            }
+        }
+        const response = NextResponse.json({ user: serializeCurrentUser(user), ...(bindingWarning ? { bindingWarning } : {}) });
         setSessionCookie(response, sessionValue, request);
         response.cookies.set(REFERRAL_COOKIE_NAME, "", { path: "/", maxAge: 0 });
         return response;

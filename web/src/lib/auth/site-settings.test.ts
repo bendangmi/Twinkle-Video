@@ -15,6 +15,11 @@ describe("site settings", () => {
         expect(settings.iconUrl).toBe("https://cdn.example.com/favicon.ico");
     });
 
+    it("normalizes the site address used by external callbacks", () => {
+        expect(normalizeSiteSettings({ siteUrl: "https://pay.example.com///?ignored=1" }).siteUrl).toBe("https://pay.example.com");
+        expect(normalizeSiteSettings({ siteUrl: "not a url" }).siteUrl).toBe("");
+    });
+
     it("defaults public contacts to the VOZEB email and QQ group", () => {
         const settings = normalizeSiteSettings({});
 

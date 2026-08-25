@@ -8,10 +8,12 @@ import {
     type PaymentProviderConfigField,
     type PaymentProviderDefinition,
 } from "@/lib/payment-config-types";
+import { getAuthSettings } from "@/lib/auth/store";
 import { fieldHasRuntimeValue, getFieldRuntimeValue, getPaymentRuntimeConfig, hasPaymentProductionSecret, isPaymentRuntimeProviderEnabled, type PaymentRuntimeConfig } from "@/lib/server/payment-config-store";
 
-export async function getPaymentConfigSummary(origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"): Promise<PaymentConfigSummary> {
-    const normalizedOrigin = normalizeOrigin(origin);
+export async function getPaymentConfigSummary(origin?: string): Promise<PaymentConfigSummary> {
+    const configuredOrigin = origin || (await getAuthSettings()).site.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const normalizedOrigin = normalizeOrigin(configuredOrigin);
     const runtimeConfig = await getPaymentRuntimeConfig();
     const providers = PAYMENT_PROVIDER_DEFINITIONS.map((provider) => buildProviderConfig(provider, runtimeConfig, normalizedOrigin));
     return {
