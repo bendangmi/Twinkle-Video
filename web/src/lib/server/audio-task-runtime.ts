@@ -63,7 +63,7 @@ export async function createAudioTaskUpstreamStep(task: AudioTask, origin: strin
             if (billing.pointsRecordId) await updateAudioTask(task.id, { billing: { pointsCost: billing.pointsCost ?? 0, pointsRecordId: billing.pointsRecordId, refunded: false } });
             const contentType = response.headers.get("content-type")?.split(";")[0].toLowerCase() || "";
             if (!contentType.includes("json")) {
-                const completed = await persistAudioBytes(candidate, origin, Buffer.from(await response.arrayBuffer()), contentType);
+                const completed = await persistAudioBytes(candidate, Buffer.from(await response.arrayBuffer()), contentType);
                 if (completed?.status === "success") {
                     await markAudioAttemptSucceeded(candidate, billing);
                     return { state: "completed" };
@@ -147,12 +147,12 @@ export async function queryAudioTaskUpstreamStep(task: AudioTask, origin: string
 export async function persistAudioTaskResult(task: AudioTask, origin: string, resultUrl: string, cookie = "", workerUserId = "") {
     if (/^data:audio\//i.test(resultUrl)) {
         const asset = await writePersistentMediaDataUrl(resultUrl, "audio", mediaContext(task));
-        return completeAudioTask(task, asset.url || `${origin}/api/reference-assets/${asset.token}`, resultUrl.slice(5, resultUrl.indexOf(";")) || mimeFromFormat(task.config.format || "mp3"));
+        return completeAudioTask(task, asset.url || `/api/reference-assets/${asset.token}`, resultUrl.slice(5, resultUrl.indexOf(";")) || mimeFromFormat(task.config.format || "mp3"));
     }
     const path = /^https?:\/\//i.test(resultUrl) ? `/_media?url=${encodeURIComponent(resultUrl)}` : `/${resultUrl.replace(/^\/+/, "")}`;
     const response = await providerFetch(task, origin, cookie, workerUserId, path, { signal: AbortSignal.timeout(resolveModelRequestTimeoutMs(task.config, "audio")) });
     if (!response.ok) throw new Error(readAudioError(await response.text(), response.status));
-    return persistAudioBytes(task, origin, Buffer.from(await response.arrayBuffer()), response.headers.get("content-type")?.split(";")[0] || "");
+    return persistAudioBytes(task, Buffer.from(await response.arrayBuffer()), response.headers.get("content-type")?.split(";")[0] || "");
 }
 
 export async function markAudioTaskFailed(task: AudioTask, error: string) {
@@ -205,7 +205,7 @@ async function refundAudioCandidate(task: AudioTask) {
     await refundUserPoints(task.userId, generationModelId(task.config), billing.pointsCost, "audio", 1, audioTaskRefundIdempotencyKey({ id: task.id, attemptNo: task.attemptNo }), billing.pointsRecordId);
 }
 
-async function persistAudioBytes(task: AudioTask, origin: string, bytes: Buffer, responseMime: string) {
+async function persistAudioBytes(task: AudioTask, bytes: Buffer, responseMime: string) {
     if (!bytes.length || bytes.length > 30 * 1024 * 1024) throw new Error("音频结果为空或超过 30MB 限制");
     const detected = await fileTypeFromBuffer(bytes);
     const detectedMime = detected?.mime.startsWith("audio/") ? detected.mime : "";
@@ -213,7 +213,7 @@ async function persistAudioBytes(task: AudioTask, origin: string, bytes: Buffer,
     if (!detectedMime && (!declaredMime || looksLikeTextResponse(bytes))) throw new GenerationSubmissionSafeFailure("音频接口返回的不是有效音频文件");
     const mimeType = detectedMime || declaredMime || mimeFromFormat(task.config.format || "mp3");
     const asset = await writePersistentMediaDataUrl(`data:${mimeType};base64,${bytes.toString("base64")}`, "audio", mediaContext(task));
-    return completeAudioTask(task, asset.url || `${origin}/api/reference-assets/${asset.token}`, mimeType);
+    return completeAudioTask(task, asset.url || `/api/reference-assets/${asset.token}`, mimeType);
 }
 
 function looksLikeTextResponse(bytes: Buffer) {

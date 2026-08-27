@@ -60,7 +60,7 @@ export function AdminSiteSection({ controller }: { controller: AdminDashboardCon
                             </LabeledControl>
                             <LabeledControl label="Logo URL">
                                 <div className="flex gap-2">
-                                    <Input value={settings.site.logoUrl} maxLength={2000} placeholder="/logo.svg 或 https://..." onChange={(event) => updateSiteSetting("logoUrl", event.target.value)} />
+                                    <Input value={settings.site.logoUrl} maxLength={2000} placeholder="/logo.jpg 或 https://..." onChange={(event) => updateSiteSetting("logoUrl", event.target.value)} />
                                     <Button icon={<Upload className="size-4" />} onClick={() => logoInputRef.current?.click()}>
                                         上传
                                     </Button>

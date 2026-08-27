@@ -11,7 +11,7 @@ import { createAgentPromptHref, type CreateAgentMode } from "@/lib/create-agent-
 import { usePublicSessionStore } from "@/stores/use-public-session-store";
 import { useUserStore } from "@/stores/use-user-store";
 import type { HomeSiteSettings } from "./home-data";
-import { resolveSiteTitle } from "@/lib/site-brand";
+import { DEFAULT_SITE_LOGO_URL, resolveSiteTitle } from "@/lib/site-brand";
 
 type HomeActions = {
     authenticated: boolean;
@@ -39,7 +39,7 @@ export function HomeActionsProvider({ initialSite, children }: { initialSite: Ho
             ...initialSite,
             ...(sessionSite || {}),
             title: resolveSiteTitle(sessionSite?.title || initialSite.title),
-            logoUrl: sessionSite?.logoUrl?.trim() || initialSite.logoUrl || "/logo.svg",
+            logoUrl: sessionSite?.logoUrl?.trim() || initialSite.logoUrl || DEFAULT_SITE_LOGO_URL,
             friendLinks: sessionSite?.friendLinks || initialSite.friendLinks,
             socials: (sessionSite?.socials as HomeSiteSettings["socials"] | undefined) || initialSite.socials,
         }),

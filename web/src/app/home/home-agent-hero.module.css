@@ -1009,9 +1009,7 @@
 }
 
 .hero::before,
-.hero::after,
-.agentRing,
-.floatingArtifact {
+.hero::after {
     display: none;
 }
 
@@ -1273,7 +1271,8 @@
     }
 
     .heroContent {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+        min-width: 0;
         row-gap: 0;
     }
 
@@ -1286,10 +1285,28 @@
     .heroSignals,
     .agentStage {
         grid-column: 1;
+        min-width: 0;
+    }
+
+    .heroCopy {
+        width: 100%;
     }
 
     .heroTitle {
         max-width: 12ch;
+    }
+
+    .heroCopy {
+        text-align: center;
+    }
+
+    .heroSubtitle {
+        margin-inline: auto;
+    }
+
+    .heroActions,
+    .heroSignals {
+        justify-content: center;
     }
 
     .agentStage {
@@ -1479,12 +1496,14 @@
     }
 
     .heroContent {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+        min-width: 0;
     }
 
     .heroCopy,
     .agentStage {
         grid-column: 1;
+        min-width: 0;
     }
 
     .agentStage {

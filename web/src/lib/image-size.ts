@@ -4,7 +4,9 @@ export type ImageOrientation = "landscape" | "portrait" | "square";
 export function parseImageDimensions(value: string): ImageDimensions | null {
     const match = value.trim().match(/^(\d+)\s*(?:x|\*|×)\s*(\d+)$/i);
     if (!match) return null;
-    return { width: Number(match[1]), height: Number(match[2]) };
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    return width > 0 && height > 0 ? { width, height } : null;
 }
 
 export function normalizeImageSizeValue(value: unknown) {

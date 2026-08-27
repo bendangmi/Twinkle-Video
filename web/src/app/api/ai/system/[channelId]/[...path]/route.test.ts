@@ -22,7 +22,7 @@ vi.mock("@/lib/auth/store", () => ({
     isQuotaExceededError: vi.fn(() => false),
     refundUserPoints: mocks.refundUserPoints,
 }));
-vi.mock("@/lib/server/proxy-dispatcher", () => ({ configureServerProxyDispatcher: vi.fn() }));
+vi.mock("@/lib/server/proxy-dispatcher", () => ({ configureServerProxyDispatcher: vi.fn(), resolveServerProxyUrl: vi.fn(() => "") }));
 vi.mock("@/lib/server/media-concurrency", () => ({ acquireMediaConcurrency: mocks.acquire, withMediaConcurrency: mocks.wrap }));
 vi.mock("@/lib/server/safe-outbound-fetch", () => ({ fetchSafeOutbound: (url: string | URL, init?: RequestInit) => fetch(url, init) }));
 vi.mock("@/lib/server/generation-media-access", () => ({ authorizeGenerationMediaProxyRequest: mocks.mediaAccess }));
@@ -698,7 +698,7 @@ describe("Stable Diffusion proxy", () => {
     });
 });
 
-describe("VOZEB recommended video proxy", () => {
+describe("Twinkle Video recommended video proxy", () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         mocks.consumeUserPoints.mockReset().mockResolvedValue(undefined);

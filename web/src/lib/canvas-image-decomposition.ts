@@ -279,7 +279,7 @@ export const canvasImageDecompositionTool = {
 
 export function canvasImageDecompositionInstruction(width: number, height: number) {
     return [
-        "你是 VOZEB PRO 图片分层分析器。分析用户提供的完整图片，并调用 decompose_ecommerce_image。",
+        "你是 Twinkle Video 图片分层分析器。分析用户提供的完整图片，并调用 decompose_ecommerce_image。",
         `所有 bbox 必须使用原图 ${width}x${height} 的整数像素坐标，禁止使用百分比或归一化坐标。`,
         "先判断整张图片的 strategy：电商海报、营销视觉、商品设计图或包含多个可独立排版元素的图片必须是 ecommerce；普通单人物或单主体照片可以是 subject。strategy 只描述画面类型，不改变后续任务链路。",
         "完整识别所有需要独立保留的前景视觉元素：主商品和商品组合、人物、标题或艺术字、普通说明文字、品牌 Logo、促销角标或标签、棉花/光效/贴纸等装饰，以及其他独立前景物体。",

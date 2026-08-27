@@ -25,7 +25,7 @@ vi.mock("@/lib/server/reference-asset-store", () => ({ writePersistentMediaDataU
 
 import { createProtocolFixtureServer } from "../../../scripts/protocol-fixture-server.mjs";
 import { GenerationSubmissionUncertainError } from "./generation-submission-error";
-import { createAudioTaskUpstreamStep, markAudioTaskFailed } from "./audio-task-runtime";
+import { createAudioTaskUpstreamStep, markAudioTaskFailed, persistAudioTaskResult } from "./audio-task-runtime";
 import type { AudioTask } from "./audio-task-store";
 import { emptyAdvancedConfig, protocolModelConfig, registeredChannelProtocolDefinitions } from "@/lib/channel-protocol-registry";
 
@@ -84,6 +84,15 @@ describe("audio task runtime submission safety", () => {
 
         expect(state.upstream).toEqual({ id: "audio-upstream-one", createPath: "/audio/speech" });
         expect(mocks.schedule).toHaveBeenLastCalledWith("audio", "audio-one", expect.objectContaining({ executionPhase: "submitted", upstreamTaskId: "audio-upstream-one", channelId: "channel-one", lastUpstreamStatus: "submitted" }));
+    });
+
+    it("keeps locally persisted audio on the browser same origin", async () => {
+        mocks.writeMedia.mockResolvedValueOnce({ token: "permanent/audio/result.wav", storage: "local" });
+
+        await persistAudioTaskResult(state, "http://127.0.0.1:46512", "data:audio/wav;base64,UklGRg==");
+
+        expect(state).toMatchObject({ status: "success", result: { url: "/api/reference-assets/permanent/audio/result.wav", mimeType: "audio/wav" } });
+        expect(mocks.register).toHaveBeenCalledWith(state.userId, expect.objectContaining({ assets: [expect.objectContaining({ url: "/api/reference-assets/permanent/audio/result.wav" })] }));
     });
 
     it("does not persist an HTML fallback page as generated audio", async () => {

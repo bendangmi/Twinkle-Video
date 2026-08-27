@@ -1,6 +1,7 @@
 import { ECOMMERCE_IMAGE_SKILL } from "@/lib/server/agent-skills/ecommerce-image";
 import { YANAI_BEAUTY_SKILL } from "@/lib/server/agent-skills/yanai-beauty";
 import { DEFAULT_CREATIVE_SHORTCUT_SKILLS } from "@/lib/server/agent-skills/creative-shortcuts";
+import { DEFAULT_SITE_ICON_URL, DEFAULT_SITE_LOGO_URL, DEFAULT_SITE_TITLE } from "@/lib/site-brand";
 import {
     type UserRole,
     type UserStatus,
@@ -84,13 +85,13 @@ export const DEFAULT_MODEL_POINT_COST_KEY = "__default__";
 export const DEFAULT_TWINKLE_MODEL_BASE_URL = "https://big-model.smart-agi.com";
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     siteUrl: "",
-    title: "VOZEB PRO",
-    logoUrl: "/logo.svg",
-    iconUrl: "/icon.svg",
-    seoTitle: "VOZEB PRO",
+    title: DEFAULT_SITE_TITLE,
+    logoUrl: DEFAULT_SITE_LOGO_URL,
+    iconUrl: DEFAULT_SITE_ICON_URL,
+    seoTitle: DEFAULT_SITE_TITLE,
     seoDescription: "面向 Agent、图片、视频、画布与短剧生产的一体化 AI 创作工作台",
-    seoKeywords: "VOZEB PRO,AI Agent,AI 绘图,AI 视频,画布,短剧,提示词库,素材管理",
-    footerCopyright: "© 2026 VOZEB PRO. All rights reserved.",
+    seoKeywords: `${DEFAULT_SITE_TITLE},AI Agent,AI 绘图,AI 视频,画布,短剧,提示词库,素材管理`,
+    footerCopyright: `© 2026 ${DEFAULT_SITE_TITLE}. All rights reserved.`,
     termsUrl: "/terms",
     termsVersion: "1.0",
     privacyUrl: "/privacy",
@@ -106,7 +107,7 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
     username: "",
     password: "",
     fromEmail: "",
-    fromName: "VOZEB PRO",
+    fromName: DEFAULT_SITE_TITLE,
 };
 export const DEFAULT_GENERATION_POINT_MULTIPLIERS: GenerationPointMultipliers = {
     imageQuality: { auto: 1, low: 1, medium: 1, high: 1 },

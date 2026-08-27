@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/store", () => ({
-    DEFAULT_SITE_SETTINGS: { title: "VOZEB PRO", logoUrl: "/logo.svg" },
+    DEFAULT_SITE_SETTINGS: { title: "Twinkle Video", logoUrl: "/logo.jpg" },
     getAuthSettings: mocks.getAuthSettings,
 }));
 
@@ -40,7 +40,7 @@ describe("public session route before installation", () => {
 
         await expect(response.json()).resolves.toMatchObject({
             user: null,
-            settings: { site: { title: "VOZEB PRO" } },
+            settings: { site: { title: "Twinkle Video" } },
             install: { database: { healthy: true, schemaReady: false } },
         });
         expect(mocks.getCurrentUser).toHaveBeenCalledTimes(1);

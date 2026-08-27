@@ -466,7 +466,7 @@ describe("executeAgentRun backend settings", () => {
                 id: "text-one",
                 title: "欢迎文案",
                 type: "text",
-                prompt: "创建一个文字节点，内容写“欢迎使用 VOZEB PRO Agent”，放在画布中央，并选中它。\n\n严格输出要求：只输出最终文本，不要标题、Markdown、解释或列表。",
+                prompt: "创建一个文字节点，内容写“欢迎使用 Twinkle Video Agent”，放在画布中央，并选中它。\n\n严格输出要求：只输出最终文本，不要标题、Markdown、解释或列表。",
                 count: 1,
                 dependencies: [],
                 status: "ready",
@@ -478,7 +478,7 @@ describe("executeAgentRun backend settings", () => {
         await executeAgentRun(mocks.run, "http://localhost", "session=test");
 
         expect(mocks.fetchInternalApi.mock.calls.some(([url]) => String(url).includes("/api/text-tasks"))).toBe(false);
-        expect(mocks.run?.tasks[0].result).toEqual({ content: "欢迎使用 VOZEB PRO Agent" });
+        expect(mocks.run?.tasks[0].result).toEqual({ content: "欢迎使用 Twinkle Video Agent" });
         const completed = mocks.events.find((event) => event.type === "task.completed") as { data?: { message?: string; ops?: Array<Record<string, unknown>> } } | undefined;
         expect(completed?.data?.message).not.toContain("无法直接操作");
         expect(completed?.data?.ops).toEqual(
@@ -488,7 +488,7 @@ describe("executeAgentRun backend settings", () => {
                     id: "output-agent-run-0-0",
                     nodeType: "text",
                     position: { x: 800, y: 96 },
-                    metadata: expect.objectContaining({ content: "欢迎使用 VOZEB PRO Agent" }),
+                    metadata: expect.objectContaining({ content: "欢迎使用 Twinkle Video Agent" }),
                 }),
                 { type: "select_nodes", ids: ["output-agent-run-0-0"] },
             ]),

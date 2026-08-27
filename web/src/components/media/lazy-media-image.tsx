@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { SiteLogo } from "@/components/layout/site-logo";
+import { DEFAULT_SITE_LOGO_URL } from "@/lib/site-brand";
 import { cn } from "@/lib/utils";
 import { usePublicSessionStore } from "@/stores/use-public-session-store";
 
@@ -25,7 +26,7 @@ export function LazyMediaImage({
 }) {
     const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
     const [placeholderReady, setPlaceholderReady] = useState(false);
-    const logoUrl = usePublicSessionStore((state) => state.payload?.settings?.site?.logoUrl) || "/logo.svg";
+    const logoUrl = usePublicSessionStore((state) => state.payload?.settings?.site?.logoUrl) || DEFAULT_SITE_LOGO_URL;
     const hasPlaceholder = Boolean(placeholderSrc && placeholderSrc !== src);
 
     useEffect(() => setStatus("loading"), [src]);

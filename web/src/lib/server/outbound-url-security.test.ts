@@ -47,10 +47,34 @@ describe("outbound url security", () => {
         await expect(isSafeOutboundUrl("http://[::ffff:127.0.0.1]/result")).resolves.toBe(false);
     });
 
+    it("allows every HTTP(S) address without credentials or host allowlists in development", async () => {
+        vi.stubEnv("NODE_ENV", "development");
+        mocks.lookup.mockResolvedValue([
+            { address: "10.0.0.8", family: 4 },
+            { address: "169.254.169.254", family: 4 },
+        ]);
+
+        await expect(isSafeOutboundUrl("http://localhost:11434/v1/models")).resolves.toBe(true);
+        await expect(isSafeOutboundUrl("http://169.254.169.254/latest/meta-data")).resolves.toBe(true);
+        await expect(isSafeOutboundUrl("http://metadata.google.internal/computeMetadata/v1")).resolves.toBe(true);
+        await expect(isSafeOutboundUrl("http://user:secret@provider.internal/v1/models")).resolves.toBe(true);
+        await expect(isSafeOutboundUrl("https://provider.internal/v1/models")).resolves.toBe(true);
+        mocks.lookup.mockRejectedValue(new Error("unresolvable"));
+        await expect(isSafeOutboundUrl("http://unresolvable.internal/v1/models")).resolves.toBe(true);
+        await expect(isSafeOutboundUrl("ftp://127.0.0.1/file")).resolves.toBe(false);
+    });
+
     it("marks only benchmark-network addresses for proxy routing", () => {
         expect(isProxyRoutedIpAddress("198.18.0.113")).toBe(true);
         expect(isProxyRoutedIpAddress("198.20.0.113")).toBe(false);
         expect(isProxyRoutedIpAddress("8.8.8.8")).toBe(false);
+    });
+
+    it("allows a proxy-routed fake IP only when an outbound proxy will be used", async () => {
+        mocks.lookup.mockResolvedValue([{ address: "198.18.0.90", family: 4 }]);
+
+        await expect(resolveSafeOutboundTarget("https://st.smart-agi.com/api/v1/auth/login")).resolves.toBeNull();
+        await expect(resolveSafeOutboundTarget("https://st.smart-agi.com/api/v1/auth/login", { allowProxyRouted: true })).resolves.toMatchObject({ address: "198.18.0.90", family: 4 });
     });
 
     it("allows exact private hosts only when explicitly enabled and never allows metadata addresses", async () => {

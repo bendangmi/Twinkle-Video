@@ -1,4 +1,4 @@
-export const appName = "VOZEB PRO";
+export const appName = "Twinkle Video";
 export const docsRoute = "/docs";
 export const docsContentRoute = "/llms.mdx/docs";
 

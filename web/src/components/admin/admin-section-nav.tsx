@@ -38,7 +38,7 @@ import {
 import { canAccessAdminSection, type AdminSectionKey } from "@/components/admin/admin-sections";
 import { SiteLogo } from "@/components/layout/site-logo";
 import type { PublicUser } from "@/lib/auth/store";
-import { DEFAULT_SITE_TITLE } from "@/lib/site-brand";
+import { DEFAULT_SITE_LOGO_URL, DEFAULT_SITE_TITLE } from "@/lib/site-brand";
 import { usePublicSessionStore } from "@/stores/use-public-session-store";
 
 type AdminSection = { key: AdminSectionKey; label: string; description: string; shortDescription: string; icon: ReactNode };
@@ -68,7 +68,7 @@ export function AdminSectionNav({
     const allowedGroups = adminSectionGroups.map((group) => ({ ...group, items: group.items.filter((section) => canAccessAdminSection(currentUser, section.key)) })).filter((group) => group.items.length);
     const activeGroup = allowedGroups.find((group) => group.items.some((section) => section.key === activeKey));
     const activeGroupTitle = activeGroup?.title;
-    const site = usePublicSessionStore((state) => state.payload?.settings?.site) || { title: DEFAULT_SITE_TITLE, logoUrl: "/logo.svg" };
+    const site = usePublicSessionStore((state) => state.payload?.settings?.site) || { title: DEFAULT_SITE_TITLE, logoUrl: DEFAULT_SITE_LOGO_URL };
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
     useEffect(() => {

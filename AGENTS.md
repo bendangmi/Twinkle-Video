@@ -152,6 +152,10 @@
 ## 文档规范
 
 - README 保持简洁，只放项目介绍、核心功能、快速开始和文档入口。
+- 公开 README 使用 `README.md` 英文版与 `README_ZH_CN.md` 简体中文版；版本、二开能力、部署限制、上游地址、AGPL 声明和商业授权边界必须在同一提交中同步更新。
+- README 必须明确本仓库是 `https://github.com/csyqlz/VOZEB-PRO` 的独立二开，不是官方版本；上游功能、上游法律材料与 Twinkle 新增修改必须分开描述，不得暗示获得官方认可。
+- `COMMERCIAL_LICENSE.md` 与 `COMMERCIAL_LICENSE_AGREEMENT.md` 属于保留的上游商业授权材料，不能描述为 Twinkle 已签发授权，也不能承诺其自动覆盖独立二开贡献；闭源授权应要求获得覆盖相关版本及全部必要权利人的书面许可。
+- 许可证说明必须以根目录 `LICENSE` 的 AGPL-3.0 文本为准，同时保留 `THIRD_PARTY_LICENSES.md`、法律声明、版权署名和修改历史；项目名称、Logo、托管服务与商标权不得与源码许可混为一谈。
 - `docs/index.md` 放给 AI 使用的文档索引，不要再放到 `docs/content/docs/` 内容目录里。
 - 详细功能介绍写到 `docs/content/docs/overview/features.mdx`。
 - 后续待办写到 `docs/content/docs/progress/todo.mdx`。
@@ -214,3 +218,9 @@
 - Cover desktop and mobile layouts, canvas interactions including node actions and linking, image workbench generation/history/reference-image flows, video workbench text-to-video and image-to-video flows, all visible buttons touched by the change, and configured API capability checks for text/image/video.
 - For live upstream API tests that include Chinese prompts, do not put Chinese literals directly in PowerShell commands. Use the app flow, Node/fetch with UTF-8 text loaded from a file, or base64/Unicode reconstruction before sending so the upstream prompt is not submitted as question marks.
 - If the full live API/browser matrix cannot be completed, report the exact gap and why.
+
+## Shared Product Design
+
+- Use `../.agents/skills/anthropic-product-design/SKILL.md` as the shared visual baseline for all UI/UX, homepage, responsive, and light/dark theme work.
+- Reuse the established Anthropic theme variables and shell components; do not add a parallel visual language.
+- Cover desktop and mobile layouts, dark/light states, focus styles, and horizontal-overflow checks in browser regression for UI changes.

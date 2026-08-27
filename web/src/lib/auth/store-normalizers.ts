@@ -468,7 +468,7 @@ export function normalizeDataLifecycle(settings: Partial<DataLifecycleSettings> 
 }
 
 export function normalizeSiteSettings(settings: Partial<SiteSettings> | undefined): SiteSettings {
-    const title = normalizeText(settings?.title, DEFAULT_SITE_SETTINGS.title, 40);
+    const title = replaceLegacyBrand(normalizeText(settings?.title, DEFAULT_SITE_SETTINGS.title, 40), DEFAULT_SITE_SETTINGS.title);
     const seoTitle = normalizeBrandDefault(settings?.seoTitle, DEFAULT_SITE_SETTINGS.seoTitle, title, title, 72);
     return {
         siteUrl: normalizeSiteUrl(settings?.siteUrl),
@@ -503,9 +503,13 @@ function normalizeSiteUrl(value: unknown) {
 }
 
 function normalizeBrandDefault(value: unknown, defaultValue: string, siteTitle: string, fallback: string, maxLength: number) {
-    const text = typeof value === "string" ? value.trim() : "";
+    const text = replaceLegacyBrand(typeof value === "string" ? value.trim() : "", siteTitle);
     if (!text || (siteTitle !== DEFAULT_SITE_SETTINGS.title && text === defaultValue)) return fallback.slice(0, maxLength);
     return normalizeText(text, fallback, maxLength);
+}
+
+function replaceLegacyBrand(value: string, siteTitle: string) {
+    return value.replaceAll("VOZEB PRO", siteTitle).replaceAll("Twinkle Model", siteTitle).replaceAll("Twinkle Video", siteTitle);
 }
 
 export function normalizeSiteFriendLinks(settings: unknown, siteTitle = DEFAULT_SITE_SETTINGS.title): SiteFriendLink[] {
@@ -516,7 +520,11 @@ export function normalizeSiteFriendLinks(settings: unknown, siteTitle = DEFAULT_
             const defaultHomeLink = value.id === "vozeb-pro-home" && value.url?.replace(/\/$/, "") === "https://www.vozeb.com";
             return {
                 id: normalizeText(value.id, `friend-${index + 1}`, 80),
-                label: normalizeText(defaultHomeLink && (!value.label || value.label === DEFAULT_SITE_SETTINGS.title) ? siteTitle : value.label, "友情链接", 32),
+                label: normalizeText(
+                    defaultHomeLink && (!value.label || value.label === DEFAULT_SITE_SETTINGS.title || value.label === "VOZEB PRO" || value.label === "Twinkle Model" || value.label === "Twinkle Video") ? siteTitle : value.label,
+                    "友情链接",
+                    32,
+                ),
                 url: normalizeLinkUrl(value.url, ""),
                 enabled: value.enabled !== false,
             };
@@ -572,7 +580,11 @@ export function normalizeMailSettings(settings: Partial<MailSettings> | undefine
         username: normalizeText(settings?.username, DEFAULT_MAIL_SETTINGS.username, 160),
         password: normalizeSecretText(settings?.password, DEFAULT_MAIL_SETTINGS.password, 512),
         fromEmail: normalizeText(settings?.fromEmail, DEFAULT_MAIL_SETTINGS.fromEmail, 160),
-        fromName: normalizeText(!settings?.fromName || settings.fromName === DEFAULT_MAIL_SETTINGS.fromName ? siteTitle : settings.fromName, siteTitle, 60),
+        fromName: normalizeText(
+            !settings?.fromName || settings.fromName === DEFAULT_MAIL_SETTINGS.fromName || settings.fromName === "VOZEB PRO" || settings.fromName === "Twinkle Model" || settings.fromName === "Twinkle Video" ? siteTitle : settings.fromName,
+            siteTitle,
+            60,
+        ),
     };
 }
 
@@ -588,9 +600,9 @@ export function normalizeText(value: unknown, fallback: string, maxLength: numbe
 }
 
 export function repairKnownMojibakeText(value: string) {
-    if (value.includes("VOZEB PRO") && value.includes("AI") && !value.includes("绘图") && value.includes(",")) return DEFAULT_SITE_SETTINGS.seoKeywords;
-    if (value.includes("VOZEB PRO") && value.includes("AI") && !value.includes("工作台")) return DEFAULT_SITE_SETTINGS.seoDescription;
-    if (value.includes("2026 VOZEB PRO") && !value.startsWith("©")) return "© 2026 VOZEB PRO. All rights reserved.";
+    if (/(VOZEB PRO|Twinkle Model|Twinkle Video)/.test(value) && value.includes("AI") && !value.includes("绘图") && value.includes(",")) return DEFAULT_SITE_SETTINGS.seoKeywords;
+    if (/(VOZEB PRO|Twinkle Model|Twinkle Video)/.test(value) && value.includes("AI") && !value.includes("工作台") && !value.includes(",")) return DEFAULT_SITE_SETTINGS.seoDescription;
+    if (/2026 (?:VOZEB PRO|Twinkle Model|Twinkle Video)/.test(value) && !value.startsWith("©")) return DEFAULT_SITE_SETTINGS.footerCopyright;
     if (value.startsWith("QQ ") && !value.includes("邮箱")) return "QQ 邮箱";
     return repairUtf8MojibakeText(value);
 }
@@ -619,10 +631,12 @@ export function textQualityScore(value: string) {
 }
 
 export function normalizeLogoUrl(value: unknown) {
+    if (value === "/logo.svg" || value === "/download.jpg") return DEFAULT_SITE_SETTINGS.logoUrl;
     return normalizeSiteImageUrl(value, DEFAULT_SITE_SETTINGS.logoUrl);
 }
 
 export function normalizeSiteIconUrl(value: unknown) {
+    if (value === "/logo.svg" || value === "/download.jpg") return DEFAULT_SITE_SETTINGS.iconUrl;
     return normalizeSiteImageUrl(value, DEFAULT_SITE_SETTINGS.iconUrl);
 }
 

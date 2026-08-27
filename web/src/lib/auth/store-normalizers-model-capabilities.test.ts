@@ -21,7 +21,7 @@ describe("system channel model capabilities", () => {
         expect(normalized?.modelCapabilities).toEqual({ "writer-v1": "text", "image-v1": "image", "video-v1": "video" });
     });
 
-    it("persists the VOZEB recommended protocol after a settings round-trip", () => {
+    it("persists the Twinkle Video recommended protocol after a settings round-trip", () => {
         expect(normalizeSystemChannelAdvancedConfig({ protocol: "vozeb-recommended" } as never)?.protocol).toBe("vozeb-recommended");
     });
 

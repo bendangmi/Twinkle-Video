@@ -5,21 +5,25 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_SITE_SETTINGS } from "@/lib/auth/store";
 
-describe("default infinite-evolution brand assets", () => {
-    it("uses the built-in infinite-evolution logo for every default brand entry", () => {
-        expect(DEFAULT_SITE_SETTINGS.logoUrl).toBe("/logo.svg");
+describe("default Twinkle Video brand assets", () => {
+    it("uses the supplied image for every default brand entry", () => {
+        expect(DEFAULT_SITE_SETTINGS.title).toBe("Twinkle Video");
+        expect(DEFAULT_SITE_SETTINGS.logoUrl).toBe("/logo.jpg");
         expect(DEFAULT_SITE_SETTINGS.iconUrl).toBe("/icon.svg");
     });
 
-    it("keeps web logo, browser icon and docs logo identical without triangle primitives", async () => {
-        const [logo, icon, docsLogo] = await Promise.all([readFile(resolve(process.cwd(), "public/logo.svg"), "utf8"), readFile(resolve(process.cwd(), "public/icon.svg"), "utf8"), readFile(resolve(process.cwd(), "../docs/public/logo.svg"), "utf8")]);
+    it("keeps the web and docs copies identical to the supplied image", async () => {
+        const [webLogo, docsLogo] = await Promise.all([readFile(resolve(process.cwd(), "public/logo.jpg")), readFile(resolve(process.cwd(), "../docs/public/logo.jpg"))]);
 
-        expect(markupShape(icon)).toBe(markupShape(logo));
-        expect(markupShape(docsLogo)).toBe(markupShape(logo));
-        expect(logo).not.toMatch(/<(?:polygon|polyline)\b|triangle/i);
+        expect(docsLogo.equals(webLogo)).toBe(true);
+    });
+
+    it("ships newly designed vector logo and icon assets", async () => {
+        const [logo, icon] = await Promise.all([readFile(resolve(process.cwd(), "public/logo.svg"), "utf8"), readFile(resolve(process.cwd(), "public/icon.svg"), "utf8")]);
+
+        expect(logo).toContain("Twinkle Video");
+        expect(icon).toContain("Twinkle Video");
+        expect(logo).toContain('id="gold"');
+        expect(icon).toContain('id="g"');
     });
 });
-
-function markupShape(svg: string) {
-    return svg.match(/<path\b[^>]*\bd="([^"]+)"/)?.[1];
-}

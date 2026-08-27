@@ -10,7 +10,7 @@ vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn(async () => ({ id: 
 vi.mock("@/lib/auth/store", () => ({ getAuthSettings: vi.fn(async () => ({ systemChannels: [savedChannel], twinkleModel: { baseUrl: "https://big-model.smart-agi.com" } })) }));
 vi.mock("@/lib/server/security", () => ({ isSafeOutboundUrl: mocks.isSafeOutboundUrl }));
 vi.mock("@/lib/server/safe-outbound-fetch", () => ({ fetchSafeOutbound: (url: string | URL, init?: RequestInit) => fetch(url, init) }));
-vi.mock("@/lib/server/proxy-dispatcher", () => ({ configureServerProxyDispatcher: vi.fn() }));
+vi.mock("@/lib/server/proxy-dispatcher", () => ({ configureServerProxyDispatcher: vi.fn(), resolveServerProxyUrl: vi.fn(() => "") }));
 vi.mock("@/lib/server/twinkle-model-account-service", () => ({
     resolveTwinkleModelChannelCredential: mocks.resolveTwinkleModelChannelCredential,
     TwinkleModelAccountError: class TwinkleModelAccountError extends Error {},
@@ -37,19 +37,16 @@ describe("admin models route", () => {
         expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/v1/models", expect.objectContaining({ headers: { authorization: "Bearer test-secret-value" } }));
     });
 
-    it("uses the administrator URL and key for a Twinkle Model video catalog", async () => {
-        const fetchMock = vi.fn(async () => Response.json({ object: "list", data: [{ id: "Seedance-2.0-Fast-Official-480p", object: "video.model", type: "video" }] }));
+    it("does not guess a model catalog for the latest Twinkle Model video protocol", async () => {
+        const fetchMock = vi.fn();
         vi.stubGlobal("fetch", fetchMock);
 
         const response = await POST(request({ baseUrl: "https://admin-twinkle.example.com", apiKey: "admin-key", protocol: "twinkle-model" }));
 
-        expect(response.status).toBe(200);
-        expect(await response.json()).toMatchObject({
-            models: ["Seedance-2.0-Fast-Official-480p"],
-            modelCapabilities: { "seedance-2.0-fast-official-480p": "video" },
-        });
+        expect(response.status).toBe(422);
+        expect(await response.json()).toEqual({ error: "Twinkle Model 最新视频协议未提供模型目录；系统不会猜测 /v1/models 或继续请求旧的 /v1/videos/models。请按当前文档手动填写模型 ID。" });
         expect(mocks.resolveTwinkleModelChannelCredential).not.toHaveBeenCalled();
-        expect(fetchMock).toHaveBeenCalledWith("https://admin-twinkle.example.com/v1/videos/models", expect.objectContaining({ headers: { authorization: "Bearer admin-key" } }));
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it("loads a keyless Stable Diffusion model catalog without authentication", async () => {

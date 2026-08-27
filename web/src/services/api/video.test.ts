@@ -16,7 +16,7 @@ import type { AiConfig } from "@/stores/use-config-store";
 import type { ReferenceImage } from "@/types/image";
 import { cancelServerVideoGenerationTask, createServerVideoGenerationTask, createVideoGenerationTask, pollVideoGenerationTask, recoverVideoGenerationTask } from "./video";
 import { createUpstreamVideoGenerationTask } from "./video-core";
-import { buildCompatibleVideoPayloadVariants, compatibleVideoCreatePaths, compatibleVideoPollPaths, isGlobalAiOpcVideoConfig } from "./video-providers";
+import { buildCompatibleVideoPayloadVariants, compatibleVideoCreatePaths, compatibleVideoPollPaths, isGlobalAiOpcVideoConfig, pollCompatibleVideoTask } from "./video-providers";
 import { normalizeCompatibleVideoDimensions, normalizeCompatibleVideoDuration, normalizeCompatibleVideoQuality, normalizeCompatibleVideoRatio, normalizeGlobalAiOpcVideoDuration } from "./video-payloads";
 import { normalizeVideoResolution, normalizeVideoSeconds, normalizeVideoSize } from "./video-support";
 import { GLOBAL_AIOPC_VIDEO_CREATE_PATH } from "./video-types";
@@ -400,8 +400,62 @@ describe("video API service", () => {
             image_urls: ["https://cdn.example.com/reference.png"],
             video_urls: ["https://cdn.example.com/reference.mp4"],
             audio_urls: ["https://cdn.example.com/reference.mp3"],
-            first_frame_url: "https://cdn.example.com/first.png",
-            last_frame_url: "https://cdn.example.com/last.png",
+            start_image_url: "https://cdn.example.com/first.png",
+            end_image_url: "https://cdn.example.com/last.png",
+        });
+    });
+
+    it("preserves an exact Twinkle Model size instead of inventing an aspect ratio", async () => {
+        const twinkle = {
+            ...config,
+            baseUrl: "/api/ai/system/twinkle",
+            apiKey: "system",
+            model: "Seedance-2.0-Official-933-1080p",
+            videoModel: "Seedance-2.0-Official-933-1080p",
+            size: "1440x1080",
+            advancedConfig: { protocol: "twinkle-model", createPath: "/v1/videos", queryPath: "/v1/videos/:task_id" },
+        } as AiConfig;
+        const post = vi.spyOn(axios, "post").mockResolvedValue({ data: { id: "twinkle-sized", status: "queued" }, headers: {} });
+
+        await createUpstreamVideoGenerationTask(twinkle, "精确尺寸视频");
+
+        expect(post.mock.calls[0][1]).toMatchObject({ size: "1440x1080" });
+        expect(post.mock.calls[0][1]).not.toHaveProperty("aspect_ratio");
+    });
+
+    it("uses the documented Twinkle Model content endpoint when a completed task omits url", async () => {
+        const twinkle = {
+            ...config,
+            baseUrl: "/api/ai/system/twinkle",
+            apiKey: "system",
+            model: "Minimax-H3-933-480p",
+            advancedConfig: { protocol: "twinkle-model", queryPath: "/v1/videos/:task_id", statusField: "status" },
+        } as AiConfig;
+        const get = vi
+            .spyOn(axios, "get")
+            .mockResolvedValueOnce({ data: { id: "twinkle-complete", status: "completed" }, headers: {} })
+            .mockRejectedValueOnce(new Error("binary probe unavailable"));
+
+        await expect(pollCompatibleVideoTask(twinkle, { id: "twinkle-complete", provider: "generation", model: twinkle.model, pollPath: "/v1/videos" })).resolves.toMatchObject({
+            status: "completed",
+            result: { url: "/api/ai/system/twinkle/v1/videos/twinkle-complete/content" },
+        });
+        expect(get.mock.calls[1][0]).toBe("/api/ai/system/twinkle/v1/videos/twinkle-complete/content");
+    });
+
+    it("stops polling when Twinkle Model reports an unresolved task", async () => {
+        const twinkle = {
+            ...config,
+            baseUrl: "/api/ai/system/twinkle",
+            apiKey: "system",
+            model: "Minimax-H3-933-480p",
+            advancedConfig: { protocol: "twinkle-model", queryPath: "/v1/videos/:task_id", statusField: "status" },
+        } as AiConfig;
+        vi.spyOn(axios, "get").mockResolvedValue({ data: { id: "twinkle-unresolved", status: "unresolved" }, headers: {} });
+
+        await expect(pollCompatibleVideoTask(twinkle, { id: "twinkle-unresolved", provider: "generation", model: twinkle.model, pollPath: "/v1/videos" })).resolves.toEqual({
+            status: "failed",
+            error: "上游生成阶段失败：视频任务状态未能确认，请联系管理员核查",
         });
     });
 });

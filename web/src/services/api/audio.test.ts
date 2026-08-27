@@ -43,6 +43,20 @@ describe("audio API service", () => {
         expect(createBody.config).not.toHaveProperty("advancedConfig");
     });
 
+    it("reads cross-origin stored audio through the same-origin media proxy", async () => {
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(json({ task: { id: "task-remote", status: "pending", model: "voice" } }))
+            .mockResolvedValueOnce(json({ task: { id: "task-remote", status: "success", model: "voice", result: { url: "https://storage.example/audio.mp3", mimeType: "audio/mpeg" } } }))
+            .mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { "content-type": "audio/mpeg" } }));
+        vi.stubGlobal("fetch", fetchMock);
+        vi.stubGlobal("window", { location: { origin: "http://localhost:46511" } });
+
+        await requestAudioGeneration(config, "测试跨域音频");
+
+        expect(fetchMock.mock.calls.at(-1)?.[0]).toBe("/api/media-proxy?url=https%3A%2F%2Fstorage.example%2Faudio.mp3");
+    });
+
     it("cancels the server task when the caller aborts", async () => {
         const controller = new AbortController();
         const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {

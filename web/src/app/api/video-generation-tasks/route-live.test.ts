@@ -106,7 +106,7 @@ describe("video creation protocols over a live fixture", () => {
         expect(fixture.requests.map((request) => request.path)).toEqual(["/custom/videos", "/custom/results/" + upstream.id]);
     });
 
-    it("uses the VOZEB recommended JSON contract and reads metadata.url", async () => {
+    it("uses the Twinkle Video recommended JSON contract and reads metadata.url", async () => {
         const fixture = createProtocolFixtureServer();
         await new Promise<void>((resolve) => fixture.server.listen(0, "127.0.0.1", resolve));
         const address = fixture.server.address();

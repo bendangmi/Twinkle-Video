@@ -110,6 +110,7 @@ describe("provider task config", () => {
         ];
 
         expect(() => assertVideoReferenceRoles({ protocol: "seedance" } as never, frames)).not.toThrow();
+        expect(() => assertVideoReferenceRoles({ protocol: "twinkle-model" } as never, frames)).not.toThrow();
         expect(() => assertVideoReferenceRoles({ protocol: "yumeng", requestTemplate: '{"first_image":"{{first_frame}}","last_image":"{{last_frame}}"}' } as never, frames)).not.toThrow();
         expect(() => assertVideoReferenceRoles({ protocol: "openai" } as never, frames)).toThrow("当前视频模型不支持尾帧输入");
         expect(() => assertVideoReferenceRoles({ protocol: "custom", requestTemplate: '{"first":"{{first_frame_url}}","last":"{{last_frame_url}}"}' } as never, frames)).not.toThrow();
@@ -118,6 +119,7 @@ describe("provider task config", () => {
 
     it("derives custom template frame roles only from explicit variables or structured references", () => {
         expect(templateVideoReferenceRoles('{"first":"{{first_frame}}","last":"{{last_frame_url}}"}')).toEqual(["reference", "first_frame", "last_frame"]);
+        expect(templateVideoReferenceRoles('{"first":"{{start_image_url}}","last":"{{end_image_url}}"}')).toEqual(["reference", "first_frame", "last_frame"]);
         expect(templateVideoReferenceRoles('{"references":"{{references}}"}')).toEqual(["reference", "first_frame", "last_frame"]);
         expect(templateVideoReferenceRoles('{"images":"{{images}}"}')).toEqual(["reference"]);
     });

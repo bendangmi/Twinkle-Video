@@ -370,6 +370,7 @@ export async function createUpstream(
                       prompt,
                       duration: values.duration as number,
                       aspectRatio: values.aspect_ratio as string | undefined,
+                      size: parseImageDimensions(String(values.size || "")) ? String(values.size) : undefined,
                       resolution: values.resolution as string | undefined,
                       generateAudio,
                       images,

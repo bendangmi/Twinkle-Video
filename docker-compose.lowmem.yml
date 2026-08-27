@@ -4,7 +4,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3000:3000"
+      - "46511:3000"
     volumes:
       - vozeb-pro-data:/app/web/.data
     environment:

@@ -10,7 +10,7 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: (
         <span className="inline-flex items-center gap-2 font-semibold">
-          <img src="/logo.svg" alt={appName} className="h-6 w-6" />
+          <img src="/logo.jpg" alt={appName} className="h-6 w-6 rounded-md object-cover" />
           <span>{appName}</span>
         </span>
       ),
@@ -43,8 +43,8 @@ export function baseOptions(): BaseLayoutProps {
       },
       {
         type: "icon",
-        text: "VOZEB 开源交流 QQ 群",
-        label: "VOZEB 开源交流 QQ 群（1049777515）",
+        text: "Twinkle Video 开源交流 QQ 群",
+        label: "Twinkle Video 开源交流 QQ 群（1049777515）",
         url: qqGroupUrl,
         external: true,
         on: "menu",

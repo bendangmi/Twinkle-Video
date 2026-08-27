@@ -15,7 +15,7 @@ import { systemAiBillingHeaders } from "@/lib/server/system-ai-billing";
 import { refundVideoTask } from "@/lib/server/video-task-refund";
 import { geminiVideoQueryPath, parseGeminiVideoOperation } from "@/lib/server/gemini-video-provider";
 
-export type VideoUpstreamStep = { state: "pending"; status: string } | { state: "result_ready"; status: string; resultUrl: string } | { state: "failed"; status: string; error: string };
+export type VideoUpstreamStep = { state: "pending"; status: string } | { state: "result_ready"; status: string; resultUrl: string } | { state: "failed"; status: string; error: string; retryable?: boolean };
 
 export async function refreshVideoTaskFromUpstream(task: VideoTask, origin: string, cookie: string) {
     const polling = taskPollingPolicy(task);
@@ -23,7 +23,7 @@ export async function refreshVideoTaskFromUpstream(task: VideoTask, origin: stri
     if (!claimed) return getVideoTask(task.id);
 
     const step = await queryVideoTaskUpstream(claimed, origin, cookie);
-    if (step.state === "failed") return failVideoTask(claimed, step.error);
+    if (step.state === "failed") return failVideoTask(claimed, step.error, step.retryable);
     if (step.state === "result_ready") return persistVideoTaskResult(claimed, step.resultUrl, origin, cookie);
     return getVideoTask(claimed.id);
 }
@@ -38,7 +38,14 @@ export async function queryVideoTaskUpstream(task: VideoTask, origin: string, co
         const documentedContentUrl = task.config.advancedConfig?.protocol === "twinkle-model" ? `/v1/videos/${encodeURIComponent(task.upstream.id)}/content` : "";
         return resultUrl || documentedContentUrl ? { state: "result_ready", status: status || "completed", resultUrl: resultUrl || documentedContentUrl } : { state: "failed", status: status || "completed", error: "视频任务已完成但没有返回视频地址" };
     }
-    if (isProviderBusinessError(data) || VIDEO_PROVIDER_FAILED.has(status)) return { state: "failed", status: status || "failed", error: readProviderError(data) || "视频生成失败" };
+    if (isProviderBusinessError(data) || VIDEO_PROVIDER_FAILED.has(status)) {
+        return {
+            state: "failed",
+            status: status || "failed",
+            error: readProviderError(data) || (status === "unresolved" ? "视频任务状态未能确认，请联系管理员核查" : "视频生成失败"),
+            ...(status === "unresolved" ? { retryable: false } : {}),
+        };
+    }
     return { state: "pending", status: status || "processing" };
 }
 

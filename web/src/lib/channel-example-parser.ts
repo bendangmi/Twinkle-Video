@@ -591,7 +591,7 @@ function protocolLabel(protocol: SystemChannelProtocol) {
     if (protocol === "yumeng") return "昱梦";
     if (protocol === "sub2api") return "sub2api";
     if (protocol === "newapi") return "New API";
-    if (protocol === "vozeb-recommended") return "VOZEB推荐";
+    if (protocol === "vozeb-recommended") return "Twinkle Video 推荐";
     if (protocol === "globalaiopc") return "GlobalAiOpc";
     if (protocol === "seedance") return "Seedance";
     if (protocol === "volcengine-video") return "火山方舟视频";

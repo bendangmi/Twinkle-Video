@@ -207,6 +207,23 @@ describe("video task upstream reconciliation", () => {
         expect(mocks.fetchInternalApi).toHaveBeenCalledWith(`http://localhost${task.config.baseUrl}/v1/videos/${task.upstream.id}`, expect.any(Object));
     });
 
+    it("stops automatic retry when Twinkle Model reports an unresolved task", async () => {
+        const task = videoTask({
+            config: {
+                ...videoTask().config,
+                advancedConfig: { protocol: "twinkle-model", queryPath: "/v1/videos/:task_id", statusField: "status" } as NonNullable<VideoTask["config"]["advancedConfig"]>,
+            },
+        });
+        const failed = { ...task, status: "error" as const, error: "视频任务状态未能确认，请联系管理员核查", retryable: false };
+        mocks.claim.mockResolvedValue(task);
+        mocks.get.mockResolvedValue(task);
+        mocks.fetchInternalApi.mockResolvedValue(json({ id: task.upstream.id, status: "unresolved" }));
+        mocks.fail.mockResolvedValue(failed);
+
+        await expect(refreshVideoTaskFromUpstream(task, "http://localhost", "session=test")).resolves.toEqual(failed);
+        expect(mocks.fail).toHaveBeenCalledWith(task.id, "视频任务状态未能确认，请联系管理员核查", false);
+    });
+
     it("recovers a completed New API video from the standard content endpoint when status queries are unavailable", async () => {
         const task = videoTask();
         mocks.fetchInternalApi.mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {

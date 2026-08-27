@@ -783,7 +783,7 @@ async function mockPendingCreativeRound(page: Page, type: MediaType) {
 
 function imageDataUrl(size: MediaSize, index: number) {
     const hue = (210 + index * 37) % 360;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="0 0 ${size.width} ${size.height}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(${hue} 55% 40%)"/><stop offset="1" stop-color="hsl(${(hue + 55) % 360} 70% 78%)"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><circle cx="${size.width * 0.5}" cy="${Math.min(size.height * 0.35, size.width)}" r="${Math.max(32, size.width * 0.18)}" fill="rgba(255,255,255,.72)"/><text x="50%" y="${Math.min(size.height * 0.72, size.height - 40)}" text-anchor="middle" fill="white" font-family="sans-serif" font-size="${Math.max(24, size.width * 0.07)}">VOZEB ${size.label}</text></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="0 0 ${size.width} ${size.height}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(${hue} 55% 40%)"/><stop offset="1" stop-color="hsl(${(hue + 55) % 360} 70% 78%)"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><circle cx="${size.width * 0.5}" cy="${Math.min(size.height * 0.35, size.width)}" r="${Math.max(32, size.width * 0.18)}" fill="rgba(255,255,255,.72)"/><text x="50%" y="${Math.min(size.height * 0.72, size.height - 40)}" text-anchor="middle" fill="white" font-family="sans-serif" font-size="${Math.max(24, size.width * 0.07)}">Twinkle Video ${size.label}</text></svg>`;
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 

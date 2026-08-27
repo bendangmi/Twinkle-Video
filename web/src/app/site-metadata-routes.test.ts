@@ -69,7 +69,7 @@ describe("site metadata routes", () => {
     });
 
     it("keeps a site-local icon relative to the current host", async () => {
-        mocks.getPublicSiteSettings.mockResolvedValue({ title: "默认站点", iconUrl: "/icon.svg", logoUrl: "/logo.svg" });
+        mocks.getPublicSiteSettings.mockResolvedValue({ title: "默认站点", iconUrl: "/icon.svg", logoUrl: "/logo.jpg" });
 
         const response = await favicon(new Request("http://localhost:3000/api/site-icon"));
 

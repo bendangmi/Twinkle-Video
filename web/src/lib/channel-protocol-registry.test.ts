@@ -38,7 +38,7 @@ describe("channel protocol registry", () => {
         expect(channelProtocolDefinition("newapi").modelCatalogPaths).toEqual(["/v1/models"]);
         expect(channelProtocolDefinition("seedance").modelCatalogPaths).toEqual(["/models"]);
         expect(channelProtocolDefinition("volcengine-video").modelCatalogPaths).toEqual(["/api/v3/models"]);
-        expect(channelProtocolDefinition("twinkle-model").modelCatalogPaths).toEqual(["/v1/videos/models"]);
+        expect(channelProtocolDefinition("twinkle-model").modelCatalogPaths).toEqual([]);
         expect(channelProtocolDefinition("stable-diffusion").modelCatalogPaths).toEqual(["/sdapi/v1/sd-models"]);
         expect(channelProtocolDefinition("gemini").modelCatalogPaths).toEqual(["/v1beta/models"]);
         expect(channelProtocolDefinition("yumeng")).toMatchObject({
@@ -66,7 +66,8 @@ describe("channel protocol registry", () => {
             createPath: "/v1/videos",
             imageToVideoPath: "/v1/videos",
             queryPath: "/v1/videos/:task_id",
-            requestTemplate: expect.stringContaining("image_urls"),
+            resultField: "url",
+            requestTemplate: expect.stringMatching(/"size".*"image_urls".*"start_image_url".*"end_image_url"/),
             supportsReferenceImage: true,
             supportsReferenceVideo: true,
             supportsReferenceAudio: true,
@@ -114,7 +115,7 @@ describe("channel protocol registry", () => {
         }
     });
 
-    it("applies the VOZEB recommended preset to frontend channel drafts", () => {
+    it("applies the Twinkle Video recommended preset to frontend channel drafts", () => {
         const configured = applyChannelProtocol({ ...channel, baseUrl: "", models: ["Seedance 2.0-fast-720p"] }, "vozeb-recommended");
 
         expect(configured).toMatchObject({ baseUrl: "https://new.aiym.ink/v1", apiFormat: "openai" });

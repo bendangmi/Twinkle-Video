@@ -20,7 +20,7 @@ describe("site settings", () => {
         expect(normalizeSiteSettings({ siteUrl: "not a url" }).siteUrl).toBe("");
     });
 
-    it("defaults public contacts to the VOZEB email and QQ group", () => {
+    it("defaults public contacts to the Twinkle Video email and QQ group", () => {
         const settings = normalizeSiteSettings({});
 
         expect(settings.socials.email).toMatchObject({ enabled: true, url: "mailto:csyqlz@gmail.com" });
@@ -28,6 +28,24 @@ describe("site settings", () => {
         expect(settings.socials.x).toMatchObject({ enabled: false, url: "" });
         expect(settings.socials.instagram).toMatchObject({ enabled: false, url: "" });
         expect(settings.friendLinks).toContainEqual(expect.objectContaining({ id: "qq-vozeb-open-source", url: "https://qm.qq.com/q/9MVLTxuRd6", enabled: true }));
+    });
+
+    it.each(["VOZEB PRO", "Twinkle Model"])("replaces the legacy %s site brand with Twinkle Video", (legacyBrand) => {
+        const settings = normalizeSiteSettings({
+            title: legacyBrand,
+            seoTitle: legacyBrand,
+            seoKeywords: `${legacyBrand},AI Agent,AI 绘图,AI 视频,画布,短剧,提示词库,素材管理`,
+            footerCopyright: `© 2026 ${legacyBrand}. All rights reserved.`,
+            friendLinks: [{ id: "vozeb-pro-home", label: legacyBrand, url: "https://www.vozeb.com/", enabled: true }],
+        });
+
+        expect(settings).toMatchObject({
+            title: "Twinkle Video",
+            seoTitle: "Twinkle Video",
+            seoKeywords: "Twinkle Video,AI Agent,AI 绘图,AI 视频,画布,短剧,提示词库,素材管理",
+            footerCopyright: "© 2026 Twinkle Video. All rights reserved.",
+        });
+        expect(settings.friendLinks[0]?.label).toBe("Twinkle Video");
     });
 
     it("updates only bundled brand defaults when the site title changes", () => {

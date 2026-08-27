@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { DEFAULT_SITE_ICON_URL } from "@/lib/site-brand";
 import { browserIconHref, getPublicSiteSettings } from "@/lib/server/site-metadata";
 
 export const runtime = "nodejs";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
     const site = await getPublicSiteSettings();
     const configured = safeIconHref(browserIconHref(site), request.url);
-    const target = configured && !isFaviconLoop(configured, request.url) ? configured : "/icon.svg";
+    const target = configured && !isFaviconLoop(configured, request.url) ? configured : DEFAULT_SITE_ICON_URL;
     const response = new NextResponse(null, { status: 307, headers: { Location: target } });
     response.headers.set("Cache-Control", "public, max-age=60, s-maxage=60, stale-while-revalidate=300");
     response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");

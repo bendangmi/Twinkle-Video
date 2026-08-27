@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, Gift, LockKeyhole, Mail, ShieldCheck, UserRound 
 import { App, Button, Checkbox, Input } from "antd";
 
 import { SiteLogo } from "@/components/layout/site-logo";
-import { DEFAULT_SITE_TITLE, resolveSiteTitle } from "@/lib/site-brand";
+import { DEFAULT_SITE_LOGO_URL, DEFAULT_SITE_TITLE, resolveSiteTitle } from "@/lib/site-brand";
 import { usePublicSessionStore } from "@/stores/use-public-session-store";
 import { type LocalUser, useUserStore } from "@/stores/use-user-store";
 import { cn } from "@/lib/utils";
@@ -46,7 +46,7 @@ export function AuthForm({
     inviteError,
 }: AuthFormProps) {
     const { message } = App.useApp();
-    const site = usePublicSessionStore((state) => state.payload?.settings?.site) || { title: DEFAULT_SITE_TITLE, logoUrl: "/logo.svg" };
+    const site = usePublicSessionStore((state) => state.payload?.settings?.site) || { title: DEFAULT_SITE_TITLE, logoUrl: DEFAULT_SITE_LOGO_URL };
     const siteTitle = resolveSiteTitle(site.title);
     const setUser = useUserStore((state) => state.setUser);
     const [username, setUsername] = useState("");

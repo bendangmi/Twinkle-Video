@@ -1,5 +1,7 @@
 # VOZEB PRO 本地前后端启动教程
 
+> 当前统一端口为前端/单端口 `46511`、分离后端 `46512`。完整且最新的 `E:\docker` 数据库、启动和镜像命令请查看 [本地启动与镜像打包教程.md](本地启动与镜像打包教程.md)；下文其他端口仅为历史切换示例。
+
 ## 1. 项目架构与端口说明
 
 VOZEB PRO 使用 Next.js App Router：页面前端和 `/api/*` Route Handler 后端位于同一个 `web` 项目，生成任务 Worker 由开发脚本一并启动。
@@ -12,6 +14,8 @@ VOZEB PRO 使用 Next.js App Router：页面前端和 `/api/*` Route Handler 后
 | 前后端分端口 | 需要手动切换端口或单独观察前端/API 请求 | `FRONTEND_PORT` 默认 `3000`，`BACKEND_PORT` 默认 `3001` |
 
 分端口模式下，浏览器只访问前端端口；前端开发服务器会把 `/api/*` 透明代理到 `VOZEB_PRO_BACKEND_ORIGIN`，未显式设置时使用 `http://127.0.0.1:<BACKEND_PORT>`。因此现有前端代码仍使用同源 `/api/*`，不会产生 CORS 或登录 Cookie 跨域问题。
+
+本地开发模式同时允许任意 Origin 直接访问后端 API，包含凭据请求、JSON/自定义请求头预检和 Private Network 预检，便于独立调试前后端；所有服务端 HTTP(S) 出站地址限制也会关闭，可直接访问 localhost、局域网、回环、保留地址和携带凭据的地址，无需配置私网上游白名单。生产模式不会启用这些放宽行为，并继续执行 CORS、写请求 Origin/Referer 与出站地址安全校验。
 
 ## 2. 环境准备
 

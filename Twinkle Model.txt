@@ -1,172 +1,161 @@
-# 视频生成 API
+# 视频生成 API 对接文档
 
-> 这是一套面向调用方的统一视频任务接口。模型目录、能力限制和价格以接口实时返回为准，调用方不需要为不同模型维护不同的任务状态或下载流程。
+> 本文档由系统当前配置动态生成。主地址、可用模型和价格可能随管理员配置变化，请勿把示例中的占位密钥用于生产环境。
+> 对外固定的是本页的标准 API 契约：鉴权方式、请求字段、任务状态、响应结构和错误语义不会随上游视频渠道变化。上游渠道、Provider 名称、供应商路径和供应商响应格式均由平台内部适配。
+> 当前模型、价格和模型能力说明属于运行时配置，不是渠道对接协议；接入新的第三方渠道时，客户端无需改用新的 URL 或新的响应解析方式。
 
-## 1. 接入信息
+## 1. 当前接入信息
 
-- Base URL：`https://big-model.smart-agi.com`
-- 认证：`Authorization: Bearer <API_KEY>`
-- 当前 API Key：视频
-- 服务状态：可用
+- 请求主地址：`https://big-model.smart-agi.com`
+- 创建任务：`POST https://big-model.smart-agi.com/v1/videos`
+- 兼容创建路径：`POST https://big-model.smart-agi.com/v1/videos/generations`（与 `/videos` 等价）
+- 查询任务：`GET https://big-model.smart-agi.com/v1/videos/{id}`；也兼容 `/videos/generations/{id}`、`/videos/edits/{id}` 和 `/videos/extensions/{id}`
+- 下载视频：`GET https://big-model.smart-agi.com/v1/videos/{id}/content`；也兼容上述三类路径的 `/content` 后缀
+- 请求体上限：36 MiB；请直接提交视频参数 JSON，不要使用工作台的 `api_key_id` / `payload` 包装结构。
+- 标准 API 返回裸 JSON 或视频二进制，不带工作台使用的 `{ "code": 0, "message": "success", "data": ... }` 包装。
+- 文档对应 API Key：视频
+- 服务状态：已开启
+- 系统充值比例：`1:10`，即每支付 1 CNY 获得 10 USD 余额；该值读取自当前支付设置，管理员修改后会随文档刷新。
 
-所有请求均使用 JSON（下载接口除外）。API Key 只应保存在服务端，不要写入浏览器代码、URL、日志或公开仓库。
+### 当前模型与价格
 
-## 2. 获取可用视频模型
+| 模型 | 计费方式 | 参考素材上限（图/视频/音频） | 分组基础单价（USD 余额） | 当前倍率 | 参考视频/音频倍率 | 余额扣费单价（USD 余额） | 最终有效单价（CNY） |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `Minimax-H3-933-480p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.0000 | $1.00 | ¥0.10 |
+| `Seedance-2.0-Fast-Official-933-480p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.3000 | $1.00 | ¥0.10 |
+| `Seedance-2.0-Fast-Official-933-720p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.3000 | $1.00 | ¥0.10 |
+| `Seedance-2.0-Official-933-1080p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.3000 | $1.00 | ¥0.10 |
+| `Seedance-2.0-Official-933-480p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.3000 | $1.00 | ¥0.10 |
+| `Seedance-2.0-Official-933-4k` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.3000 | $1.00 | ¥0.10 |
+| `Seedance-2.0-Official-933-720p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.3000 | $1.00 | ¥0.10 |
+| `Seedance-2.5-Official-933-1080p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.2000 | $1.00 | ¥0.10 |
+| `Seedance-2.5-Official-933-480p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.2000 | $1.00 | ¥0.10 |
+| `Seedance-2.5-Official-933-720p` | 按秒 | 9/3/3 | $1.00 | 1.0000 | 1.2000 | $1.00 | ¥0.10 |
+| `kling-3.0-omni-1080p` | 按秒 | 4/3/1 | $1.00 | 1.0000 | 1.0000 | $1.00 | ¥0.10 |
+| `kling-3.0-omni-720p` | 按秒 | 4/3/1 | $1.00 | 1.0000 | 1.0000 | $1.00 | ¥0.10 |
 
-GET https://big-model.smart-agi.com/v1/videos/models
+- 参考素材上限按模型名称动态判断：包含 `431` 的模型最多 4 张图片、3 个视频、1 个音频；包含 `933` 的模型最多 9 张图片、3 个视频、3 个音频；其他模型按 4/3/1 执行。
 
-模型列表只返回当前 API Key 可以使用的模型。创建任务前请读取此接口，并使用响应中的 `id`、`constraints` 和 `pricing` 生成客户端选项。
+- 当前充值比例为 `1:10`。人民币最终有效单价 = 余额扣费单价 ÷ 10。例如余额扣费单价为 $0.60、充值比例为 1:10 时，最终有效单价为 ¥0.06。
+- 按次模型：预计余额扣费 = 余额扣费单价 × 生成数量；预计人民币成本 = 最终有效单价 × 生成数量。
+- 按秒模型：预计余额扣费 = 余额扣费单价 × 时长秒数 × 生成数量；预计人民币成本 = 最终有效单价 × 时长秒数 × 生成数量。
+- 请求中包含参考视频或参考音频时，上述预计费用还要乘以该模型在分组中设置的“参考视频/音频倍率”。对于按秒模型，即每秒余额扣费单价和每秒人民币成本均需乘以该倍率；仅传参考图片时不应用此倍率。
+- 当前倍率包含 Video 分组倍率以及请求时刻的高峰倍率；高峰时段变化后价格会动态变化，最终以创建任务时的计费结果为准。
 
-```bash
-curl 'https://big-model.smart-agi.com/v1/videos/models' \
-  -H 'Authorization: Bearer YOUR_VIDEO_API_KEY'
-```
+### 使用范围与动态配置
 
-```json
-{
-  "object": "list",
-  "data": [
-    {
-      "id": "Seedance-2.0-Fast-Official-480p",
-      "object": "video.model",
-      "type": "video",
-      "capabilities": {
-        "text_to_video": true,
-        "image_to_video": true,
-        "video_reference": true,
-        "audio_reference": true
-      },
-      "constraints": {
-        "resolutions": [
-          "480p"
-        ],
-        "aspect_ratios": [
-          "21:9",
-          "16:9",
-          "4:3",
-          "1:1",
-          "3:4",
-          "9:16"
-        ],
-        "durations": [
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15
-        ],
-        "reference_limits": {
-          "images": 9,
-          "videos": 3,
-          "audios": 3
-        }
-      },
-      "pricing": {
-        "mode": "per_request",
-        "currency": "USD",
-        "unit_price": 1,
-        "rate_multiplier": 1,
-        "effective_unit_price": 1
-      }
-    }
-  ]
-}
-```
+- 本页仅列出当前所选 Video API Key 可调用且已配置价格的模型；未列出的模型会被网关拒绝，避免产生不可计费或无法调度的任务。
+- “余额扣费单价”已包含当前分组倍率和此刻生效的高峰倍率；请求包含参考视频或参考音频时，还会额外乘以价格表中的“参考视频/音频倍率”。“最终有效单价”再按系统充值比例折算为人民币。倍率可能随时间变化，任务创建后仍以任务详情中的预扣金额和实际扣费为准。
 
-| 字段 | 说明 |
-| --- | --- |
-| `id` | 创建任务时使用的模型 ID。 |
-| `capabilities` | 模型支持的输入类型。 |
-| `constraints` | 分辨率、比例、时长和参考素材限制；空数组表示没有统一限制。 |
-| `pricing` | 当前计费模式、币种和单价。`per_second` 按秒计费，`per_request` 按任务计费。 |
+## 2. 鉴权与创建任务
 
-模型、价格和限制可能动态调整。客户端应缓存目录但定期刷新，不能把示例值当作固定配置。
-
-## 3. 创建视频任务
-
-POST https://big-model.smart-agi.com/v1/videos
+所有请求使用 Bearer Token。请在“API Key”页面复制完整密钥，不要使用此页面显示的 Key 名称。
+当前标准接口不使用客户端传入的 `Idempotency-Key` 作为本地去重键；网关会为每个已创建任务生成自己的上游幂等标识。创建成功后请保存返回的任务 `id`，超时或重试前优先查询该 ID，避免重复创建并产生重复预扣费。
 
 ```bash
 curl -X POST 'https://big-model.smart-agi.com/v1/videos' \
   -H 'Authorization: Bearer YOUR_VIDEO_API_KEY' \
   -H 'Content-Type: application/json' \
-  -d '{"model":"Seedance-2.0-Fast-Official-480p","prompt":"电影感镜头，主体清晰，动作连贯","duration":4,"resolution":"480p","aspect_ratio":"21:9","count":1}'
+  -d '{"model":"Minimax-H3-933-480p","prompt":"电影感航拍镜头，纸飞机穿过雨后的城市街道","resolution":"480p","aspect_ratio":"16:9","duration":4}'
 ```
 
-### 请求字段
-
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `model` | string | 是 | `/v1/videos/models` 返回的模型 ID。 |
-| `prompt` | string | 是 | 对内容、主体、动作、镜头和风格的描述。 |
-| `duration` | integer | 否 | 时长（秒）；必须符合模型目录。也接受 `seconds`、`duration_seconds`。 |
-| `count` | integer | 否 | 生成数量，默认 `1`；也接受 `n`。 |
-| `resolution` | string | 否 | 例如 `480p`、`720p`、`1080p`；以模型目录为准。 |
-| `aspect_ratio` | string | 否 | 例如 `16:9`、`9:16`；以模型目录为准。 |
-| `size` | string | 否 | 使用宽高表达尺寸，例如 `1280x720`。 |
-| `image_url` / `image_urls` | string / array | 否 | 参考图片。 |
-| `video_url` / `video_urls` | string / array | 否 | 参考视频。 |
-| `audio_url` / `audio_urls` | string / array | 否 | 参考音频。 |
-| `first_frame_url` / `last_frame_url` | string | 否 | 首帧和尾帧图片。 |
-| `reference_images` / `reference_videos` / `reference_audios` | array | 否 | 结构化参考素材；每项可使用 URL 或文件标识。 |
-| `generate_audio` | boolean | 否 | 是否生成音频，默认由模型决定。 |
-| `negative_prompt` | string | 否 | 不希望出现的内容。 |
-| `long_term_storage` | boolean | 否 | 请求在任务完成后保留长期副本（需系统开启此能力）。 |
-
-参考素材必须是服务端可读取的地址或符合模型目录要求的文件标识。数量、格式、大小和时长以 `constraints.reference_limits` 及模型目录为准。
-
-### 创建响应
+按当前示例模型生成的参考素材请求：
 
 ```json
 {
-  "id": "video_xxx",
-  "status": "queued",
-  "model": "Seedance-2.0-Fast-Official-480p",
-  "created_at": "2026-08-24T12:00:00Z",
-  "completed_at": null,
-  "error": null
+  "model": "Minimax-H3-933-480p",
+  "prompt": "保持参考素材中的主体一致，生成自然、连贯的电影感动态镜头",
+  "duration": 4,
+  "aspect_ratio": "16:9",
+  "image_url": "https://cdn.example.com/reference.png"
 }
 ```
 
-| 字段 | 说明 |
-| --- | --- |
-| `id` | 任务 ID。后续查询和下载都使用它。 |
-| `status` | `submitting`、`queued`、`in_progress`、`completed`、`failed` 或 `unresolved`。 |
-| `model` | 实际使用的模型 ID。 |
-| `completed_at` | 完成时间；未完成时为 `null`。 |
-| `error` | 失败时的 `{ code, message }`。 |
+### 创建字段
 
-## 4. 查询任务
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `model` | string | 是 | 必须是当前 API Key 的可用且已配置价格的 Video 模型。 |
+| `prompt` | string | 建议 | 内容、镜头、动作、光线、风格和声音描述。视频模型通常需要有效提示词；部分模型支持 `@图片1`、`@视频1`、`@音频1`。 |
+| `resolution` | string | 视模型 | 常见值为 `480p`、`720p`、`1080p`；以模型协议为准。 |
+| `aspect_ratio` | string | 视模型 | 常见值为 `16:9`、`9:16`、`1:1`；Seedance 2.0 还支持 `21:9`、`4:3`、`3:4`。 |
+| `size` | string | 否 | 部分 Seedance 模型可用 `宽x高` 替代比例；必须与模型分辨率匹配。 |
+| `duration` / `seconds` / `duration_seconds` | integer | 条件必填 | 时长（秒）。按秒计费模型必须为正整数；如同时传多个别名，数值必须相同。 |
+| `count` / `n` | integer | 否 | 生成数量，默认 1；如同时传多个别名，数值必须相同；参与按次或按秒计费。 |
+| `image_url` / `image_urls` / `images` | string / string[] | 否 | 仅接受公网 HTTP(S) 图片 URL，不支持 data URL 或 Base64。名称含 `933` 的模型最多 9 张，其他模型最多 4 张；图片宽、高均须在 300px 到 6000px 之间，模型自身可能更严格。 |
+| `start_image_url` / `end_image_url` / `style_image_url` / `style_image_urls` | string / string[] | 否 | Seedance 等模型的首帧、尾帧和风格参考图字段；仅接受公网 HTTP(S) URL，并会计入图片总数。 |
+| `video_url` / `video_urls` / `video_reference` / `video_references` | string / string[] / object[] | 否 | 仅接受公网 HTTP(S) 视频 URL；多视频可传 URL 数组或 `[ { "url": "..." } ]`，网关最多 3 个，模型自身可能更严格。 |
+| `audio_url` / `audio_urls` / `audio_reference` / `audio_references` | string / string[] / object[] | 否 | 仅接受公网 HTTP(S) 音频 URL；多音频可传 URL 数组或 `[ { "url": "..." } ]`，名称含 `933` 的模型最多 3 个，其他模型最多 1 个。 |
+| `negative_prompt` / `negativePrompt` | string | 否 | Sora、Veo 等部分模型支持的负向提示词。 |
+| `generate_audio` / `generateAudio` | boolean | 否 | 部分模型支持是否生成音频，默认通常为 `true`。 |
+| `long_term_storage` | boolean | 否 | 系统已配置长期存储时可请求转存完成视频。 |
 
-GET https://big-model.smart-agi.com/v1/videos/{id}
+#### 参数校验边界
 
-建议从 5 秒开始轮询，并在任务持续处理时逐步增加间隔。不要因为单次请求超时就重新创建任务。
+- 网关会校验 JSON 格式、`model`、`duration`/`seconds`/`duration_seconds` 和 `count`/`n` 的正整数语义，以及当前 API Key 是否具备该模型和价格配置。
+- `resolution`、`aspect_ratio`、参考素材和模型特有参数会被保留并转发；其是否支持、素材格式和时长限制还需满足模型自身协议。
+- 参考素材数量由网关服务端强制校验：名称含 `431` 的模型为 4/3/1，含 `933` 的模型为 9/3/3，其他模型为 4/3/1；`933` 模型三类素材合计还不得超过 9 个。若具体模型限制更严格，以两者中的较小值为准。
+- 用户自行上传的图片、音频和视频必须先转换为公网 HTTP(S) URL 外链；data URL、裸 Base64 和 Base64 对象均不受支持。参考图片宽度和高度都必须在 300px 到 6000px 之间。
+- 同一请求不要同时传同一类别的多个别名；网关会把已传别名的数量合计校验，不把某个别名视为另一个别名的覆盖值。
+- 未列出的模型专属字段会原样转发给对应上游；字段是否生效、格式和限制以该模型协议为准。
+
+### 创建响应
+
+创建成功返回 HTTP `200` 和裸 JSON。请求通过 JSON、模型、计费和素材校验后，平台会先创建任务记录，再提交给上游；任务通常先处于 `submitting` 或 `queued`。请使用返回的 `id` 查询，不要用客户端生成的业务 ID 替代它。上游提交成功或失败都会保留这条视频任务记录，用户可在视频生成页面的“视频任务”中查看调用时间、模型、参数、状态、错误和计费结果。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | string | 平台生成的任务 ID，例如 `video_xxx`。 |
+| `status` | string | `submitting`、`queued`、`in_progress`、`completed`、`failed` 或 `unresolved`。 |
+| `model` | string | 本次请求使用的模型名。 |
+| `url` | string | 任务完成后的上游视频地址；处理中或失败时可能没有该字段，长期使用建议改用 `/content`。 |
+| `error` | object | 失败时返回 `{ "code": "...", "message": "..." }`。 |
+| `media_urls` | object | 任务中使用的参考图片、视频和音频 URL；仅返回可公开访问的 URL，失败任务也会保留调用记录。 |
+| `created_at` / `completed_at` | string / null | 创建时间和完成时间，使用 RFC3339 时间格式。 |
+| `settled` / `can_delete` | boolean | 计费是否结算、任务是否允许删除。 |
+
+## 3. 查询任务与状态
+
+创建成功后保存响应顶层 `id`，建议每 5–10 秒查询一次，不要高频轮询。
+如果预扣或上游提交阶段立即失败，错误对象会在已创建任务时返回 `error.task_id`；失败任务同样会写入视频任务列表，可通过该 ID 查询 `failed` 状态和 `error` 详情。请求 JSON 无法解析、鉴权失败等尚未形成有效视频任务的请求不会生成任务 ID。
 
 ```bash
 curl 'https://big-model.smart-agi.com/v1/videos/VIDEO_TASK_ID' \
   -H 'Authorization: Bearer YOUR_VIDEO_API_KEY'
 ```
 
-| 状态 | 含义 |
-| --- | --- |
-| `submitting` / `queued` | 任务已接收，等待处理。 |
-| `in_progress` | 正在生成。 |
-| `completed` | 已完成，可以下载。 |
-| `failed` | 任务失败，读取 `error`。 |
-| `unresolved` | 长时间未取得最终状态，请人工核查。 |
+| 状态 | 含义 | 处理建议 |
+| --- | --- | --- |
+| `submitting` / `queued` | 正在提交或排队 | 继续轮询。 |
+| `in_progress` | 上游正在生成 | 继续轮询，建议逐步增加间隔。 |
+| `completed` | 已完成 | 从响应顶层 `url` 读取视频地址并及时下载。 |
+| `failed` | 生成失败 | 读取 `error.code` 与 `error.message`，修正参数后重新创建。 |
+| `unresolved` | 长时间未取得最终状态 | 停止自动轮询并联系管理员核查。 |
 
-## 5. 下载结果
+```json
+{
+  "id": "video_xxx",
+  "status": "completed",
+  "model": "Minimax-H3-933-480p",
+  "url": "https://cdn.example.com/generated.mp4"
+}
+```
 
-GET https://big-model.smart-agi.com/v1/videos/{id}/content
+错误响应统一为：
 
-任务完成后使用此接口获取视频二进制。接口保持 API Key 鉴权，不要求调用方处理结果地址。
+```json
+{
+  "error": {
+    "type": "insufficient_balance",
+    "message": "余额不足以预扣本次视频生成费用",
+    "task_id": "video_xxx"
+  }
+}
+```
+
+### 下载视频内容
+
+任务完成后可使用 GET https://big-model.smart-agi.com/v1/videos/VIDEO_TASK_ID/content 获取平台代理的视频内容，不必直接访问响应中的上游 URL。
 
 ```bash
 curl -L 'https://big-model.smart-agi.com/v1/videos/VIDEO_TASK_ID/content?download=1' \
@@ -174,35 +163,30 @@ curl -L 'https://big-model.smart-agi.com/v1/videos/VIDEO_TASK_ID/content?downloa
   -o video.mp4
 ```
 
-- 普通响应为 `200`，支持 `Range` / `If-Range` 断点续传时可能返回 `206`。
-- `download=1` 或 `download=true` 返回下载响应；不传时适合浏览器播放。
-- 任务未完成时返回 `409` 和 `video_not_ready`。
+- 成功响应返回 `video/*` 二进制，普通请求为 `200`，携带有效 `Range` 时可能为 `206`；支持 `Range` / `If-Range` 断点续传。
+- `download=1` 或 `download=true` 会返回附件下载头；不传时返回 `inline`，适合浏览器播放。
+- 兼容路径包括 `/videos/generations/{id}/content`、`/videos/edits/{id}/content` 和 `/videos/extensions/{id}/content`。
 
-## 6. 错误与重试
+## 4. 参考素材通用规则
 
-| HTTP | 常见错误 | 处理建议 |
-| ---: | --- | --- |
-| `400` | `invalid_request`、`model_not_found`、`invalid_duration`、`invalid_resolution` | 修正请求后重新创建。 |
-| `401` | `api_key_required` | 检查 Bearer Token 和 API Key 权限。 |
-| `402` | `insufficient_balance` | 补充可用余额后重试。 |
-| `404` | `video_not_found` | 检查任务 ID 是否属于当前 API Key。 |
-| `409` | `video_not_ready` | 继续查询任务状态。 |
-| `413` | `request_too_large` | 减少 Base64 或参考素材，当前请求体上限为 36 MiB。 |
-| `429` | `rate_limit_exceeded` | 使用指数退避，不要并行重复创建。 |
-| `502` | `video_download_failed` | 稍后重试内容接口。 |
-| `503` | `video_generation_disabled`、`video_generation_failed` | 稍后重试或联系系统管理员。 |
+- 工作台与标准 API 使用相同的动态素材限制：模型名含 `933` 时最多 9 图、3 视频、3 音频且三类合计不超过 9 个，其他模型默认最多 4 图、3 视频、1 音频；具体模型可能有更严格限制。
+- 用户自行提供的图片、音频、视频等附件必须先上传到可公开访问的对象存储或 CDN，再把公网 HTTP(S) URL 传给 API；该 URL 必须允许服务端无需 Cookie、Referer 或登录即可直接下载。
+- 不支持 data URL、裸 Base64 或 Base64 对象格式。请勿把附件内容直接编码进请求体，所有附件都必须使用公网 URL 外链。
+- 参考图片宽度必须在 300px 到 6000px 之间，高度必须在 300px 到 6000px 之间。
+- 素材建议使用 JPEG/PNG/WebP、MP4、MP3/WAV/AAC 等常见格式，并遵守上游文件大小、编码和时长限制。
+- 不要在日志中记录完整 API Key 或包含隐私的素材地址。
 
-错误响应格式：
+## 5. 错误处理与生产建议
 
-```json
-{
-  "error": {
-    "type": "invalid_request",
-    "message": "Request is invalid"
-  }
-}
-```
-
-## 7. 计费说明
-
-当前文档使用的充值比例为 `1:10`。实际预扣、结算和退款以任务创建后的账单字段为准；客户端不应自行推算最终扣费。
+- `400`：请求 JSON、模型价格配置、整数参数、重复别名或上游提交参数不符合要求。错误对象中可读取 `error.type` 与 `error.message`；请求未通过本地校验时不会创建任务记录。
+- `401`：API Key 缺失、无效，或 Key 未绑定 Video 分组。
+- `402` 或余额相关错误：余额不足以预留预计费用。
+- `404`：任务不存在、已删除，或不属于当前 API Key。
+- `409`：任务尚未完成，暂时不能下载视频内容。
+- `413`：请求体超过 36 MiB。
+- `502`：视频内容所在的上游地址不可用，客户端可稍后重试 `/content`。
+- `503`：系统关闭视频生成，或没有已同步且支持该模型的可调度 Video 上游账户。
+- 客户端超时后不要立即重复提交；优先使用已获得的任务 ID 查询，避免重复计费。
+- 生产环境应保存任务 ID、业务编号和最终状态，并对轮询使用退避策略。
+- 视频 URL 可能有有效期，完成后应尽快下载；需要长期保存时请启用系统长期存储。
+- 价格、倍率和模型列表均可能动态变化，以当前控制台和实际接口响应为准。

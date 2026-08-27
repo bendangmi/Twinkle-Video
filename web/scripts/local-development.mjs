@@ -1,7 +1,7 @@
 export function localDevelopmentEnvironment(mode, environment = process.env) {
-    const frontendPort = validPort(environment.FRONTEND_PORT) || 3000;
-    const backendPort = validPort(environment.BACKEND_PORT) || 3001;
-    const port = mode === "frontend" ? frontendPort : mode === "backend" ? backendPort : validPort(environment.PORT) || 3000;
+    const frontendPort = validPort(environment.FRONTEND_PORT) || 46511;
+    const backendPort = validPort(environment.BACKEND_PORT) || 46512;
+    const port = mode === "frontend" ? frontendPort : mode === "backend" ? backendPort : validPort(environment.PORT) || 46511;
     const publicOrigin = httpOrigin(environment.VOZEB_PRO_LOCAL_PUBLIC_ORIGIN) || `http://localhost:${mode === "backend" ? frontendPort : port}`;
     const backendOrigin = httpOrigin(environment.VOZEB_PRO_BACKEND_ORIGIN) || `http://127.0.0.1:${backendPort}`;
     const internalOrigin = `http://127.0.0.1:${port}`;
@@ -16,6 +16,10 @@ export function localDevelopmentEnvironment(mode, environment = process.env) {
         VOZEB_PRO_WORKER_API_ORIGIN: internalOrigin,
         ...(mode === "frontend" ? { VOZEB_PRO_BACKEND_ORIGIN: backendOrigin } : {}),
     };
+}
+
+export function localDevelopmentBundlerFlag(platform = process.platform) {
+    return platform === "win32" ? "--webpack" : "--turbopack";
 }
 
 function validPort(value) {

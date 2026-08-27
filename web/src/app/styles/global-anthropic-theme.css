@@ -399,7 +399,6 @@ html[data-ui-theme="anthropic"] .admin-console-page {
 }
 
 html[data-ui-theme="anthropic"] .admin-section-nav {
-    width: 256px;
     border-color: var(--anthropic-line) !important;
     background: var(--anthropic-surface) !important;
     box-shadow: none !important;

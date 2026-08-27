@@ -339,8 +339,8 @@ export const DEFAULT_SITE_SOCIALS: SiteSocialSettings = {
 };
 
 export const DEFAULT_SITE_FRIEND_LINKS: SiteFriendLink[] = [
-    { id: "vozeb-pro-home", label: "VOZEB PRO", url: "https://www.vozeb.com/", enabled: true },
-    { id: "qq-vozeb-open-source", label: "VOZEB 开源交流 QQ 群", url: VOZEB_QQ_GROUP_URL, enabled: true },
+    { id: "vozeb-pro-home", label: "Twinkle Video", url: "https://www.vozeb.com/", enabled: true },
+    { id: "qq-vozeb-open-source", label: "Twinkle Video 开源交流 QQ 群", url: VOZEB_QQ_GROUP_URL, enabled: true },
     { id: "linux-do", label: "Linux.do", url: "https://linux.do/", enabled: true },
 ];
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { assertVozebRecommendedVideoReferences, buildVozebRecommendedVideoRequest } from "./vozeb-recommended-video";
 
-describe("VOZEB recommended video protocol", () => {
+describe("Twinkle Video recommended video protocol", () => {
     it("omits intelligent ratio and resolution when no fixed value was planned", () => {
         expect(
             buildVozebRecommendedVideoRequest({

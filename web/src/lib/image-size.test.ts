@@ -5,6 +5,8 @@ import { extractImageOrientationFromPrompt, extractImageSizeFromPrompt, imageSiz
 describe("image size input", () => {
     it("normalizes supported dimension separators", () => {
         expect(parseImageDimensions("1080*1213")).toEqual({ width: 1080, height: 1213 });
+        expect(parseImageDimensions("0x1080")).toBeNull();
+        expect(parseImageDimensions("1080x0")).toBeNull();
         expect(normalizeImageSizeValue("1080×1213")).toBe("1080x1213");
     });
 

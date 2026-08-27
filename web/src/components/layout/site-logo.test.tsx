@@ -12,10 +12,10 @@ describe("SiteLogo", () => {
         expect(markup).not.toContain("url(/logo.svg)");
     });
 
-    it("keeps the bundled mark as a safe loading fallback", () => {
-        const markup = renderToStaticMarkup(<SiteLogo logoUrl="/logo.svg" className="size-8" />);
+    it("renders the supplied color image as the bundled mark", () => {
+        const markup = renderToStaticMarkup(<SiteLogo logoUrl="/logo.jpg" className="size-8" />);
 
-        expect(markup).toContain("url(/logo.svg)");
-        expect(markup).toContain('aria-hidden="true"');
+        expect(markup).toContain('src="/logo.jpg"');
+        expect(markup).toContain("object-cover");
     });
 });

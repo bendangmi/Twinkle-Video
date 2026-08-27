@@ -76,7 +76,6 @@ describe("safe outbound fetch", () => {
 
         await fetchSafeOutbound("http://private-provider.test/v1/models");
 
-        expect(mocks.proxyUrl).not.toHaveBeenCalled();
         expect(mocks.agents[0]?.options.connect).toBeTruthy();
     });
 
@@ -93,7 +92,7 @@ describe("safe outbound fetch", () => {
         });
     });
 
-    it("routes an explicitly allowed benchmark-network provider through the outbound proxy", async () => {
+    it("allows and routes a benchmark-network provider when an outbound proxy is configured", async () => {
         mocks.resolve.mockResolvedValue({ url: new URL("https://big-model.smart-agi.com/v1/videos"), address: "198.18.0.113", family: 4 });
         mocks.isPublic.mockReturnValue(false);
         mocks.isProxyRouted.mockReturnValue(true);
@@ -101,6 +100,7 @@ describe("safe outbound fetch", () => {
 
         await fetchSafeOutbound("https://big-model.smart-agi.com/v1/videos");
 
+        expect(mocks.resolve).toHaveBeenCalledWith(expect.any(URL), { allowProxyRouted: true });
         expect(mocks.agents[0]?.options).toMatchObject({ uri: "http://proxy.test:8080" });
     });
 });

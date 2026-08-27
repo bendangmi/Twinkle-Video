@@ -158,7 +158,7 @@ export const adminHelpGuidance: Record<AdminHelpArticleId, AdminHelpGuidance> = 
         troubleshooting: [
             {
                 symptom: "已经上传无限进化 Logo，但部分页面仍显示旧图标或三角形",
-                cause: "后台配置、/logo.svg、/icon.svg、favicon、manifest、metadata 或助手头像仍有独立硬编码和浏览器缓存。",
+                cause: "后台配置、站点 Logo、浏览器图标、favicon、manifest、metadata 或助手头像仍有独立硬编码和浏览器缓存。",
                 actions: ["逐项检查品牌来源和网络请求实际地址。", "清理旧构建并重启，硬刷新浏览器后再验证浅色、深色和未登录状态。"],
                 caution: "播放、告警等功能性三角图标可以保留，但不得作为品牌 Logo、默认占位或回退。",
             },

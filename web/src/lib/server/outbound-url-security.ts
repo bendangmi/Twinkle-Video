@@ -54,7 +54,7 @@ export type SafeOutboundTarget = {
     family: 4 | 6;
 };
 
-export async function resolveSafeOutboundTarget(value: string | URL, options?: { allowCredentials?: boolean }): Promise<SafeOutboundTarget | null> {
+export async function resolveSafeOutboundTarget(value: string | URL, options?: { allowCredentials?: boolean; allowProxyRouted?: boolean }): Promise<SafeOutboundTarget | null> {
     let url: URL;
     try {
         url = value instanceof URL ? new URL(value) : new URL(value);
@@ -62,18 +62,19 @@ export async function resolveSafeOutboundTarget(value: string | URL, options?: {
         return null;
     }
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    if (!options?.allowCredentials && (url.username || url.password)) return null;
+    const unrestrictedDevelopment = process.env.NODE_ENV === "development";
+    if (!unrestrictedDevelopment && !options?.allowCredentials && (url.username || url.password)) return null;
 
     const hostname = normalizeHostname(url.hostname);
-    if (!hostname || isBlockedHostname(hostname)) return null;
+    if (!hostname || (!unrestrictedDevelopment && isBlockedHostname(hostname))) return null;
     const privateAllowed = privateUpstreamHostAllowed(hostname);
-    if ((hostname === "localhost" || hostname.endsWith(".localhost")) && !privateAllowed) return null;
+    if (!unrestrictedDevelopment && (hostname === "localhost" || hostname.endsWith(".localhost")) && !privateAllowed) return null;
     const directFamily = isIP(hostname);
-    if (directFamily) return addressAllowed(hostname, privateAllowed) ? { url, address: hostname, family: directFamily as 4 | 6 } : null;
+    if (directFamily) return unrestrictedDevelopment || addressAllowed(hostname, privateAllowed, options?.allowProxyRouted === true) ? { url, address: hostname, family: directFamily as 4 | 6 } : null;
 
     try {
         const addresses = dedupeAddresses(await lookup(hostname, { all: true, verbatim: true }));
-        if (!addresses.length || !addresses.every((item) => addressAllowed(item.address, privateAllowed))) return null;
+        if (!addresses.length || (!unrestrictedDevelopment && !addresses.every((item) => addressAllowed(item.address, privateAllowed, options?.allowProxyRouted === true)))) return null;
         const address = addresses.find((item) => item.family === 4) || addresses[0];
         return { url, address: address.address, family: address.family as 4 | 6 };
     } catch {
@@ -82,6 +83,14 @@ export async function resolveSafeOutboundTarget(value: string | URL, options?: {
 }
 
 export async function isSafeOutboundUrl(value: string, options?: { allowCredentials?: boolean }) {
+    if (process.env.NODE_ENV === "development") {
+        try {
+            const url = new URL(value);
+            return url.protocol === "http:" || url.protocol === "https:";
+        } catch {
+            return false;
+        }
+    }
     return Boolean(await resolveSafeOutboundTarget(value, options));
 }
 
@@ -100,8 +109,8 @@ export function isProxyRoutedIpAddress(address: string) {
     return version === 4 && PROXY_ROUTED_IPV4_ADDRESSES.check(address, "ipv4");
 }
 
-function addressAllowed(address: string, privateAllowed: boolean) {
-    return isPublicIpAddress(address) || (privateAllowed && isPrivateAllowlistableAddress(address));
+function addressAllowed(address: string, privateAllowed: boolean, proxyRoutedAllowed: boolean) {
+    return isPublicIpAddress(address) || (proxyRoutedAllowed && isProxyRoutedIpAddress(address)) || (privateAllowed && isPrivateAllowlistableAddress(address));
 }
 
 function isPrivateAllowlistableAddress(address: string) {

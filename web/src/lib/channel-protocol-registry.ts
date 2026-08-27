@@ -222,8 +222,8 @@ export const registeredChannelProtocolDefinitions: ChannelProtocolDefinition[] =
     },
     {
         id: "vozeb-recommended",
-        label: "VOZEB推荐",
-        description: "VOZEB 推荐的 JSON 异步视频协议，支持多模态参考素材与持久结果地址。",
+        label: "Twinkle Video 推荐",
+        description: "Twinkle Video 推荐的 JSON 异步视频协议，支持多模态参考素材与持久结果地址。",
         apiFormat: "openai",
         authMode: "bearer",
         defaultBaseUrl: "https://new.aiym.ink/v1",
@@ -252,7 +252,7 @@ export const registeredChannelProtocolDefinitions: ChannelProtocolDefinition[] =
         apiFormat: "openai",
         authMode: "bearer",
         defaultBaseUrl: "https://big-model.smart-agi.com",
-        modelCatalogPaths: ["/v1/videos/models"],
+        modelCatalogPaths: [],
         capabilities: ["video"],
         operations: {
             video: {
@@ -261,10 +261,11 @@ export const registeredChannelProtocolDefinitions: ChannelProtocolDefinition[] =
                 imageToVideoPath: "/v1/videos",
                 queryPath: "/v1/videos/:task_id",
                 requestTemplate:
-                    '{"model":"{{model}}","prompt":"{{prompt}}","duration":"{{duration}}","resolution":"{{resolution}}","aspect_ratio":"{{aspect_ratio}}","generate_audio":"{{generate_audio}}","image_urls":"{{image_urls}}","video_urls":"{{video_urls}}","audio_urls":"{{audio_urls}}","first_frame_url":"{{first_frame_url}}","last_frame_url":"{{last_frame_url}}"}',
+                    '{"model":"{{model}}","prompt":"{{prompt}}","duration":"{{duration}}","resolution":"{{resolution}}","aspect_ratio":"{{aspect_ratio}}","size":"{{size}}","generate_audio":"{{generate_audio}}","image_urls":"{{image_urls}}","video_urls":"{{video_urls}}","audio_urls":"{{audio_urls}}","start_image_url":"{{start_image_url}}","end_image_url":"{{end_image_url}}"}',
+                resultField: "url",
                 statusField: "status",
                 durationRange: "按当前 API Key 可用模型的公开限制",
-                referenceRule: "图片、视频和音频分别使用 image_urls、video_urls、audio_urls 字符串数组；首尾帧使用 first_frame_url 和 last_frame_url。任务完成后通过 /v1/videos/{id}/content 下载，素材需使用上游可访问的 URL 或文件标识。",
+                referenceRule: "图片、视频和音频分别使用 image_urls、video_urls、audio_urls 字符串数组；首帧和尾帧使用 start_image_url 和 end_image_url；所有素材必须使用公网 HTTP(S) URL。任务完成后通过 /v1/videos/{id}/content 下载。",
                 supportsReferenceImage: true,
                 supportsReferenceVideo: true,
                 supportsReferenceAudio: true,

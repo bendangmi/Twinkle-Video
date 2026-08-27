@@ -1,8 +1,23 @@
 import { describe, expect, it } from "vitest";
 
-import { localDevelopmentEnvironment } from "./local-development.mjs";
+import { localDevelopmentBundlerFlag, localDevelopmentEnvironment } from "./local-development.mjs";
 
 describe("local development environment", () => {
+    it("uses the reserved Twinkle Video ports by default", () => {
+        expect(localDevelopmentEnvironment("dev", {})).toMatchObject({
+            PORT: "46511",
+            NEXT_PUBLIC_SITE_URL: "http://localhost:46511",
+        });
+        expect(localDevelopmentEnvironment("frontend", {})).toMatchObject({
+            PORT: "46511",
+            VOZEB_PRO_BACKEND_ORIGIN: "http://127.0.0.1:46512",
+        });
+        expect(localDevelopmentEnvironment("backend", {})).toMatchObject({
+            PORT: "46512",
+            NEXT_PUBLIC_SITE_URL: "http://localhost:46511",
+        });
+    });
+
     it("uses a custom unified application port", () => {
         expect(localDevelopmentEnvironment("dev", { PORT: "4310" })).toMatchObject({
             PORT: "4310",
@@ -29,5 +44,10 @@ describe("local development environment", () => {
 
     it("accepts an explicit frontend backend origin", () => {
         expect(localDevelopmentEnvironment("frontend", { VOZEB_PRO_BACKEND_ORIGIN: "http://localhost:4401/path" }).VOZEB_PRO_BACKEND_ORIGIN).toBe("http://localhost:4401");
+    });
+
+    it("avoids the Windows Turbopack package-resolution panic", () => {
+        expect(localDevelopmentBundlerFlag("win32")).toBe("--webpack");
+        expect(localDevelopmentBundlerFlag("linux")).toBe("--turbopack");
     });
 });

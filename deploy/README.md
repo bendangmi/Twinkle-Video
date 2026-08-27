@@ -89,14 +89,18 @@ curl -fsS https://你的域名.example.com/api/health/live
 
 ## 详细操作：构建与导出镜像
 
-在仓库根目录执行：
+在 Windows 开发机上，从仓库根目录执行部署目录脚本。脚本会读取 `VERSION`，构建同名版本镜像，导出到 `deploy`，并打印镜像 ID 与 SHA256：
 
 ```powershell
-$tag = "twinkle-video:v0.0.7.custom.2"
-docker build --pull --build-arg NPM_REGISTRY=https://registry.npmjs.org --build-arg APT_MIRROR=http://mirrors.aliyun.com -t $tag .
-docker save $tag -o deploy/twinkle-video-v0.0.7.custom.2.tar
-docker image inspect $tag --format '{{.Id}}'
-Get-FileHash deploy/twinkle-video-v0.0.7.custom.2.tar -Algorithm SHA256
+powershell -ExecutionPolicy Bypass -File .\deploy\build-image.ps1
+```
+
+如果 Docker 使用其他 Debian 或 npm 镜像，可通过参数覆盖：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\build-image.ps1 `
+  -NpmRegistry https://registry.npmjs.org `
+  -AptMirror https://deb.debian.org
 ```
 
 导出的 tar 包只包含应用镜像。`postgres` 不属于该镜像；不要使用根目录的 `docker-compose.yml` 作为外部数据库部署方案，因为它会声明 PostgreSQL 服务。

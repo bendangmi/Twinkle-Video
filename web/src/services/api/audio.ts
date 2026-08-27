@@ -1,4 +1,5 @@
 import { audioMimeType, normalizeAudioFormatValue, normalizeAudioSpeedValue, normalizeAudioVoiceValue } from "@/lib/audio-generation";
+import { browserReadableMediaUrl } from "@/lib/browser-media-url";
 import { GenerationTaskNeedsReviewError, GenerationTaskTerminalError, type GenerationTaskExecutionState } from "@/services/api/generation-task-state";
 import { readStoredMediaFile, uploadGeneratedMediaFile, type UploadedFile } from "@/services/file-storage";
 import { refreshUserPointsIfSystem, syncUserPointsFromHeaders } from "@/services/api/points";
@@ -97,7 +98,7 @@ export async function waitForAudioGenerationTask(config: AiConfig, task: AudioGe
             if (current.needsReview) throw new GenerationTaskNeedsReviewError(current.reviewReason);
             if (current.status === "success") {
                 if (!current.result?.url) throw new Error("音频任务没有返回结果");
-                const audioResponse = await fetch(current.result.url, { signal: options?.signal });
+                const audioResponse = await fetch(browserReadableMediaUrl(current.result.url), { signal: options?.signal });
                 if (!audioResponse.ok) throw new Error(await readFetchError(audioResponse, "读取音频结果失败"));
                 const blob = await audioResponse.blob();
                 await assertAudioBlob(blob);

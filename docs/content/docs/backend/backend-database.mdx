@@ -1,11 +1,11 @@
 ---
 title: 数据库结构
-description: VOZEB PRO PostgreSQL 主库表结构与 Repository 边界
+description: Twinkle Video PostgreSQL 主库表结构与 Repository 边界
 ---
 
 # 数据库结构
 
-VOZEB PRO 商业版默认使用 PostgreSQL 作为主库。数据库初始化 SQL 由 `web/src/lib/server/database/schema.ts` 维护，服务端统一通过 `web/src/lib/server/database/` 下的 Repository 访问主库。
+Twinkle Video 商业版默认使用 PostgreSQL 作为主库。数据库初始化 SQL 由 `web/src/lib/server/database/schema.ts` 维护，服务端统一通过 `web/src/lib/server/database/` 下的 Repository 访问主库。
 
 ## 环境变量
 
@@ -27,13 +27,13 @@ VOZEB_PRO_DATABASE_PROVIDER=file
 
 ## 表名前缀
 
-VOZEB PRO 的 PostgreSQL 真实表名统一使用项目名前缀 `vozeb_pro_`。业务代码里仍然使用逻辑表名，例如 `users`、`billing_orders`、`generation_logs`；数据库执行层会统一映射为真实表名：
+Twinkle Video 的 PostgreSQL 真实表名统一使用项目名前缀 `vozeb_pro_`。业务代码里仍然使用逻辑表名，例如 `users`、`billing_orders`、`generation_logs`；数据库执行层会统一映射为真实表名：
 
 - `users` -> `vozeb_pro_users`
 - `billing_orders` -> `vozeb_pro_billing_orders`
 - `generation_logs` -> `vozeb_pro_generation_logs`
 
-这样同一个 PostgreSQL 数据库里即使存在其他业务表，也能清楚区分 VOZEB PRO 的数据。Schema 中的显式索引和会生成索引的命名唯一约束也必须使用 `vozeb_pro_` 前缀，避免与同一 `public` Schema 的其他应用对象重名。无前缀表不会被自动删除；当前部署和后续读写只使用 `vozeb_pro_` 前缀表。
+这样同一个 PostgreSQL 数据库里即使存在其他业务表，也能清楚区分 Twinkle Video 的数据。Schema 中的显式索引和会生成索引的命名唯一约束也必须使用 `vozeb_pro_` 前缀，避免与同一 `public` Schema 的其他应用对象重名。无前缀表不会被自动删除；当前部署和后续读写只使用 `vozeb_pro_` 前缀表。
 
 ## 核心表
 
@@ -45,7 +45,7 @@ VOZEB PRO 的 PostgreSQL 真实表名统一使用项目名前缀 `vozeb_pro_`。
 - `vozeb_pro_users`：用户账号、角色、状态、头像存储键、最多 160 字的个人简介、当前套餐、积分余额和密码哈希；`admin_permissions` JSONB 保存管理员的显式职责列表，并由 CHECK 约束保证为数组，普通用户保持空数组。管理员 TOTP MFA 使用 `mfa_secret_ciphertext` 保存 AES-GCM 密文，`mfa_enabled_at` 表示已完成验证并启用，CHECK 约束禁止启用时间存在但密文缺失。公开注册还原子保存当时的服务条款版本/链接、隐私政策版本/链接和同意时间，五个留痕字段必须同时为空或同时存在。管理员代建账号不伪造用户同意记录。公开创作者接口只按用户名返回允许公开的资料字段，不暴露邮箱、内部用户 ID、职责、MFA 密文或协议留痕。
 - `vozeb_pro_sessions`：登录会话 token 哈希和过期时间。
 - `vozeb_pro_account_deletion_requests`：账号注销申请、用户资料快照、申请状态、管理员处理备注与处理人快照；同一用户同一时间只能存在一条待处理申请，受理不会自动停用账号或删除业务数据。
-- `vozeb_pro_twinkle_model_bindings`：VOZEB 用户与独立 Twinkle Model 账号的一对一绑定，保存绑定地址、账号邮箱、加密后的访问/刷新令牌、令牌过期时间、`active/needs_rebind` 状态、全局 Provider 偏好，以及按稳定 `template_id` 缓存的加密个人 API 密钥；用户密码不落盘，解绑随用户级联删除绑定。
+- `vozeb_pro_twinkle_model_bindings`：Twinkle Video 用户与独立 Twinkle Model 账号的一对一绑定，保存绑定地址、账号邮箱、加密后的访问/刷新令牌、令牌过期时间、`active/needs_rebind` 状态、全局 Provider 偏好，以及按稳定 `template_id` 缓存的加密个人 API 密钥；用户密码不落盘，解绑随用户级联删除绑定。
 - `vozeb_pro_rate_limits`：PostgreSQL 多实例共享的接口限流窗口，保存哈希后的业务键、原子请求计数和重置时间；数据库不可用时服务端临时退回进程内保护。
 - `vozeb_pro_email_codes`：注册、换绑邮箱、找回密码验证码及失败尝试次数。
 - `vozeb_pro_quota_usage`：按用户、日期和生成能力保存每日积分与次数占用；套餐关闭但生成成本保护启用时仍会写入，以便按用户和全站聚合实际积分成本，退款会原子回退对应日期的占用。
@@ -131,7 +131,7 @@ Agent Run 的状态与任务数组继续保存在 `generation_tasks.payload`，�
 
 `web/src/lib/auth/` 通过用户、Session、设置、积分、CDK、邮箱验证码和公告 Repository 读写对应关系表；文件 Provider 保留相同业务接口和进程内串行 mutation。PostgreSQL 在线路径不再把完整 `AuthDatabase` 删除重写。管理员后台业务操作按 `admin_permissions` 与当前 Session 授权，不进行逐次密码/TOTP 复核；系统渠道 API Key 与管理员 MFA Secret 在数据库中只保存密文。MFA 启用或关闭会保留当前 Session 并撤销该管理员的其他 Session，服务器恢复命令会清除 MFA 并撤销全部 Session。常规业务备份不导出 MFA Secret，导入也不能覆盖服务器当前 MFA 状态。
 
-Twinkle Model 绑定由独立 Repository 管理，文件 Provider 对应 `twinkle-model-bindings.json`。注册时的可选绑定在本地账号创建后执行，失败只返回提醒，不回滚注册；个人中心支持绑定、换绑、解绑和全局切换 Twinkle Model/Twinkle Video。选择 Twinkle Model 时，相同逻辑模型通过全局 Twinkle Model 地址和当前用户按全局默认密钥名称解析出的个人密钥执行，不消费 VOZEB 积分，也不会静默回退到站内扣费；选择 Twinkle Video 时，通过模型渠道保存的管理员地址和管理员密钥执行，并按既有规则扣除本站积分。异步任务把执行模式保存在代理基址和尝试记录中，后续查询、媒体读取及用户切换偏好后仍继续使用创建任务时的凭据模式。个人密钥只允许带服务端签名的生成请求使用，同名多个系统默认密钥会拒绝解析。账户配置备份包含绑定令牌与个人 API 密钥的既有密文，不包含 Twinkle 密码或解密后的密钥。
+Twinkle Model 绑定由独立 Repository 管理，文件 Provider 对应 `twinkle-model-bindings.json`。注册时的可选绑定在本地账号创建后执行，失败只返回提醒，不回滚注册；个人中心支持绑定、换绑、解绑和全局切换 Twinkle Model/Twinkle Video。选择 Twinkle Model 时，相同逻辑模型通过全局 Twinkle Model 地址和当前用户按全局默认密钥名称解析出的个人密钥执行，不消费 Twinkle Video 积分，也不会静默回退到站内扣费；选择 Twinkle Video 时，通过模型渠道保存的管理员地址和管理员密钥执行，并按既有规则扣除本站积分。异步任务把执行模式保存在代理基址和尝试记录中，后续查询、媒体读取及用户切换偏好后仍继续使用创建任务时的凭据模式。个人密钥只允许带服务端签名的生成请求使用，同名多个系统默认密钥会拒绝解析。账户配置备份包含绑定令牌与个人 API 密钥的既有密文，不包含 Twinkle 密码或解密后的密钥。
 
 `web/src/lib/prompts/store.ts` 以及 `web/src/lib/server/` 下的生成日志、统一创作运行时、Canvas 项目、素材库、短剧项目和审计日志 Store 已接入 PostgreSQL。对应 JSON Provider 保留为单机文件部署方式。媒体业务记录始终保存稳定站内路径；读取时按每条媒体登记的 `storage_provider` 选择本地文件或对象存储地址，不受当前外部存储开关影响；对象存储未配置自定义访问域名时使用短期签名地址，配置后使用自定义域名拼接对象 Key。
 

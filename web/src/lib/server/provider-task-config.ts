@@ -112,7 +112,7 @@ export function assertVideoReferenceRoles(config: SystemChannelAdvancedConfig | 
     const protocol = config?.protocol || "auto";
     const supported = new Set<VideoReferenceRole>(
         declaredRoles ||
-            (protocol === "seedance" || protocol === "volcengine-video" || protocol === "seedance-special"
+            (protocol === "seedance" || protocol === "volcengine-video" || protocol === "seedance-special" || protocol === "twinkle-model"
                 ? ["reference", "first_frame", "last_frame"]
                 : protocol === "yumeng"
                   ? templateVideoReferenceRoles(config?.requestTemplate)
@@ -131,8 +131,8 @@ export function templateVideoReferenceRoles(template: string | undefined): Video
     const structured = /\{\{\s*references\s*\}\}/i.test(value);
     return [
         "reference" as const,
-        ...(structured || /\{\{\s*(?:first_frame|first_frame_url)\s*\}\}/i.test(value) ? (["first_frame"] as const) : []),
-        ...(structured || /\{\{\s*(?:last_frame|last_frame_url)\s*\}\}/i.test(value) ? (["last_frame"] as const) : []),
+        ...(structured || /\{\{\s*(?:first_frame|first_frame_url|start_image_url)\s*\}\}/i.test(value) ? (["first_frame"] as const) : []),
+        ...(structured || /\{\{\s*(?:last_frame|last_frame_url|end_image_url)\s*\}\}/i.test(value) ? (["last_frame"] as const) : []),
     ];
 }
 
@@ -294,9 +294,11 @@ const REFERENCE_FIELD_KEYS = new Set([
     "referenceimage",
     "referenceimages",
     "firstframeurl",
+    "startimageurl",
     "firstframeimage",
     "firstimage",
     "lastframeurl",
+    "endimageurl",
     "lastframeimage",
     "lastimage",
     "video",
@@ -333,9 +335,11 @@ const VIDEO_REFERENCE_VALUE_KEYS: Record<string, string> = {
     inputimage: "image",
     referenceimage: "image",
     firstframeurl: "first_frame",
+    startimageurl: "first_frame",
     firstframeimage: "first_frame",
     firstimage: "first_frame",
     lastframeurl: "last_frame",
+    endimageurl: "last_frame",
     lastframeimage: "last_frame",
     lastimage: "last_frame",
     images: "images",

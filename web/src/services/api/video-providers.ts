@@ -244,8 +244,12 @@ export async function pollCompatibleVideoTask(config: AiConfig, task: VideoGener
                 const resolvedUrl = resolveVideoMediaUrl(config, videoUrl, readHeader(response.headers, "x-vozeb-pro-upstream-url") || requestUrl);
                 return { status: "completed", result: await videoResultFromUrl(resolvedUrl, options) };
             }
+            if (config.advancedConfig?.protocol === "twinkle-model" && isCompletedStatus(status)) {
+                const contentUrl = aiApiUrl(config, `/v1/videos/${encodeURIComponent(task.id)}/content`);
+                return { status: "completed", result: await videoResultFromUrl(contentUrl, options) };
+            }
             if (isCompletedStatus(status)) return { status: "failed", error: videoStageError("视频任务完成但没有返回视频地址") };
-            if (isFailedStatus(status)) return { status: "failed", error: videoStageError(readTaskError(state) || "视频生成失败") };
+            if (isFailedStatus(status)) return { status: "failed", error: videoStageError(readTaskError(state) || (status === "unresolved" ? "视频任务状态未能确认，请联系管理员核查" : "视频生成失败")) };
             return { status: "pending" };
         } catch (error) {
             const message = readAxiosError(error, "视频任务查询失败");
@@ -449,12 +453,14 @@ export async function buildCompatibleVideoPayloadVariants(config: AiConfig, mode
     });
     if (config.advancedConfig?.protocol === "yumeng") return templatePayloads;
     if (config.advancedConfig?.protocol === "twinkle-model") {
+        const exactSize = /^\d+\s*[x×]\s*\d+$/.test(config.size.trim()) ? config.size.replace(/\s+/g, "").replace("×", "x") : undefined;
         return [
             buildTwinkleModelVideoRequest({
                 model: modelOptionName(model),
                 prompt,
                 duration,
                 aspectRatio: ratio,
+                size: exactSize,
                 resolution,
                 generateAudio: boolConfig(config.videoGenerateAudio, true),
                 images,

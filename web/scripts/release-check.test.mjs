@@ -49,8 +49,7 @@ describe("release type-check and build contract", () => {
         expect(standaloneStart).toContain('process.env.NEXT_DIST_DIR?.trim() || ".next"');
         expect(developmentStart).toContain("localDevelopmentEnvironment");
         expect(developmentStart).toContain('mode === "frontend" ? undefined : path.join(webRoot, "scripts", "generation-worker.mjs")');
-        expect(developmentStart).toContain('"--turbopack"');
-        expect(developmentStart).not.toContain('"--webpack"');
+        expect(developmentStart).toContain("localDevelopmentBundlerFlag()");
         expect(standaloneStart).toContain("prepareStandaloneAssets");
         expect(dockerfile).toContain("pnpm run typecheck && NEXT_SKIP_BUILD_TYPECHECK=1 pnpm run build");
         expect(dockerfile).not.toContain("ARG NEXT_BUILD_CPUS=1");
@@ -71,7 +70,8 @@ describe("release type-check and build contract", () => {
             await Promise.all([
                 writeFile(path.join(fixtureRoot, distDir, "standalone", "server.js"), "server"),
                 writeFile(path.join(fixtureRoot, distDir, "static", "chunks", "app.js"), "chunk"),
-                writeFile(path.join(fixtureRoot, "public", "logo.svg"), "logo"),
+                writeFile(path.join(fixtureRoot, "public", "logo.jpg"), "logo"),
+                writeFile(path.join(fixtureRoot, "public", "logo.svg"), "vector logo"),
                 writeFile(path.join(fixtureRoot, "public", "icon.svg"), "icon"),
                 writeFile(path.join(fixtureRoot, "public", "icons", "icon-192.png"), "png"),
                 writeFile(path.join(fixtureRoot, "node_modules", ".pnpm", "@img+sharp-linux-x64@0.35.3", "node_modules", "@img", "sharp-linux-x64", "sharp.node"), "native"),
@@ -81,10 +81,10 @@ describe("release type-check and build contract", () => {
             const result = await prepareStandaloneAssets({ webRoot: fixtureRoot, distDir });
 
             expect(result.staticFiles).toBe(1);
-            expect(result.publicFiles).toBe(3);
+            expect(result.publicFiles).toBe(4);
             expect(result.sharpRuntimePackages).toEqual(["@img+sharp-libvips-linux-x64@1.3.2", "@img+sharp-linux-x64@0.35.3"]);
             expect(existsSync(path.join(fixtureRoot, distDir, "standalone", distDir, "static", "chunks", "app.js"))).toBe(true);
-            expect(existsSync(path.join(fixtureRoot, distDir, "standalone", "public", "logo.svg"))).toBe(true);
+            expect(existsSync(path.join(fixtureRoot, distDir, "standalone", "public", "logo.jpg"))).toBe(true);
             expect(existsSync(path.join(fixtureRoot, distDir, "standalone", "public", "icons", "icon-192.png"))).toBe(true);
             expect(existsSync(path.join(fixtureRoot, distDir, "standalone", "node_modules", ".pnpm", "@img+sharp-linux-x64@0.35.3", "node_modules", "@img", "sharp-linux-x64", "sharp.node"))).toBe(true);
             expect(existsSync(path.join(fixtureRoot, distDir, "standalone", "node_modules", ".pnpm", "@img+sharp-libvips-linux-x64@1.3.2", "node_modules", "@img", "sharp-libvips-linux-x64", "lib", "libvips.so"))).toBe(true);

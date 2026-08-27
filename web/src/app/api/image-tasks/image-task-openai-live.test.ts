@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createServer } from "node:http";
 
-vi.mock("@/lib/server/proxy-dispatcher", () => ({ configureServerProxyDispatcher: vi.fn() }));
+vi.mock("@/lib/server/proxy-dispatcher", () => ({ configureServerProxyDispatcher: vi.fn(), resolveServerProxyUrl: vi.fn(() => "") }));
 
 import { createProtocolFixtureServer } from "../../../../scripts/protocol-fixture-server.mjs";
 import { runGeminiImageTask } from "./image-task-gemini";

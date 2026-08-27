@@ -5,9 +5,11 @@ services:
     env_file:
       - .env
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:46511:3000"
     volumes:
       - vozeb-pro-data:/app/web/.data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
       VOZEB_PRO_DATA_DIR: /app/web/.data

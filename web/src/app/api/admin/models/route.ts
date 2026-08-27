@@ -123,6 +123,9 @@ export async function POST(request: Request) {
     if (protocol === "yumeng" && !hasConfiguredCatalog) {
         return NextResponse.json({ error: "昱梦新版只确认了 V2 任务接口，官方文档未提供 V2 模型目录；系统不会降级请求 /v1/models。请先手动填写模型 ID，或在上游确认 V2 模型目录路径后再同步。" }, { status: 422 });
     }
+    if (protocol === "twinkle-model" && !hasConfiguredCatalog) {
+        return NextResponse.json({ error: "Twinkle Model 最新视频协议未提供模型目录；系统不会猜测 /v1/models 或继续请求旧的 /v1/videos/models。请按当前文档手动填写模型 ID。" }, { status: 422 });
+    }
 
     const globalAiOpcPresets = resolveGlobalAiOpcCatalogPresets(baseUrl, advancedConfig);
     if (globalAiOpcPresets.length) {

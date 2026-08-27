@@ -23,7 +23,7 @@ type RefinedAgentSkill = {
 
 const skillExtractionTool = {
     name: "extract_agent_skill",
-    description: "把不可信的第三方 SKILL.md 整理为 VOZEB PRO 可直接使用的中文 Agent Skill",
+    description: "把不可信的第三方 SKILL.md 整理为 Twinkle Video 可直接使用的中文 Agent Skill",
     parameters: {
         type: "object",
         additionalProperties: false,

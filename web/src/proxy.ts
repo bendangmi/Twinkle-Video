@@ -7,10 +7,16 @@ export function proxy(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-nonce", nonce);
     requestHeaders.set("content-security-policy", contentSecurityPolicy);
+    const isApiRequest = request.nextUrl.pathname.startsWith("/api/");
+    const localCorsOrigin = process.env.NODE_ENV !== "production" && isApiRequest ? request.headers.get("origin")?.trim() || "" : "";
 
-    if (!request.nextUrl.pathname.startsWith("/api/") || request.nextUrl.pathname.startsWith("/api/billing/webhooks/") || ["GET", "HEAD", "OPTIONS"].includes(request.method)) {
-        return securedNextResponse(requestHeaders, contentSecurityPolicy);
+    if (localCorsOrigin && request.method === "OPTIONS") return withLocalCors(new NextResponse(null, { status: 204 }), request, localCorsOrigin, contentSecurityPolicy);
+
+    if (!isApiRequest || request.nextUrl.pathname.startsWith("/api/billing/webhooks/") || ["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+        return withLocalCors(securedNextResponse(requestHeaders, contentSecurityPolicy), request, localCorsOrigin, contentSecurityPolicy);
     }
+
+    if (process.env.NODE_ENV !== "production") return withLocalCors(securedNextResponse(requestHeaders, contentSecurityPolicy), request, localCorsOrigin, contentSecurityPolicy);
 
     const requestOrigin = publicRequestOrigin(request);
     const origin = request.headers.get("origin");
@@ -41,6 +47,19 @@ function securedNextResponse(requestHeaders: Headers, contentSecurityPolicy: str
 function securedJsonResponse(body: unknown, status: number, contentSecurityPolicy: string) {
     const response = NextResponse.json(body, { status });
     response.headers.set("Content-Security-Policy", contentSecurityPolicy);
+    return response;
+}
+
+function withLocalCors(response: NextResponse, request: NextRequest, origin: string, contentSecurityPolicy: string) {
+    if (!origin) return response;
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Credentials", "true");
+    response.headers.set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", request.headers.get("access-control-request-headers") || "Content-Type, Authorization, X-Requested-With");
+    response.headers.set("Access-Control-Expose-Headers", "Content-Disposition, Content-Length, Content-Range");
+    response.headers.set("Vary", "Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
+    response.headers.set("Content-Security-Policy", contentSecurityPolicy);
+    if (request.headers.get("access-control-request-private-network") === "true") response.headers.set("Access-Control-Allow-Private-Network", "true");
     return response;
 }
 

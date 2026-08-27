@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-import { resolveSiteTitle } from "@/lib/site-brand";
+import { DEFAULT_SITE_LOGO_URL, resolveSiteTitle } from "@/lib/site-brand";
 import type { LocalUser } from "@/stores/use-user-store";
 import type { PublicSystemSettings } from "@/stores/use-config-store";
 
@@ -85,7 +85,7 @@ export function applyPublicSiteSettings(site: PublicSiteSettings) {
                         ...(payload.settings?.site || {}),
                         ...site,
                         title: resolveSiteTitle(site.title),
-                        logoUrl: site.logoUrl?.trim() || "/logo.svg",
+                        logoUrl: site.logoUrl?.trim() || DEFAULT_SITE_LOGO_URL,
                     },
                 },
             },

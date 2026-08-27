@@ -5,6 +5,7 @@ import { AppProviders } from "@/components/layout/app-providers";
 import { appStorageKey } from "@/lib/storage-keys";
 import { absoluteSiteUrl, browserIconHref, getPublicSiteSettings, siteMetadataBase } from "@/lib/server/site-metadata";
 import { buildWebsiteStructuredData, serializeStructuredData } from "@/lib/structured-data";
+import { DEFAULT_SITE_LOGO_URL } from "@/lib/site-brand";
 import "antd/dist/reset.css";
 import "./globals.css";
 import React from "react";
@@ -24,7 +25,7 @@ export const viewport: Viewport = {
 export async function generateMetadata(): Promise<Metadata> {
     const site = await getPublicSiteSettings();
     const base = siteMetadataBase();
-    const logoUrl = absoluteSiteUrl(site.logoUrl || "/logo.svg", base);
+    const logoUrl = absoluteSiteUrl(site.logoUrl || DEFAULT_SITE_LOGO_URL, base);
     const title = site.seoTitle || site.title;
     return {
         metadataBase: base,
@@ -66,7 +67,7 @@ export default async function RootLayout({
         name: site.title,
         description: site.seoDescription,
         url: websiteUrl,
-        logoUrl: absoluteSiteUrl(site.logoUrl || "/logo.svg", base),
+        logoUrl: absoluteSiteUrl(site.logoUrl || DEFAULT_SITE_LOGO_URL, base),
     });
 
     return (
