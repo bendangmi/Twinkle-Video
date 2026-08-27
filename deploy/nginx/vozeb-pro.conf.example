@@ -1,6 +1,6 @@
 # 将域名和证书路径替换为真实值后，放入 Nginx 的 http 配置范围（如 conf.d/）。
 upstream vozeb_pro_app {
-    server 127.0.0.1:3000;
+    server 127.0.0.1:46511;
     keepalive 32;
 }
 

@@ -10,7 +10,7 @@
 
 服务器需要安装 Docker Engine、Docker Compose Plugin、Nginx，并准备一台可从服务器访问的 PostgreSQL 14+ 数据库。数据库账号需要具备目标数据库的建表和读写权限。
 
-生产环境建议使用 HTTPS 域名。应用容器只绑定宿主机 `127.0.0.1:3000`，公网访问统一经过 Nginx。
+生产环境建议使用 HTTPS 域名。应用容器只绑定宿主机 `127.0.0.1:46511`，公网访问统一经过 Nginx。
 
 ### 2. 准备文件
 
@@ -64,7 +64,7 @@ docker compose -f docker-compose.yaml config --services
 ```bash
 docker compose -f docker-compose.yaml up -d
 docker compose -f docker-compose.yaml ps
-curl -fsS http://127.0.0.1:3000/api/health/live
+curl -fsS http://127.0.0.1:46511/api/health/live
 ```
 
 健康检查成功后，打开 `https://你的域名.example.com/install`，输入 `VOZEB_PRO_INSTALL_TOKEN` 创建第一个管理员。随后在后台配置模型渠道、对象存储和支付渠道，并实际提交一次生成任务验证 Worker。
@@ -123,7 +123,7 @@ docker load -i deploy/twinkle-video-v0.0.7.custom.2.tar
 export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.2
 docker compose -f docker-compose.yaml up -d
 docker compose -f docker-compose.yaml ps
-curl -fsS http://127.0.0.1:3000/api/health/live
+curl -fsS http://127.0.0.1:46511/api/health/live
 ```
 
 若使用 `.env` 中的 `VOZEB_PRO_IMAGE`，可省略 `export`。应用和 `generation-worker` 共用该镜像，Worker 通过内部地址调用应用；外部 PostgreSQL 只由 `DATABASE_URL` 提供，不创建本地数据库容器。
@@ -147,10 +147,10 @@ docker compose -f docker-compose.yaml logs --tail=100 app generation-worker
 
 - **数据库连接失败**：检查 PostgreSQL 防火墙、白名单、账号权限、端口和 SSL 参数；容器内不能使用宿主机 `localhost` 连接云数据库。
 - **Worker 认证失败**：确认 `VOZEB_PRO_WORKER_TOKEN` 在 `app` 和 `generation-worker` 中完全一致，且不同于维护令牌。
-- **安装页打不开**：先检查 `curl http://127.0.0.1:3000/api/health/live`，再查看应用和 Nginx 日志。
+- **安装页打不开**：先检查 `curl http://127.0.0.1:46511/api/health/live`，再查看应用和 Nginx 日志。
 - **SSE 断流**：确认 Nginx 使用示例中的 Agent events 配置，并保持 `proxy_buffering off`。
 - **媒体上传失败**：确认 Docker volume 可写；启用 S3 兼容存储时，在后台完成 Endpoint、Bucket、Region 和密钥配置。
 
 ## 反向代理
 
-将 `deploy/nginx/vozeb-pro.conf.example` 中的 `server_name`、证书路径替换为真实值。Nginx 代理到 `127.0.0.1:3000`，SSE 事件流路径已关闭代理缓冲；证书、域名、HTTPS 和防火墙策略由部署环境负责。
+将 `deploy/nginx/vozeb-pro.conf.example` 中的 `server_name`、证书路径替换为真实值。Nginx 代理到 `127.0.0.1:46511`，SSE 事件流路径已关闭代理缓冲；证书、域名、HTTPS 和防火墙策略由部署环境负责。
