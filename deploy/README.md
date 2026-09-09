@@ -2,7 +2,7 @@
 
 本目录用于保存部署说明、外部 PostgreSQL Compose 文件和 Nginx 示例。应用镜像使用仓库根目录的 `Dockerfile` 构建，数据库不打进应用镜像，也不由本部署方案创建；线上使用已有 PostgreSQL，并通过本目录的 `docker-compose.yaml` 启动应用和生成 Worker。
 
-镜像版本以官方最新版本为基线并追加 `custom.N`。当前官方版本为 `v0.0.7`，本次二开镜像为 `v0.0.7.custom.2`；同一官方版本后续依次使用 `custom.3`、`custom.4`，官方版本升级后重新从 `custom.1` 开始。
+镜像版本以官方最新版本为基线并追加 `custom.N`。当前官方版本为 `v0.0.7`，本次二开镜像为 `v0.0.7.custom.3`；同一官方版本后续依次使用 `custom.4`、`custom.5`，官方版本升级后重新从 `custom.1` 开始。
 
 ## 快速部署流程
 
@@ -17,7 +17,7 @@
 在服务器创建部署目录，并将以下文件复制到同一目录：
 
 ```text
-twinkle-video-v0.0.7.custom.2.tar
+twinkle-video-v0.0.7.custom.3.tar
 docker-compose.yaml
 .env
 ```
@@ -35,7 +35,7 @@ chmod 600 .env
 
 ```dotenv
 NEXT_PUBLIC_SITE_URL=https://你的域名.example.com
-VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.2
+VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.3
 VOZEB_PRO_DATABASE_PROVIDER=postgres
 DATABASE_URL=postgresql://用户:URL编码后的密码@数据库地址:5432/数据库名
 VOZEB_PRO_DATABASE_SSL=1
@@ -52,8 +52,8 @@ VOZEB_PRO_WORKER_TOKEN=独立的至少32位Worker令牌
 
 ```bash
 cd /opt/twinkle-video
-docker load -i twinkle-video-v0.0.7.custom.2.tar
-docker image inspect twinkle-video:v0.0.7.custom.2 --format '{{.Id}}'
+docker load -i twinkle-video-v0.0.7.custom.3.tar
+docker image inspect twinkle-video:v0.0.7.custom.3 --format '{{.Id}}'
 docker compose -f docker-compose.yaml config --services
 ```
 
@@ -109,7 +109,7 @@ powershell -ExecutionPolicy Bypass -File .\deploy\build-image.ps1 `
 
 将以下文件复制到服务器同一目录：
 
-- `deploy/twinkle-video-v0.0.7.custom.2.tar`
+- `deploy/twinkle-video-v0.0.7.custom.3.tar`
 - `deploy/docker-compose.yaml`
 - `.env`（从 `.env.example` 复制并填写真实值）
 - `deploy/nginx/vozeb-pro.conf.example`（改域名和证书路径后放入 Nginx 配置目录）
@@ -119,8 +119,8 @@ powershell -ExecutionPolicy Bypass -File .\deploy\build-image.ps1 `
 ## 详细操作：加载与启动
 
 ```bash
-docker load -i deploy/twinkle-video-v0.0.7.custom.2.tar
-export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.2
+docker load -i deploy/twinkle-video-v0.0.7.custom.3.tar
+export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.3
 docker compose -f docker-compose.yaml up -d
 docker compose -f docker-compose.yaml ps
 curl -fsS http://127.0.0.1:46511/api/health/live
@@ -133,8 +133,8 @@ curl -fsS http://127.0.0.1:46511/api/health/live
 更新时先导入新 tar，再执行：
 
 ```bash
-docker load -i deploy/twinkle-video-v0.0.7.custom.2.tar
-export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.2
+docker load -i deploy/twinkle-video-v0.0.7.custom.3.tar
+export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.3
 docker compose -f docker-compose.yaml up -d
 docker compose -f docker-compose.yaml logs --tail=100 app generation-worker
 ```

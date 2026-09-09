@@ -32,11 +32,11 @@ test("public homepage is functional for signed-out visitors", async ({ browser }
     });
 
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { level: 1, name: "一个入口 完成所有 AI 创作" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Twinkle Video" })).toBeVisible();
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.getByText("核心能力", { exact: true })).toHaveCount(0);
     await expect(page.getByTestId("home-agent-card")).toHaveCount(1);
-    await expect(page.getByTestId("home-agent-halo").locator("[data-halo-ring]")).toHaveCount(4);
+    await expect(page.locator('[data-testid="home-agent-halo"], [data-hero-decoration]')).toHaveCount(0);
     await expect(page.getByTestId("home-public-gallery")).toBeVisible();
     const galleryLayout = await page
         .getByTestId("home-public-gallery")
@@ -146,10 +146,10 @@ test("public homepage is functional for signed-out visitors", async ({ browser }
             boxShadow: getComputedStyle(element).boxShadow,
             color: getComputedStyle(element).color,
         }));
-        expect(sendStyle.backgroundImage).toContain("linear-gradient");
-        expect(sendStyle.borderRadius).toBe("50%");
+        expect(sendStyle.backgroundImage).toBe("none");
+        expect(sendStyle.borderRadius).toBe("6px");
         expect(sendStyle.boxShadow).toBe("none");
-        expect(sendStyle.color).toBe("rgb(255, 255, 255)");
+        expect(sendStyle.color).toBe("rgb(255, 250, 245)");
     }
     for (const action of ["开始创作", "进入创作页添加参考素材"]) {
         await page.getByRole("button", { name: action }).click();
@@ -163,8 +163,6 @@ test("public homepage is functional for signed-out visitors", async ({ browser }
         await expect(dialog).toBeHidden();
     }
 
-    await expect(page.getByRole("heading", { name: "简单四步，创意即刻落地" })).toBeVisible();
-    for (const title of ["选择场景", "输入需求", "生成内容", "发布与分享"]) await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.getByRole("heading", { name: "开启你的 AI 创作工作流" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "行业场景解决方案" })).toHaveCount(0);
     await expect(page.getByRole("navigation", { name: "产品" })).toBeVisible();
@@ -199,7 +197,7 @@ test("public homepage is functional for signed-out visitors", async ({ browser }
     const brandTab = page.getByRole("tab", { name: "品牌内容", exact: true });
     await brandTab.click();
     if (testInfo.project.name === "chromium") await brandTab.hover();
-    await expect(brandTab).toHaveCSS("color", "rgb(255, 255, 255)");
+    await expect(brandTab).toHaveCSS("color", "rgb(20, 20, 19)");
 
     const beforeTheme = await homepageDomState(page);
     await page.getByRole("button", { name: "切换到深色主题" }).click();
@@ -214,8 +212,8 @@ test("public homepage is functional for signed-out visitors", async ({ browser }
         expect(attachStyle.backgroundImage).toBe("none");
         expect(attachStyle.borderColor).not.toBe("rgba(0, 0, 0, 0)");
         expect(attachStyle.color).not.toBe(sendStyle.color);
-        expect(sendStyle.backgroundImage).toContain("linear-gradient");
-        expect(sendStyle.color).toBe("rgb(255, 255, 255)");
+        expect(sendStyle.backgroundImage).toBe("none");
+        expect(sendStyle.color).toBe("rgb(232, 228, 223)");
     }
     expect(await homepageDomState(page)).toEqual(beforeTheme);
     await expectNoHorizontalOverflow(page);
@@ -254,40 +252,34 @@ test("homepage gallery hides internal service errors from visitors", async ({ pa
     await expect(page.getByText(/PostgreSQL|数据库|部署/)).toHaveCount(0);
 });
 
-test("homepage hero stays centered and responsive", async ({ page }, testInfo) => {
+test("homepage hero stays responsive without decorations", async ({ page }, testInfo) => {
     await page.route("**/api/public/gallery?**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(galleryResponse) }));
     await page.goto("/", { waitUntil: "domcontentloaded" });
     const geometry = await page.evaluate(() => {
         const viewportWidth = document.documentElement.clientWidth;
         const title = document.querySelector("h1")!.getBoundingClientRect();
-        const subtitle = document.querySelector("h1 + p")!.getBoundingClientRect();
         const card = document.querySelector<HTMLElement>('[data-testid="home-agent-card"]')!.getBoundingClientRect();
-        const halo = document.querySelector<HTMLElement>('[data-testid="home-agent-halo"]')!.getBoundingClientRect();
         const textarea = document.querySelector<HTMLElement>("#home-agent-prompt")!.getBoundingClientRect();
         const presetsElement = document.querySelector<HTMLElement>('[aria-label="示例提示词"]')!;
         const presets = presetsElement.getBoundingClientRect();
         const presetButtons = Array.from(presetsElement.querySelectorAll<HTMLButtonElement>("button"));
         const presetButtonRects = presetButtons.map((button) => button.getBoundingClientRect());
         const creationModesElement = document.querySelector<HTMLElement>('[aria-label="创作模式"]')!;
-        const creationModes = creationModesElement.getBoundingClientRect();
         const toolbarElement = creationModesElement.parentElement!;
         const toolbar = toolbarElement.getBoundingClientRect();
         const send = document.querySelector<HTMLElement>('button[aria-label="开始创作"]')!.getBoundingClientRect();
         const mobileToolbarButtons = Array.from(toolbarElement.querySelectorAll<HTMLButtonElement>("button")).map((button) => button.getBoundingClientRect());
         const cardRadius = Number.parseFloat(getComputedStyle(document.querySelector<HTMLElement>('[data-testid="home-agent-card"]')!).borderRadius);
-        const rings = Array.from(document.querySelectorAll<HTMLElement>("[data-halo-ring]"));
-        const decorations = Array.from(document.querySelectorAll<HTMLElement>("[data-hero-decoration]"));
         return {
             viewportWidth,
             titleCenterOffset: Math.abs(title.left + title.width / 2 - viewportWidth / 2),
             cardCenterOffset: Math.abs(card.left + card.width / 2 - viewportWidth / 2),
+            titleRight: title.right,
+            cardLeft: card.left,
+            cardRight: card.right,
             cardWidth: card.width,
             cardHeight: card.height,
             cardRadius,
-            haloCenterOffset: Math.abs(halo.left + halo.width / 2 - (card.left + card.width / 2)),
-            haloWidthRatio: halo.width / card.width,
-            haloTop: halo.top,
-            cardBottom: card.bottom,
             textareaHeight: textarea.height,
             presetOffset: presets.top - textarea.bottom,
             presetButtonsInsideCard: presetButtonRects.every((button) => button.left >= card.left && button.right <= card.right && button.top >= card.top && button.bottom <= card.bottom),
@@ -302,73 +294,38 @@ test("homepage hero stays centered and responsive", async ({ page }, testInfo) =
             toolbarOffset: toolbar.top - presets.bottom,
             sendInset: card.right - send.right,
             sendVisible: send.width >= 42 && send.height >= 42,
-            filledRingCount: rings.filter((ring) => getComputedStyle(ring).backgroundImage !== "none").length,
-            borderOnlyRingCount: rings.filter((ring) => Number.parseFloat(getComputedStyle(ring).borderTopWidth) > 0 && getComputedStyle(ring).backgroundImage === "none").length,
-            decorationCount: decorations.length,
-            decorationSizeCount: new Set(
-                decorations.map((decoration) => {
-                    const bounds = decoration.getBoundingClientRect();
-                    return `${Math.round(bounds.width)}x${Math.round(bounds.height)}`;
-                }),
-            ).size,
-            polygonDecorationCount: decorations.filter((decoration) => getComputedStyle(decoration).clipPath !== "none").length,
-            animatedDecorationCount: decorations.filter((decoration) => getComputedStyle(decoration).animationName !== "none").length,
-            visibleDecorationCount: decorations.filter((decoration) => getComputedStyle(decoration).display !== "none").length,
-            decorationSubtitleOverlapCount: decorations.filter((decoration) => getComputedStyle(decoration).display !== "none" && decoration.getBoundingClientRect().top < subtitle.bottom).length,
+            decorationCount: document.querySelectorAll('[data-testid="home-agent-halo"], [data-hero-decoration]').length,
             mobileToolbarButtonCount: mobileToolbarButtons.length,
             mobileToolbarButtonsInsideCard: mobileToolbarButtons.every((button) => button.left >= card.left && button.right <= card.right && button.top >= card.top && button.bottom <= card.bottom),
             mobileToolbarRowSpread: Math.max(...mobileToolbarButtons.map((button) => button.top)) - Math.min(...mobileToolbarButtons.map((button) => button.top)),
             visibleModeLabelCount: Array.from(creationModesElement.querySelectorAll<HTMLElement>("span:last-child")).filter((label) => getComputedStyle(label).display !== "none").length,
-            sequencedDecorationCount: decorations.filter((decoration) => getComputedStyle(decoration).animationName.includes("artifact-reveal") && getComputedStyle(decoration).animationName.includes("artifact-float")).length,
-            shadowedDecorationCount: decorations.filter((decoration) => {
-                const face = decoration.firstElementChild as HTMLElement | null;
-                return getComputedStyle(decoration).boxShadow !== "none" || getComputedStyle(decoration, "::before").boxShadow !== "none" || (face ? getComputedStyle(face).boxShadow !== "none" : false);
-            }).length,
-            castShadowDecorationCount: decorations.filter((decoration) => getComputedStyle(decoration, "::after").content !== "none").length,
         };
     });
-    expect(geometry.titleCenterOffset).toBeLessThanOrEqual(2);
-    expect(geometry.cardCenterOffset).toBeLessThanOrEqual(2);
     expect(geometry.cardWidth).toBeLessThanOrEqual(geometry.viewportWidth - (geometry.viewportWidth < 768 ? 24 : 48));
     if (testInfo.project.name === "chromium") {
-        expect(geometry.cardWidth).toBeGreaterThanOrEqual(1080);
-        expect(geometry.cardWidth).toBeLessThanOrEqual(1120);
-        expect(geometry.cardHeight).toBeGreaterThanOrEqual(286);
-        expect(geometry.cardHeight).toBeLessThanOrEqual(304);
-        expect(geometry.cardRadius).toBeGreaterThanOrEqual(28);
-        expect(geometry.cardRadius).toBeLessThanOrEqual(32);
-        expect(geometry.haloCenterOffset).toBeLessThanOrEqual(1);
-        expect(geometry.haloWidthRatio).toBeGreaterThan(1.16);
-        expect(geometry.haloWidthRatio).toBeLessThan(1.2);
-        expect(geometry.haloTop).toBeLessThan(geometry.cardBottom);
+        expect(geometry.titleRight).toBeLessThan(geometry.cardLeft);
+        expect(geometry.cardRight).toBeLessThanOrEqual(geometry.viewportWidth);
+        expect(geometry.cardWidth).toBeGreaterThanOrEqual(460);
+        expect(geometry.cardWidth).toBeLessThanOrEqual(640);
+        expect(geometry.cardHeight).toBeGreaterThanOrEqual(380);
+        expect(geometry.cardRadius).toBe(10);
         expect(geometry.textareaHeight).toBeGreaterThanOrEqual(68);
         expect(geometry.presetOffset).toBe(0);
-        expect(geometry.toolbarOffset).toBeGreaterThanOrEqual(18);
-        expect(geometry.toolbarOffset).toBeLessThanOrEqual(26);
-        expect(geometry.sendInset).toBeGreaterThanOrEqual(34);
-        expect(geometry.filledRingCount).toBe(4);
-        expect(geometry.borderOnlyRingCount).toBe(0);
-        expect(geometry.decorationCount).toBe(4);
-        expect(geometry.decorationSizeCount).toBe(4);
-        expect(geometry.polygonDecorationCount).toBe(0);
-        expect(geometry.animatedDecorationCount).toBe(4);
-        expect(geometry.sequencedDecorationCount).toBe(4);
-        expect(geometry.shadowedDecorationCount).toBe(0);
-        expect(geometry.castShadowDecorationCount).toBe(0);
     }
     if (testInfo.project.name.startsWith("mobile-")) {
+        expect(geometry.titleCenterOffset).toBeLessThanOrEqual(2);
+        expect(geometry.cardCenterOffset).toBeLessThanOrEqual(2);
         expect(geometry.visiblePresetCount).toBe(4);
         expect(geometry.presetButtonsInsideCard).toBe(true);
         expect(geometry.presetColumnCount).toBe(2);
         expect(geometry.presetRowCount).toBe(2);
         expect(geometry.presetsFitWithoutScroll).toBe(true);
-        expect(geometry.visibleDecorationCount).toBe(4);
-        expect(geometry.decorationSubtitleOverlapCount).toBe(0);
         expect(geometry.mobileToolbarButtonCount).toBe(6);
         expect(geometry.mobileToolbarButtonsInsideCard).toBe(true);
         expect(geometry.mobileToolbarRowSpread).toBeLessThanOrEqual(3);
         expect(geometry.visibleModeLabelCount).toBe(0);
     }
+    expect(geometry.decorationCount).toBe(0);
     expect(geometry.sendVisible).toBe(true);
     await expectNoHorizontalOverflow(page);
 });

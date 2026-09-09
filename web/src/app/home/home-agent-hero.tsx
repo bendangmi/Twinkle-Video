@@ -31,26 +31,6 @@ export function HomeAgentHero() {
 
     return (
         <section className={styles.hero} aria-labelledby="home-hero-title">
-            <span className={`${styles.floatingArtifact} ${styles.artifactAgent}`} data-hero-decoration aria-hidden="true">
-                <span className={styles.artifactFace}>
-                    <Lightbulb />
-                </span>
-            </span>
-            <span className={`${styles.floatingArtifact} ${styles.artifactImage}`} data-hero-decoration aria-hidden="true">
-                <span className={styles.artifactFace}>
-                    <ImageIcon />
-                </span>
-            </span>
-            <span className={`${styles.floatingArtifact} ${styles.artifactVideo}`} data-hero-decoration aria-hidden="true">
-                <span className={styles.artifactFace}>
-                    <Video />
-                </span>
-            </span>
-            <span className={`${styles.floatingArtifact} ${styles.artifactAudio}`} data-hero-decoration aria-hidden="true">
-                <span className={styles.artifactFace}>
-                    <AudioLines />
-                </span>
-            </span>
             <div className={styles.heroContent}>
                 <div className={styles.heroCopy}>
                     <div className={styles.eyebrow}>MULTIMODAL CREATIVE WORKSPACE</div>
@@ -75,12 +55,6 @@ export function HomeAgentHero() {
                 </div>
 
                 <div className={styles.agentStage}>
-                    <div className={styles.agentRing} data-testid="home-agent-halo" aria-hidden="true">
-                        <span className={styles.ringGround} data-halo-ring />
-                        <span className={styles.ringOuter} data-halo-ring />
-                        <span className={styles.ringMiddle} data-halo-ring />
-                        <span className={styles.ringInner} data-halo-ring />
-                    </div>
                     <div className={styles.agentCard} data-testid="home-agent-card">
                         <div className={styles.inputArea}>
                             <label htmlFor="home-agent-prompt" className={styles.srOnly}>
