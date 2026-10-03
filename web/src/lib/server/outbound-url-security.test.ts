@@ -73,8 +73,8 @@ describe("outbound url security", () => {
     it("allows a proxy-routed fake IP only when an outbound proxy will be used", async () => {
         mocks.lookup.mockResolvedValue([{ address: "198.18.0.90", family: 4 }]);
 
-        await expect(resolveSafeOutboundTarget("https://st.smart-agi.com/api/v1/auth/login")).resolves.toBeNull();
-        await expect(resolveSafeOutboundTarget("https://st.smart-agi.com/api/v1/auth/login", { allowProxyRouted: true })).resolves.toMatchObject({ address: "198.18.0.90", family: 4 });
+        await expect(resolveSafeOutboundTarget("https://st.smart-agi.com/api/v2/auth/login")).resolves.toBeNull();
+        await expect(resolveSafeOutboundTarget("https://st.smart-agi.com/api/v2/auth/login", { allowProxyRouted: true })).resolves.toMatchObject({ address: "198.18.0.90", family: 4 });
     });
 
     it("allows exact private hosts only when explicitly enabled and never allows metadata addresses", async () => {

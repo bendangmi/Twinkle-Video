@@ -1,6 +1,6 @@
 services:
   docs:
-    image: ghcr.io/csyqlz/vozeb-pro-docs:v0.0.7.custom.3
+    image: ghcr.io/csyqlz/vozeb-pro-docs:v0.0.7.custom.4
     ports:
       - "3001:3000"
     restart: unless-stopped

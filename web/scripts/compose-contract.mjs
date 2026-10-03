@@ -9,11 +9,11 @@ const releaseVersion = readFileSync(path.join(repoRoot, "VERSION"), "utf8").trim
 const releaseTag = releaseVersion.startsWith("v") ? releaseVersion : `v${releaseVersion}`;
 
 export const composeProfiles = [
-    { file: "docker-compose.yml", embeddedPostgres: true, image: `\${VOZEB_PRO_IMAGE:-ghcr.io/csyqlz/vozeb-pro:${releaseTag}}`, workerOrigin: "http://app:3000" },
+    { file: "docker-compose.yml", embeddedPostgres: true, image: `\${VOZEB_PRO_IMAGE:-twinkle-video:${releaseTag}}`, workerOrigin: "http://app:3000" },
     { file: "docker-compose.local.yml", embeddedPostgres: true, image: "vozeb-pro:local", workerOrigin: "http://app:3000" },
-    { file: "docker-compose.baota.yml", embeddedPostgres: false, hostNetwork: true, image: `\${VOZEB_PRO_IMAGE:-ghcr.io/csyqlz/vozeb-pro:${releaseTag}}`, workerOrigin: "http://127.0.0.1:3000" },
-    { file: "docker-compose.external-db.yml", embeddedPostgres: false, image: `\${VOZEB_PRO_IMAGE:-ghcr.io/csyqlz/vozeb-pro:${releaseTag}}`, workerOrigin: "http://app:3000" },
-    { file: "docker-compose.lowmem.yml", embeddedPostgres: false, image: `\${VOZEB_PRO_IMAGE:-ghcr.io/csyqlz/vozeb-pro:${releaseTag}}`, workerOrigin: "http://app:3000" },
+    { file: "docker-compose.baota.yml", embeddedPostgres: false, hostNetwork: true, image: `\${VOZEB_PRO_IMAGE:-twinkle-video:${releaseTag}}`, workerOrigin: "http://127.0.0.1:3000" },
+    { file: "docker-compose.external-db.yml", embeddedPostgres: false, image: `\${VOZEB_PRO_IMAGE:-twinkle-video:${releaseTag}}`, workerOrigin: "http://app:3000" },
+    { file: "docker-compose.lowmem.yml", embeddedPostgres: false, image: `\${VOZEB_PRO_IMAGE:-twinkle-video:${releaseTag}}`, workerOrigin: "http://app:3000" },
 ];
 
 export const docsComposeProfiles = [

@@ -2,7 +2,7 @@
 
 本目录用于保存部署说明、外部 PostgreSQL Compose 文件和 Nginx 示例。应用镜像使用仓库根目录的 `Dockerfile` 构建，数据库不打进应用镜像，也不由本部署方案创建；线上使用已有 PostgreSQL，并通过本目录的 `docker-compose.yaml` 启动应用和生成 Worker。
 
-镜像版本以官方最新版本为基线并追加 `custom.N`。当前官方版本为 `v0.0.7`，本次二开镜像为 `v0.0.7.custom.3`；同一官方版本后续依次使用 `custom.4`、`custom.5`，官方版本升级后重新从 `custom.1` 开始。
+镜像版本以官方最新版本为基线并追加 `custom.N`。当前官方版本为 `v0.0.7`，本次二开镜像为 `v0.0.7.custom.4`；同一官方版本后续依次使用 `custom.5`、`custom.6`，官方版本升级后重新从 `custom.1` 开始。本次同步官方 BUSL-1.1 许可与商业授权说明，生产或商业部署前须先确认授权范围，详见根目录 `LICENSE` 与 `LICENSE_NOTICE.md`。
 
 ## 快速部署流程
 
@@ -17,7 +17,7 @@
 在服务器创建部署目录，并将以下文件复制到同一目录：
 
 ```text
-twinkle-video-v0.0.7.custom.3.tar
+twinkle-video-v0.0.7.custom.4.tar
 docker-compose.yaml
 .env
 ```
@@ -35,7 +35,7 @@ chmod 600 .env
 
 ```dotenv
 NEXT_PUBLIC_SITE_URL=https://你的域名.example.com
-VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.3
+VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.4
 VOZEB_PRO_DATABASE_PROVIDER=postgres
 DATABASE_URL=postgresql://用户:URL编码后的密码@数据库地址:5432/数据库名
 VOZEB_PRO_DATABASE_SSL=1
@@ -52,12 +52,13 @@ VOZEB_PRO_WORKER_TOKEN=独立的至少32位Worker令牌
 
 ```bash
 cd /opt/twinkle-video
-docker load -i twinkle-video-v0.0.7.custom.3.tar
-docker image inspect twinkle-video:v0.0.7.custom.3 --format '{{.Id}}'
+sha256sum twinkle-video-v0.0.7.custom.4.tar
+docker load -i twinkle-video-v0.0.7.custom.4.tar
+docker image inspect twinkle-video:v0.0.7.custom.4 --format '{{.Id}}'
 docker compose -f docker-compose.yaml config --services
 ```
 
-`config --services` 只能显示 `app` 和 `generation-worker`。如果显示 `postgres`，说明误用了根目录的 `docker-compose.yml`；本教程只使用外部 PostgreSQL。
+先将 `sha256sum` 的值与打包脚本输出的 SHA256 对照。`config --services` 只能显示 `app` 和 `generation-worker`。如果显示 `postgres`，说明误用了根目录的 `docker-compose.yml`；本教程只使用外部 PostgreSQL。
 
 ### 4. 启动和首次初始化
 
@@ -105,11 +106,20 @@ powershell -ExecutionPolicy Bypass -File .\deploy\build-image.ps1 `
 
 导出的 tar 包只包含应用镜像。`postgres` 不属于该镜像；不要使用根目录的 `docker-compose.yml` 作为外部数据库部署方案，因为它会声明 PostgreSQL 服务。
 
+若构建机的 Debian 软件源不可用，且已加载上一版 `twinkle-video:v0.0.7.custom.3` 镜像，可在确认 `web/pnpm-lock.yaml` 与上一版一致后复用其 Node/FFmpeg/PostgreSQL 运行时层；新应用仍须通过当前源码的 `web-build` 阶段完整构建。此方案不会更新运行时底层系统包，部署前应评估其安全性，网络恢复后建议按上方标准脚本重新构建：
+
+```powershell
+docker build --target web-build -t twinkle-video-build:v0.0.7.custom.4 .
+docker build -f deploy/Dockerfile.rebase -t twinkle-video:v0.0.7.custom.4 .
+docker save twinkle-video:v0.0.7.custom.4 -o deploy/twinkle-video-v0.0.7.custom.4.tar
+Get-FileHash deploy/twinkle-video-v0.0.7.custom.4.tar -Algorithm SHA256
+```
+
 ## 详细操作：线上准备
 
 将以下文件复制到服务器同一目录：
 
-- `deploy/twinkle-video-v0.0.7.custom.3.tar`
+- `deploy/twinkle-video-v0.0.7.custom.4.tar`
 - `deploy/docker-compose.yaml`
 - `.env`（从 `.env.example` 复制并填写真实值）
 - `deploy/nginx/vozeb-pro.conf.example`（改域名和证书路径后放入 Nginx 配置目录）
@@ -119,8 +129,9 @@ powershell -ExecutionPolicy Bypass -File .\deploy\build-image.ps1 `
 ## 详细操作：加载与启动
 
 ```bash
-docker load -i deploy/twinkle-video-v0.0.7.custom.3.tar
-export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.3
+cd /opt/twinkle-video
+docker load -i twinkle-video-v0.0.7.custom.4.tar
+export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.4
 docker compose -f docker-compose.yaml up -d
 docker compose -f docker-compose.yaml ps
 curl -fsS http://127.0.0.1:46511/api/health/live
@@ -133,8 +144,9 @@ curl -fsS http://127.0.0.1:46511/api/health/live
 更新时先导入新 tar，再执行：
 
 ```bash
-docker load -i deploy/twinkle-video-v0.0.7.custom.3.tar
-export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.3
+cd /opt/twinkle-video
+docker load -i twinkle-video-v0.0.7.custom.4.tar
+export VOZEB_PRO_IMAGE=twinkle-video:v0.0.7.custom.4
 docker compose -f docker-compose.yaml up -d
 docker compose -f docker-compose.yaml logs --tail=100 app generation-worker
 ```

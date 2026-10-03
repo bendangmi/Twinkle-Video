@@ -4,6 +4,12 @@
 
 - 暂无。
 
+## v0.0.7.custom.4
+
+- [上游] 合并官方许可和商业文档更新，保留 Twinkle Video 二开功能及独立标识。
+- [模型] Twinkle Model 账号登录改用 `/api/v2/auth/login`，增加对应回归断言。
+- [部署] 更新版本元数据、Compose 镜像标签和外部 PostgreSQL 部署说明，导出 `twinkle-video:v0.0.7.custom.4` 镜像。
+
 ## v0.0.7.custom.3
 
 - [首页] 移除首屏周围的装饰性悬浮元素和光环，保持标题与 Agent 输入卡片的响应式居中布局。

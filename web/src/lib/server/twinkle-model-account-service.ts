@@ -143,7 +143,7 @@ async function refreshBinding(binding: NonNullable<Awaited<ReturnType<typeof rea
 }
 
 async function login(baseUrl: string, email: string, password: string) {
-    const response = await panelRequest(baseUrl, "/api/v1/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+    const response = await panelRequest(baseUrl, "/api/v2/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
     if (!response.ok) throw new TwinkleModelAccountError(providerError(response.payload, "Twinkle Model 登录失败，请检查邮箱和密码"), response.status >= 500 ? 502 : response.status);
     return parseTokenPair(response.payload);
 }

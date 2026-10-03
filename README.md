@@ -11,7 +11,7 @@ Twinkle Video is a customized distribution of VOZEB PRO for AI-assisted multimod
 
 | Item | Current value |
 | --- | --- |
-| Source metadata | `v0.0.7.custom.3` |
+| Source metadata | `v0.0.7.custom.4` |
 | Maintained branch | `main` |
 | Fork repository | `https://github.com/bendangmi/Twinkle-Video.git` |
 | Upstream repository | `https://github.com/csyqlz/VOZEB-PRO` |

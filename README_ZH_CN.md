@@ -11,7 +11,7 @@ Twinkle Video 是基于 VOZEB PRO 定制的 AI 多模态创作平台，以 Next.
 
 | 项目 | 当前值 |
 | --- | --- |
-| 源码版本元数据 | `v0.0.7.custom.3` |
+| 源码版本元数据 | `v0.0.7.custom.4` |
 | 维护分支 | `main` |
 | 二开仓库 | `https://github.com/bendangmi/Twinkle-Video.git` |
 | 上游仓库 | `https://github.com/csyqlz/VOZEB-PRO` |

@@ -89,6 +89,8 @@ describe("Twinkle Model account service", () => {
 
         await bindTwinkleModelAccount({ userId: "user-one", email: "USER@example.com", password: "plain-password" });
 
+        expect(mocks.fetchSafeOutbound.mock.calls[0][0].toString()).toBe("https://big-model.smart-agi.com/api/v2/auth/login");
+        expect(mocks.fetchSafeOutbound.mock.calls[0][1]).toEqual(expect.objectContaining({ method: "POST" }));
         const persisted = JSON.stringify(mocks.upsertBinding.mock.calls[0][0]);
         expect(persisted).not.toContain("plain-password");
         expect(persisted).toContain("enc:access");
