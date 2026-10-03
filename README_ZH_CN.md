@@ -17,7 +17,7 @@ Twinkle Video 是基于 VOZEB PRO 定制的 AI 多模态创作平台，以 Next.
 | 上游仓库 | `https://github.com/csyqlz/VOZEB-PRO` |
 | 上游远程名 | `official` |
 | 包管理器 | `pnpm@11.9.0` |
-| 社区源码许可证 | GNU AGPL v3.0 |
+| 源码许可证 | Business Source License 1.1（BUSL-1.1）；详见 [LICENSE](LICENSE) |
 
 版本信息分布在 `VERSION`、根目录与 `web/` 包元数据、Compose 和部署资源中。发布时必须同步更新全部版本文件，并核验镜像摘要与内嵌元数据。
 
@@ -202,8 +202,8 @@ git merge official/main
 
 Twinkle Video 派生自 [VOZEB-PRO](https://github.com/csyqlz/VOZEB-PRO)。上游源码、文档和历史贡献继续归属上游项目及其贡献者，二开修改归各自贡献者。
 
-本仓库社区源码按 [GNU Affero General Public License v3.0](LICENSE) 分发。修改后的网络部署可能需要根据 AGPL 第 13 条提供完整对应源码。再分发时必须保留适用的版权、许可证、署名、法律与修改声明。捆绑依赖声明见 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。
+本仓库源码继承上游的 [Business Source License 1.1](LICENSE)。商业使用需取得上游授权；转换日期与转换许可证见 [LICENSE_NOTICE.md](LICENSE_NOTICE.md)。再分发时必须保留适用的版权、许可证、署名、法律与修改声明。捆绑依赖声明见 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。
 
 仓库中的[商业授权说明](COMMERCIAL_LICENSE.md)与[协议模板](COMMERCIAL_LICENSE_AGREEMENT.md)来源于 VOZEB PRO 上游。它们不能证明接收者已获得签署授权，不会自动授予独立二开贡献的闭源权利，也不能作为 Twinkle 已签发授权对外宣传。闭源授权必须取得覆盖相关版本与全部必要权利人的书面许可。
 
-“Twinkle Video”“VOZEB PRO”、相关 Logo、托管服务、模型/供应商访问、支付账户与商业关系独立于源码版权。AGPL 不授予商标权，也不代表官方认可。本节仅用于信息说明，不构成法律意见。
+“Twinkle Video”“VOZEB PRO”、相关 Logo、托管服务、模型/供应商访问、支付账户与商业关系独立于源码版权。源码许可证不授予商标权，也不代表官方认可。本节仅用于信息说明，不构成法律意见。
